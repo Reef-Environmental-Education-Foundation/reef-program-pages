@@ -25,7 +25,13 @@
        educatorName, educatorPhone (optional), educatorEmail (optional),
        reefEducatorName, reefPhone, reefEmail
      },
-     hero: { eyebrowTag, headline, promise },
+     hero: {
+       eyebrowTag, headline, promise,
+       imageUrl (optional): path to a REEF-owned, non-people background photo,
+         relative to this booking's own index.html (e.g. "../../assets/photos/reef-shark.jpg").
+         Omit to use the default ocean gradient treatment (no photo needed).
+       imageCredit (optional): small on-image credit line, e.g. "Photo: Jeffrey Haines / REEF".
+     },
      welcome: { body: [string, ...], signOff },
      glanceNote (optional),
      days: [
@@ -43,6 +49,37 @@
      },
      flexNote,
      finalReminders: { arrivalTime, parking, reefContact, questionsEmail },
+
+     // ---- Action Needed banner (optional) ----
+     // Shown directly under the hero ONLY when customer action is actually
+     // required right now. Leave this out entirely (or set show:false) once
+     // there is nothing pending — do not show it "just in case".
+     actionNeeded (optional): {
+       show: bool,
+       headline: string,             // e.g. "Your agreement is ready to sign"
+       detail: string,                // one or two sentences of context
+       ctaText: string,               // button label, e.g. "Review & Sign Agreement"
+       ctaUrl: string,                // where the button goes (usually agreement.zohoSignUrl)
+     },
+
+     // ---- Agreement / Contract status (optional but expected once a proposal is sent) ----
+     // Mirrors the REEF Bookings "Agreement/Contract Status" field exactly:
+     // "Not Sent" | "Sent" | "Signed" | "Declined".
+     agreement (optional): {
+       status: "Not Sent" | "Sent" | "Signed" | "Declined",
+       zohoSignUrl (optional): string,  // the Zoho Sign link for this booking's agreement.
+         // IMPORTANT (architecture, do not change): this page never embeds or
+         // becomes the signed contract itself. It only links out to Zoho Sign,
+         // which is REEF's actual e-signature system of record. The signed
+         // PDF lives in Zoho Sign, not here.
+       lastUpdated (optional): string,  // e.g. "Sent Aug 28, 2026"
+     },
+
+     // ---- Next Steps checklist (optional) ----
+     // A short, explicit list of what still needs to happen. If omitted,
+     // a sensible default list is shown based on agreement.status.
+     nextSteps (optional): { items: [string, ...] },
+
      proposal (only when docType === "proposal"): {
        whyItWorks: [ { title, text } ],
        nextSteps: [ string, ... ]
@@ -128,7 +165,10 @@
       ]);
     });
 
-    mount("hero", el("div", { class: "hero" }, [
+    const heroClass = "hero" + (hero.imageUrl ? " hero-has-image" : "");
+    const heroStyle = hero.imageUrl ? "background-image:url('" + hero.imageUrl + "');" : "";
+
+    mount("hero", el("div", { class: heroClass, style: heroStyle }, [
       el("div", { class: "hero-top" }, [
         renderLogo(data),
         el("div", { class: "hero-kicker" }, [(hero.kicker || "OCEAN EXPLORERS\nEXPEDITION PACKET").split("\n").join(" ")]),
@@ -139,6 +179,48 @@
         el("p", { class: "promise" }, [hero.promise || ""]),
       ]),
       el("div", { class: "hero-meta" }, chips),
+      hero.imageUrl && hero.imageCredit ? el("div", { class: "hero-photo-credit" }, [hero.imageCredit]) : null,
+    ]));
+  }
+
+  // ---------------- MINI NAV (persistent wayfinding) ----------------
+  // Auto-built from which sections actually have content, unless the
+  // booking's data.js supplies an explicit `nav` array of { label, targetId }.
+  function buildNavItems(data) {
+    if (data.nav && data.nav.length) return data.nav;
+    const items = [{ label: "Overview", targetId: "welcome" }];
+    if ((data.days || []).length) items.push({ label: "Daily Schedule", targetId: "day-by-day" });
+    if (data.gear && (data.gear.groups || []).length) items.push({ label: "What to Bring", targetId: "gear" });
+    items.push({ label: "Forms & Next Steps", targetId: "next-steps" });
+    return items;
+  }
+
+  function renderMiniNav(data) {
+    const items = buildNavItems(data);
+    if (!items.length) return;
+    mount("mini-nav", el("div", { class: "mini-nav" }, [
+      el("div", { class: "mini-nav-inner" }, items.map(function (item) {
+        return el("a", { class: "mini-nav-link", href: "#" + item.targetId }, [item.label]);
+      })),
+    ]));
+  }
+
+  // ---------------- ACTION NEEDED BANNER ----------------
+  // Only rendered when data.actionNeeded.show is explicitly true — a
+  // booking with nothing pending should simply omit this block.
+  function renderActionNeeded(data) {
+    const a = data.actionNeeded;
+    if (!a || !a.show) return;
+    const cta = a.ctaUrl
+      ? el("a", { class: "action-needed-cta", href: a.ctaUrl, target: "_blank", rel: "noopener" }, [a.ctaText || "Take Action"])
+      : null;
+    mount("action-needed", el("div", { class: "action-needed" }, [
+      el("div", { class: "action-needed-icon" }, ["!"]),
+      el("div", { class: "action-needed-body" }, [
+        el("div", { class: "action-needed-headline" }, [a.headline || "Action needed"]),
+        el("div", { class: "action-needed-detail" }, [a.detail || ""]),
+      ]),
+      cta,
     ]));
   }
 
@@ -203,11 +285,17 @@
           el("p", { class: "dek" }, [data.glanceNote ||
             "A quick-scan summary for planning. Full detail — including “students will” outcomes and gear notes — follows on the day-by-day pages."]),
         ]),
-        el("table", { class: "glance-table" }, [
-          el("thead", {}, [el("tr", {}, ["Day", "Theme", "Morning", "Afternoon", "Learning Outcome"].map(function (h) {
-            return el("th", {}, [h]);
-          }))]),
-          el("tbody", {}, rows),
+        // Wrapped in a scroll container so a wide table scrolls on its own on
+        // narrow viewports instead of stretching the whole page sideways
+        // (pre-existing mobile overflow bug, fixed here — same pattern
+        // already used for the mini-nav).
+        el("div", { class: "table-scroll" }, [
+          el("table", { class: "glance-table" }, [
+            el("thead", {}, [el("tr", {}, ["Day", "Theme", "Morning", "Afternoon", "Learning Outcome"].map(function (h) {
+              return el("th", {}, [h]);
+            }))]),
+            el("tbody", {}, rows),
+          ]),
         ]),
       ]),
     ]));
@@ -332,15 +420,63 @@
     ]));
   }
 
-  // ---------------- FLEX / FINAL REMINDERS ----------------
-  function renderFinalReminders(data) {
+  // ---------------- AGREEMENT STATUS PILL ----------------
+  const AGREEMENT_PILL_CLASS = {
+    "Not Sent": "agreement-pill-notsent",
+    "Sent": "agreement-pill-sent",
+    "Signed": "agreement-pill-signed",
+    "Declined": "agreement-pill-declined",
+  };
+
+  function defaultNextSteps(status) {
+    if (status === "Signed") {
+      return ["Your agreement is signed — no action needed here.", "Watch your email for final trip details as your date approaches."];
+    }
+    if (status === "Sent") {
+      return ["Review and sign your agreement (see above).", "Return your group's forms and any outstanding participant paperwork.", "Reach out any time with questions before your date."];
+    }
+    if (status === "Declined") {
+      return ["Contact your REEF educator to discuss next steps on your agreement."];
+    }
+    return ["Your REEF educator will send your agreement once program details are finalized.", "No action needed from you yet."];
+  }
+
+  // ---------------- FORMS & NEXT STEPS (agreement status + checklist + final reminders) ----------------
+  function renderNextSteps(data) {
     const fr = data.finalReminders || {};
-    mount("final-reminders", el("div", { class: "section" }, [
+    const agreement = data.agreement || {};
+    const status = agreement.status || "Not Sent";
+    const pillClass = AGREEMENT_PILL_CLASS[status] || AGREEMENT_PILL_CLASS["Not Sent"];
+    const steps = (data.nextSteps && data.nextSteps.items && data.nextSteps.items.length)
+      ? data.nextSteps.items
+      : defaultNextSteps(status);
+
+    const agreementBlock = el("div", { class: "agreement-block" }, [
+      el("div", { class: "agreement-status-row" }, [
+        el("span", { class: "eyebrow" }, ["AGREEMENT STATUS"]),
+        el("span", { class: "agreement-pill " + pillClass }, [status]),
+        agreement.lastUpdated ? el("span", { class: "agreement-updated" }, [agreement.lastUpdated]) : null,
+      ]),
+      (status === "Sent" && agreement.zohoSignUrl)
+        ? el("a", { class: "agreement-cta", href: agreement.zohoSignUrl, target: "_blank", rel: "noopener" }, ["Review & Sign Your Agreement →"])
+        : null,
+    ]);
+
+    mount("next-steps", el("div", { class: "section" }, [
       el("div", { class: "container" }, [
         el("div", { class: "section-head" }, [
           el("div", { class: "divider-mark" }),
+          el("span", { class: "eyebrow" }, ["FORMS & NEXT STEPS"]),
+          el("h2", {}, ["What happens next"]),
+        ]),
+        agreementBlock,
+        el("div", { class: "next-steps-list" }, [
+          el("span", { class: "eyebrow" }, ["NEXT STEPS"]),
+          el("ul", {}, steps.map(function (line) { return el("li", {}, [line]); })),
+        ]),
+        el("div", { class: "section-head", style: "margin-top:32px;" }, [
           el("span", { class: "eyebrow" }, ["FINAL REMINDERS"]),
-          el("h2", {}, ["Before you arrive"]),
+          el("h3", { style: "font-size:18px;" }, ["Before you arrive"]),
         ]),
         el("div", { class: "callout" }, [
           el("span", { class: "mark" }, ["”"]),
@@ -432,6 +568,8 @@
     }
     renderSampleFlag(data);
     renderHero(data);
+    renderMiniNav(data);
+    renderActionNeeded(data);
     if (data.docType === "pretrip") renderSnapshot(data);
     renderWelcome(data);
     renderGlance(data);
@@ -441,7 +579,7 @@
     } else {
       renderWhatStudentsWillDo(data);
       renderGear(data);
-      renderFinalReminders(data);
+      renderNextSteps(data);
     }
     renderClosing(data);
   }
