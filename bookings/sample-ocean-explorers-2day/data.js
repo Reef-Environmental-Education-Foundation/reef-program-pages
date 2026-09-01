@@ -48,6 +48,41 @@ window.BOOKING_DATA = {
     eyebrowTag: "Florida Keys Marine Science Expedition",
     headline: "From Student to Scientist in Key Largo",
     promise: "Turn the ocean into your classroom. Your students won't just study marine science — they become part of it.",
+    // Placeholder path — points at a real, non-people REEF photo (Caribbean
+    // Reef Shark, credit Jeffrey Haines) found in REEF's Dropbox at
+    // /Photos Videos/Fish and Invertebrate Algae Photos/TWA Region Fish
+    // Photos/CaribbeanReefShark_JeffreyHaines.jpg. This session couldn't
+    // pull the binary file into the build (no image-byte access to Dropbox
+    // from here) — save that file as assets/photos/hero-reef-shark.jpg in
+    // the repo and this path will pick it up automatically. Until then the
+    // hero renders its default navy/teal gradient (no broken image).
+    imageUrl: "../../assets/photos/hero-reef-shark.jpg",
+    imageCredit: "Photo: Jeffrey Haines / REEF",
+  },
+
+  // Shown only while the agreement is genuinely awaiting the customer's
+  // signature — remove or set show:false once it's Signed.
+  actionNeeded: {
+    show: true,
+    headline: "Your agreement is ready to sign",
+    detail: "Review and sign your Ocean Explorers agreement in Zoho Sign to lock in your dates.",
+    ctaText: "Review & Sign Agreement",
+    ctaUrl: "https://sign.zoho.com/reef-sample-agreement-link",
+  },
+
+  agreement: {
+    status: "Sent",
+    zohoSignUrl: "https://sign.zoho.com/reef-sample-agreement-link",
+    lastUpdated: "Sent Aug 28, 2026",
+  },
+
+  nextSteps: {
+    items: [
+      "Review and sign your agreement in Zoho Sign (link above).",
+      "Return your group's signed waivers and health/medical forms.",
+      "Confirm final headcount with your REEF educator at least 2 weeks before arrival.",
+      "Reach out any time with questions before your expedition.",
+    ],
   },
 
   welcome: {
