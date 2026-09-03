@@ -1,0 +1,66 @@
+[
+  {
+    "dayNumber": 1,
+    "totalDays": 2,
+    "title": "From Student to Scientist",
+    "theme": "Students move from REEF Campus orientation into the skills they'll apply in the field.",
+    "blocks": [
+      {
+        "time": "Session 1",
+        "tag": "Campus Activity",
+        "title": "Welcome Program (arrival)",
+        "description": "Students begin with a REEF Campus welcome and orientation that frames the trip as an immersive Florida Keys marine science experience."
+      },
+      {
+        "time": "Session 2",
+        "tag": "Citizen Science",
+        "title": "Volunteer Fish Survey Project Training",
+        "description": "Students learn how REEF volunteers identify fish and collect survey data, building the skills needed to participate in citizen science and marine biodiversity monitoring."
+      },
+      {
+        "time": "Session 2",
+        "tag": "Workshop",
+        "title": "Lionfish Lesson & Dissection",
+        "description": "Students investigate invasive lionfish through a hands-on lesson and guided dissection, linking anatomy and adaptation to real conservation challenges in Florida Keys ecosystems."
+      }
+    ],
+    "studentsWill": [
+      "Learn REEF's fish identification and survey methods before entering the field (Identify).",
+      "Investigate invasive lionfish anatomy and adaptation through a guided dissection (Understand).",
+      "Connect the lionfish investigation to REEF's ongoing invasive-species conservation work (Connect to Conservation)."
+    ],
+    "outcomesNote": null
+  },
+  {
+    "dayNumber": 2,
+    "totalDays": 2,
+    "title": "Into the Field",
+    "theme": "Students travel to real reef and coastal habitats to apply what they've learned.",
+    "blocks": [
+      {
+        "time": "Transit",
+        "tag": "Travel/Transit",
+        "title": "Travel / Transit",
+        "description": "Move between program locations with time built in for group transitions, preparation, and the next learning experience in the Florida Keys."
+      },
+      {
+        "time": "Session 3",
+        "tag": "Field Activity",
+        "title": "Kayaking (Mangrove Tour)",
+        "description": "Students explore mangroves and seagrass by kayak while investigating how coastal habitats support marine life, protect shorelines, and fit into the larger reef ecosystem (Observe)."
+      },
+      {
+        "time": "Session 4",
+        "tag": "Field Activity",
+        "title": "Boat Snorkel",
+        "description": "Students travel by boat to the Florida Keys coral reef to practice fish identification, observe reef ecology in the field, and connect their observations to REEF citizen science (Observe → Connect to Conservation)."
+      }
+    ],
+    "studentsWill": [
+      "Investigate mangrove and seagrass habitats and how they shelter marine life (Observe).",
+      "Apply fish-ID skills on a real Florida Keys coral reef during a guided boat snorkel survey (Identify).",
+      "Record field observations that feed directly into REEF's Volunteer Fish Survey Project (Connect to Conservation)."
+    ],
+    "outcomesNote": "Boat and kayak activities are weather- and water-condition dependent."
+  }
+]
