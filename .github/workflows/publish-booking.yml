@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
 
@@ -41,9 +42,28 @@ jobs:
           python pipeline/generate_booking_package.py "${{ github.event.inputs.booking_record_id }}"
 
       - name: Commit generated files
+        id: commit
         run: |
           git config user.name "REEF Booking Pipeline"
           git config user.email "actions@users.noreply.github.com"
           git add bookings/ contracts/
-          git diff --cached --quiet || git commit -m "Publish booking package for ${{ github.event.inputs.booking_record_id }}"
-          git push
+          if git diff --cached --quiet; then
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "Publish booking package for ${{ github.event.inputs.booking_record_id }}"
+            git push
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # A push made with the workflow's own GITHUB_TOKEN does NOT trigger
+      # other workflows (GitHub blocks that to prevent infinite loops), so
+      # deploy.yml's `on: push` never fires for the commit above -- the new
+      # booking page would sit on `main` without ever going live on Pages.
+      # Dispatching it explicitly here (an intentional API call, not an
+      # automatic event) works around that and keeps Pages in sync with
+      # every publish.
+      - name: Trigger Pages deploy
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref main
