@@ -38,6 +38,13 @@ jobs:
           # and the EPO base (appCK2qlT3WHdhYKd). See HANDOFF_INSTRUCTIONS.md
           # for how to create this and add it as a secret.
           AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
+          # Repo secret -- an Asana Personal Access Token, used only to
+          # create the post-generation review task for Rose (Martha,
+          # 2026-09-04). See README.md's "Setting up the ASANA_API_KEY
+          # secret" section for how to create one. If this secret is
+          # unset, generate_booking_package.py logs a warning and skips
+          # creating the review task -- it does not fail the run.
+          ASANA_API_KEY: ${{ secrets.ASANA_API_KEY }}
         run: |
           python pipeline/generate_booking_package.py "${{ github.event.inputs.booking_record_id }}"
 
