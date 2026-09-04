@@ -86,3 +86,23 @@ In this repo's Settings → Pages, set **Source** to **GitHub Actions**
 (not "Deploy from a branch"). The included workflow
 (`.github/workflows/deploy.yml`) then deploys automatically on every push
 to `main`.
+
+
+## Setting up the ASANA_API_KEY secret
+
+The review-gate step in `pipeline/generate_booking_package.py` (see "How this is organized" above) creates an Asana task for Rose to review each generated proposal and contract before it's sent to a customer. That step needs an Asana Personal Access Token stored as a GitHub Actions secret named `ASANA_API_KEY`. This is a manual, one-time setup step -- it has to be done by a person in GitHub's and Asana's own UI, not through automation.
+
+**1. Generate an Asana Personal Access Token**
+
+- In Asana, click your profile photo (top right) -> **My Settings** -> **Apps** tab -> **Manage Developer Apps**.
+- Under "Personal Access Tokens," click **+ Create new token**, give it a name like `reef-program-pages review gate`, and copy the token it shows you. You won't be able to see it again after leaving that page.
+
+**2. Add it as a GitHub Actions secret**
+
+- In this repo, go to **Settings** -> **Secrets and variables** -> **Actions**.
+- Click **New repository secret**.
+- Name: `ASANA_API_KEY`
+- Value: paste the token from step 1.
+- Click **Add secret**.
+
+Once this secret exists, every run of the "Publish Booking Package" workflow automatically creates a review task assigned to Rose after generating a booking's page and contract. If the secret is missing, the workflow still generates and publishes the page and contract as normal -- it just skips creating the review task and logs a warning in the run's output.
