@@ -12,7 +12,13 @@ data straight from the Airtable REST API (no hardcoded dict) and produces:
      (docType "pretrip"). The slug is the same either way, so a booking's
      URL does not change as it moves through the pipeline -- the link a
      customer already has simply becomes the pre-trip packet.
-  2. contracts/<slug>-contract.docx -- the merged contract document.
+  2. contracts/<slug>-contract.docx -- the merged contract document,
+     produced only once the booking reaches Contracted. Everything here
+     is published to the public Pages site, so a booking still at
+     Quoting / Proposal Sent / Verbal Yes deliberately gets no signable
+     agreement put up before anything has been agreed.
+
+A Cancelled booking produces neither: see CancelledBookingNotSupported.
 
 This is the script .github/workflows/publish-booking.yml calls. It
 requires an AIRTABLE_API_KEY environment variable (a read-only personal
@@ -210,6 +216,18 @@ class NoItineraryCaptured(Exception):
     around with fabricated content."""
 
 
+class CancelledBookingNotSupported(Exception):
+    """Raised when a booking's Status is Cancelled.
+
+    Same deliberate-failure pattern as NoItineraryCaptured: what a
+    cancelled booking's public page should say -- a cancellation notice,
+    an unpublish, a redirect, or simply nothing at all -- is a design
+    decision that has not been made. Falling through to the confirmed /
+    pre-trip page would quietly publish a cancelled group's itinerary as
+    though the trip were still happening, so this fails loudly instead of
+    guessing."""
+
+
 def airtable_get(base_id, table_name, record_id):
     if not AIRTABLE_API_KEY:
         raise RuntimeError("AIRTABLE_API_KEY environment variable is not set.")
@@ -255,8 +273,8 @@ def fetch_booking_data(record_id):
     # Linked-record fields come back from the REST API as bare record ID
     # strings (the Airtable UI and MCP show names, the API does not), so
     # each linked record has to be fetched to get anything human-readable.
-    activities_requested = fetch_linked_names(
-        BOOKINGS_BASE, ACTIVITIES_TABLE, f.get("Activities Requested"), "Activity Name")
+    activity_topics = fetch_linked_names(
+        BOOKINGS_BASE, ACTIVITIES_TABLE, f.get("Activities Requested"), "Educational Topic")
 
     program_type = {}
     program_type_ids = f.get("Program Type") or []
@@ -318,7 +336,7 @@ def fetch_booking_data(record_id):
         "proposal_version": f.get("Proposal Version"),
         "proposal_sent_date": f.get("Proposal Sent Date"),
         "free_chaperones": f.get("# Free Chaperones", 0),
-        "activities_requested": activities_requested,
+        "activity_topics": activity_topics,
         "program_type": program_type,
         "asana_task_id": f.get("Asana Task ID", ""),
     }
@@ -326,16 +344,28 @@ def fetch_booking_data(record_id):
 
 def fetch_linked_names(base_id, table_name, record_ids, name_field):
     """Resolves a multipleRecordLinks cell (a list of record ID strings)
-    into that field's display values. Deliberately lets an HTTP error
-    propagate: a stale link is a data problem worth failing loudly on,
-    consistent with NoItineraryCaptured above."""
+    into that field's values across the linked records.
+
+    Handles both single-value fields (singleLineText -> "Boat Snorkel")
+    and multi-value ones (multipleSelects -> ["Citizen Science",
+    "Caribbean Fish ID"]), which the REST API returns as a plain list of
+    strings. Results are flattened, empties dropped, and duplicates
+    removed while preserving first-seen order, since several linked
+    records routinely share a value.
+
+    Deliberately lets an HTTP error propagate: a stale link is a data
+    problem worth failing loudly on, consistent with NoItineraryCaptured."""
     names = []
     for record_id in record_ids or []:
         if not isinstance(record_id, str) or not record_id.startswith("rec"):
             continue
         value = airtable_get(base_id, table_name, record_id)["fields"].get(name_field)
-        if value:
-            names.append(value)
+        if not value:
+            continue
+        for item in (value if isinstance(value, list) else [value]):
+            item = str(item).strip()
+            if item and item not in names:
+                names.append(item)
     return names
 
 
@@ -431,12 +461,13 @@ def build_proposal_data(b, photos=None):
     chaperones = b["chaperones"] or 0
     free_chaperones = b["free_chaperones"] or 0
 
-    # "Focus" is the joined names of the linked Activities Requested
-    # records. Airtable has no per-booking topics field, so this is the
-    # closest available signal -- see the README note in the PR: several
-    # linked activities are logistics ("Travel / Transit"), and Activities
-    # does carry an Educational Topic field that would read better here.
-    focus = " · ".join(b.get("activities_requested") or []) or "[confirm from booking data]"
+    # "Focus" is the deduped Educational Topic values of the linked
+    # Activities Requested records, rather than the activity names
+    # themselves: the names include pure logistics ("Travel / Transit",
+    # "Welcome Program (arrival)") that read badly as a program focus,
+    # and repeat the day-by-day section further down the page. Activities
+    # with no topic set drop out of the join entirely.
+    focus = " · ".join(b.get("activity_topics") or []) or "[confirm from booking data]"
 
     reef = b["reef_contact"]
     welcome_body = [line for line in [reef.get("welcome_line"), pt.get("description")] if line]
@@ -809,8 +840,11 @@ def create_review_task(b, page_url, contract_url):
         "Review before this goes to the customer:\n"
         f"- Proposal/pre-trip page: {page_url}\n"
         "  (may take a couple of minutes to go live after this task is created)\n"
-        f"- Contract: {contract_url}\n\n"
-        "Check dates, price, org/contact details, and the day-by-day content for accuracy.\n\n"
+        + (f"- Contract: {contract_url}\n\n" if contract_url else
+           "- Contract: not generated yet -- this booking is still pre-commitment "
+           "(Quoting / Proposal Sent / Verbal Yes). The contract is produced once "
+           "Status reaches 'Contracted'.\n\n")
+        + "Check dates, price, org/contact details, and the day-by-day content for accuracy.\n\n"
         "This task is a process gate only -- marking it complete does not trigger anything "
         "automated. It's the documented signal that a human has reviewed both documents and "
         "it's OK for staff to send the link to the customer. Do not send the link before this "
@@ -884,6 +918,20 @@ def main():
     record_id = sys.argv[1]
 
     b = fetch_booking_data(record_id)
+
+    # Checked before anything is written: a cancelled booking has no
+    # designed page behavior yet, and the pre-trip branch below would
+    # otherwise publish its itinerary as if the trip were still on.
+    if b["status"] == "Cancelled":
+        raise CancelledBookingNotSupported(
+            f"Booking {record_id} has Status 'Cancelled'. This script does not publish a page "
+            "for cancelled bookings: what the public page should show in that case -- a "
+            "cancellation notice, an unpublished/removed page, a redirect, or nothing at all -- "
+            "has not been designed yet, and defaulting to the confirmed/pre-trip packet would "
+            "quietly advertise a cancelled group's itinerary as though it were still happening. "
+            "Decide the intended behavior first, then teach this script that rule explicitly."
+        )
+
     slug = slugify(b["org_name"])
 
     BOOKINGS_OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -929,12 +977,23 @@ def main():
         f.write(BOOKING_PAGE_SHELL_TEMPLATE.format(title=page_title))
     print(f"Wrote {booking_dir / 'index.html'}")
 
+    # Contracts are gated on commitment, not just on which page was built.
+    # Everything this script writes is published to the public Pages site,
+    # and a booking still at Quoting / Proposal Sent / Verbal Yes has not
+    # agreed to anything yet -- putting a signable agreement up at that
+    # point invites a customer to sign terms nobody has negotiated. The
+    # contract appears once the booking reaches Contracted.
     contract_path = CONTRACTS_OUT_DIR / f"{slug}-contract.docx"
-    build_contract(b, contract_path)
-    print(f"Wrote {contract_path}")
+    if b["status"] in PROPOSAL_STATUSES:
+        contract_url = None
+        print(f"Skipping contract generation: status {b['status']!r} is pre-commitment "
+              f"(no signable contract is published before 'Contracted').")
+    else:
+        build_contract(b, contract_path)
+        contract_url = f"{PAGES_BASE_URL}/contracts/{slug}-contract.docx"
+        print(f"Wrote {contract_path}")
 
     page_url = f"{PAGES_BASE_URL}/bookings/{slug}/"
-    contract_url = f"{PAGES_BASE_URL}/contracts/{slug}-contract.docx"
     create_review_task(b, page_url, contract_url)
 
 
