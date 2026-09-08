@@ -4,8 +4,14 @@ proof-of-concept scripts built 2026-09-03 (gen_contract.py and
 generate_confirmed_page.py). Given a Bookings record ID, this pulls fresh
 data straight from the Airtable REST API (no hardcoded dict) and produces:
 
-  1. bookings/<slug>/data.js   -- the confirmed/pre-trip page's data,
-     matching the schema in assets/render.js.
+  1. bookings/<slug>/data.js   -- the customer page's data, matching the
+     schema in assets/render.js. Which of render.js's two rendering modes
+     it targets depends on Bookings.Status: Quoting / Proposal Sent /
+     Verbal Yes produce the six-section proposal (docType "proposal");
+     Contracted and beyond produce the confirmed/pre-trip packet
+     (docType "pretrip"). The slug is the same either way, so a booking's
+     URL does not change as it moves through the pipeline -- the link a
+     customer already has simply becomes the pre-trip packet.
   2. contracts/<slug>-contract.docx -- the merged contract document.
 
 This is the script .github/workflows/publish-booking.yml calls. It
@@ -54,8 +60,42 @@ API_ROOT = "https://api.airtable.com/v0"
 
 BOOKINGS_BASE = "app3FIECuG8iQr7kY"
 BOOKINGS_TABLE = "Bookings"
+ACTIVITIES_TABLE = "Activities"
+PROGRAM_TYPES_TABLE = "Program Types"
 EPO_BASE = "appCK2qlT3WHdhYKd"
 PERSONNEL_TABLE = "REEF Personnel"
+
+# Program Types' six per-section hero attachment fields, keyed by the
+# section names render.js's proposal mode expects in data.proposal.photos.
+# Field names use an em dash, matching Airtable exactly -- a hyphen here
+# silently yields None and falls back to the gradient art.
+PROPOSAL_HERO_FIELDS = {
+    "overview": "Proposal Hero — Overview",
+    "experience": "Proposal Hero — Your Experience",
+    "days": "Proposal Hero — Day by Day",
+    "included": "Proposal Hero — What's Included",
+    "pricing": "Proposal Hero — Pricing & Details",
+    "next": "Proposal Hero — Next Steps",
+}
+
+# Bookings.Status values that mean "the customer is still deciding", and so
+# should publish the proposal experience rather than the confirmed/pre-trip
+# packet. Everything else (Contracted and beyond) gets the pre-trip page.
+PROPOSAL_STATUSES = {"Quoting", "Proposal Sent", "Verbal Yes"}
+
+# Bookings.Status -> which of the 5 roadmap steps the customer is on now.
+# render.js renders steps below currentStep as done and currentStep as
+# current, so "Quoting" sits ON step 2 (proposal being prepared).
+ROADMAP_STEPS = ["Inquiry", "Proposal Prepared", "Your Review", "Contract", "Confirmed"]
+ROADMAP_STEP_BY_STATUS = {
+    "Quoting": 2,
+    "Proposal Sent": 3,
+    "Verbal Yes": 3,
+    "Contracted": 4,
+    "Confirmed": 5,
+    "In Progress": 5,
+    "Completed": 5,
+}
 
 REPO_ROOT = Path(__file__).parent
 TEMPLATE_PATH = REPO_ROOT / "templates" / "Benjamin_School_Expedition_Contract_TEMPLATE.docx"
@@ -73,6 +113,95 @@ ASANA_OXP_PROJECT_GID = "1208312572861835"        # "OXP New Reservation Workflo
 ASANA_FACILITY_PROJECT_GID = "1210526829539105"   # "Facility Rental New Reservation Workflow"
 ASANA_REVIEWER_GID = "1209845394372396"           # Rose Kelly
 PAGES_BASE_URL = "https://reef-environmental-education-foundation.github.io/reef-program-pages"
+
+
+# Booking Type -> the customer-facing noun render.js drops into proposal
+# headings ("Florida Keys Ocean Explorers <label>", "your <word>, at a
+# glance"). Derived from Booking Type rather than the linked Program Type
+# record because Program Type Name is plural ("Expeditions") and only
+# covers 3 of the 5 Booking Type values.
+PROGRAM_WORDS_BY_BOOKING_TYPE = {
+    "Group Program - Expedition": ("Expedition", "expedition"),
+    "Group Program - Discovery": ("Discovery Program", "program"),
+    "Facility Rental": ("Facility Rental", "rental"),
+    "OXP – Virtual": ("Virtual Program", "program"),
+    "OXP – Monroe County": ("Monroe County Program", "program"),
+}
+DEFAULT_PROGRAM_WORDS = ("Program", "program")
+
+# ---- Static proposal copy (no Airtable source) -------------------------
+# The proposal's "why REEF works" pillars and its educator-team section
+# have no backing Airtable fields, so per Martha's direction they are
+# hardcoded here, one set per Booking Type, rather than left blank.
+#
+# Two deliberate constraints on this copy:
+#   1. Every claim traces to something REEF actually does (the Volunteer
+#      Fish Survey Project, educator-led instruction, the Ocean
+#      Exploration Center) -- this text goes in front of customers.
+#   2. The team entries name ROLES, not people. render.js already tells
+#      the reader these are illustrative rather than their assigned
+#      educators, and inventing named REEF staff for a customer-facing
+#      page would be fabricating real colleagues' identities. Real bios
+#      should come from EPO REEF Personnel, which already carries
+#      Full name, Customer-Facing Title and Photo -- see the note in
+#      build_proposal_data().
+PILLARS_BY_BOOKING_TYPE = {
+    "Group Program - Expedition": [
+        {"title": "Real citizen science, not a demo",
+         "text": "Students are trained in REEF's Volunteer Fish Survey Project methods and collect survey data using the same protocol REEF's volunteer network uses across the Caribbean and beyond."},
+        {"title": "Taught by REEF educators",
+         "text": "Every session and field activity is led by REEF marine science educators, with pre- and post-activity debriefs that connect what students saw to what it means."},
+        {"title": "The Florida Keys as the classroom",
+         "text": "Programs are based at REEF's Ocean Exploration Center in Key Largo and run out into the coral reef, mangrove, and seagrass habitats that surround it."},
+        {"title": "Built around your group",
+         "text": "The itinerary in this proposal is shaped around your dates, group size, and what you told us your students need to get out of the trip."},
+    ],
+    "Group Program - Discovery": [
+        {"title": "Hands-on from the first session",
+         "text": "Discovery Programs put students in front of real specimens, real data, and real marine science questions rather than a lecture."},
+        {"title": "Taught by REEF educators",
+         "text": "Sessions are led by REEF marine science educators who work with school and youth groups year-round."},
+        {"title": "Anchored at the Ocean Exploration Center",
+         "text": "Your group learns at REEF's Ocean Exploration Center for Marine Conservation in Key Largo."},
+        {"title": "Sized to your group",
+         "text": "Session content and pacing are matched to your group's age range, size, and available time."},
+    ],
+    "Facility Rental": [
+        {"title": "A purpose-built marine science venue",
+         "text": "Your event is hosted at REEF's Ocean Exploration Center for Marine Conservation in Key Largo."},
+        {"title": "Clear, itemized pricing",
+         "text": "Space, staffing, and any add-on programming are quoted separately so you can see exactly what drives the total."},
+        {"title": "REEF staff on site",
+         "text": "REEF staff coordinate setup, access, and logistics for the spaces included in your rental."},
+        {"title": "Optional programming",
+         "text": "Educational sessions can be added to a rental if you want REEF content as part of your event."},
+    ],
+}
+DEFAULT_PILLARS = PILLARS_BY_BOOKING_TYPE["Group Program - Expedition"]
+
+TEAM_BY_BOOKING_TYPE = {
+    "Group Program - Expedition": [
+        {"name": "REEF Marine Science Educators", "role": "Program Instruction",
+         "bio": "Lead every session and field activity, from fish ID training through the reef survey itself."},
+        {"name": "Volunteer Fish Survey Project Staff", "role": "Citizen Science",
+         "bio": "Run REEF's survey methodology training and help students log real observations into REEF's database."},
+        {"name": "REEF Ocean Explorers Coordination", "role": "Trip Logistics",
+         "bio": "Your planning contact for dates, headcount, vendors, and everything between booking and arrival."},
+    ],
+    "Group Program - Discovery": [
+        {"name": "REEF Marine Science Educators", "role": "Program Instruction",
+         "bio": "Lead each Discovery session and adapt content to your group's age range and goals."},
+        {"name": "REEF Ocean Explorers Coordination", "role": "Program Logistics",
+         "bio": "Your planning contact for scheduling, headcount, and on-site details."},
+    ],
+    "Facility Rental": [
+        {"name": "REEF Facility Coordination", "role": "Event Logistics",
+         "bio": "Coordinates space setup, access, and timing for your event."},
+        {"name": "REEF Marine Science Educators", "role": "Optional Programming",
+         "bio": "Available if you add educational sessions to your rental."},
+    ],
+}
+DEFAULT_TEAM = TEAM_BY_BOOKING_TYPE["Group Program - Expedition"]
 
 
 class NoItineraryCaptured(Exception):
@@ -123,6 +252,24 @@ def fetch_booking_data(record_id):
     rec = airtable_get(BOOKINGS_BASE, BOOKINGS_TABLE, record_id)
     f = rec["fields"]
 
+    # Linked-record fields come back from the REST API as bare record ID
+    # strings (the Airtable UI and MCP show names, the API does not), so
+    # each linked record has to be fetched to get anything human-readable.
+    activities_requested = fetch_linked_names(
+        BOOKINGS_BASE, ACTIVITIES_TABLE, f.get("Activities Requested"), "Activity Name")
+
+    program_type = {}
+    program_type_ids = f.get("Program Type") or []
+    if program_type_ids:
+        pt = airtable_get(BOOKINGS_BASE, PROGRAM_TYPES_TABLE, program_type_ids[0])["fields"]
+        program_type = {
+            "name": pt.get("Program Type Name", ""),
+            "tagline": pt.get("Tagline", ""),
+            "description": pt.get("Customer-Facing Description", ""),
+            # Attachment cells are absent (not empty lists) when unset.
+            "heroes": {key: (pt.get(field) or []) for key, field in PROPOSAL_HERO_FIELDS.items()},
+        }
+
     personnel_record_id = f.get("REEF Booking Contact (EPO Personnel Record ID)")
     reef_contact = {}
     if personnel_record_id:
@@ -167,8 +314,83 @@ def fetch_booking_data(record_id):
         "proposal_included": f.get("Proposal — What's Included", ""),
         "proposal_not_included": f.get("Proposal — What's Not Included", ""),
         "proposal_assumptions": f.get("Proposal — Assumptions", ""),
+        "proposal_next_steps": f.get("Proposal — Next Steps", ""),
+        "proposal_version": f.get("Proposal Version"),
+        "proposal_sent_date": f.get("Proposal Sent Date"),
+        "free_chaperones": f.get("# Free Chaperones", 0),
+        "activities_requested": activities_requested,
+        "program_type": program_type,
         "asana_task_id": f.get("Asana Task ID", ""),
     }
+
+
+def fetch_linked_names(base_id, table_name, record_ids, name_field):
+    """Resolves a multipleRecordLinks cell (a list of record ID strings)
+    into that field's display values. Deliberately lets an HTTP error
+    propagate: a stale link is a data problem worth failing loudly on,
+    consistent with NoItineraryCaptured above."""
+    names = []
+    for record_id in record_ids or []:
+        if not isinstance(record_id, str) or not record_id.startswith("rec"):
+            continue
+        value = airtable_get(base_id, table_name, record_id)["fields"].get(name_field)
+        if value:
+            names.append(value)
+    return names
+
+
+def split_items(text):
+    """Splits a free-text Airtable field into bullet items.
+
+    Staff write these fields inconsistently: "Proposal — What's Included"
+    and "— What's Not Included" are semicolon-separated lists, while
+    "— Assumptions" is written as prose sentences. Splitting on newlines
+    then on semicolons alone therefore mangles Assumptions, cutting
+    "...program days. Rate assumes both days run as outlined" into one
+    item. Breaking on either terminator handles all three, and leaves a
+    field written with neither as a single item.
+
+    Trailing semicolons are dropped; authored periods are kept as-is
+    rather than second-guessing how staff wrote the sentence."""
+    if not text:
+        return []
+    parts = [line.strip() for line in str(text).splitlines() if line.strip()]
+    if len(parts) == 1:
+        parts = re.split(r"(?<=[.;])\s+", parts[0])
+    return [part.strip().rstrip(";").strip() for part in parts if part.strip(" ;")]
+
+
+def download_hero_photos(b, booking_dir):
+    """Downloads each populated Program Types hero attachment into the
+    booking's own photos/ directory and returns the relative paths
+    render.js expects in data.proposal.photos.
+
+    The download is not incidental. Airtable attachment URLs
+    (v5.airtableusercontent.com) are short-lived signed links that expire
+    within hours, so writing them straight into data.js would produce a
+    page whose photography silently breaks the same day. Committing the
+    file alongside the page is what makes it durable -- publish-booking.yml
+    already stages bookings/ wholesale, so these get committed with it.
+
+    Sections whose attachment is empty are simply omitted from the returned
+    dict; render.js then falls back to its own decorative gradient SVG."""
+    heroes = (b.get("program_type") or {}).get("heroes") or {}
+    photos = {}
+    for key, attachments in heroes.items():
+        if not attachments:
+            continue
+        attachment = attachments[0]
+        url = attachment.get("url")
+        if not url:
+            continue
+        ext = os.path.splitext(attachment.get("filename") or "")[1].lower() or ".jpg"
+        photos_dir = booking_dir / "photos"
+        photos_dir.mkdir(parents=True, exist_ok=True)
+        resp = requests.get(url, timeout=60)
+        resp.raise_for_status()
+        (photos_dir / f"{key}{ext}").write_bytes(resp.content)
+        photos[key] = f"photos/{key}{ext}"
+    return photos
 
 
 def load_itinerary(record_id):
@@ -182,6 +404,158 @@ def load_itinerary(record_id):
         )
     with open(path) as fh:
         return json.load(fh)
+
+
+# ---------------------------------------------------------------- Proposal page
+
+def build_proposal_data(b, photos=None):
+    """Builds the docType "proposal" shape -- the advanced six-section
+    customer proposal experience in assets/render.js. Parallel to
+    build_confirmed_page_data() below; a booking gets one or the other
+    depending on Status (see main()).
+
+    Note the two separate meta objects render.js reads: the shared
+    top-level data.meta (sampleFlag, used by both modes) and the
+    proposal-specific data.proposal.meta."""
+    pt = b.get("program_type") or {}
+    label, word = PROGRAM_WORDS_BY_BOOKING_TYPE.get(b["booking_type"], DEFAULT_PROGRAM_WORDS)
+
+    # load_itinerary() output already matches the proposal's days schema
+    # (dayNumber/totalDays/title/theme/blocks/studentsWill/outcomesNote),
+    # so unlike build_confirmed_page_data() -- which reshapes it to add
+    # morningLabel/afternoonLabel/learningOutcome for the glance table --
+    # it is passed through as-is.
+    days = copy.deepcopy(load_itinerary(b["record_id"]))
+
+    students = b["students"] or 0
+    chaperones = b["chaperones"] or 0
+    free_chaperones = b["free_chaperones"] or 0
+
+    # "Focus" is the joined names of the linked Activities Requested
+    # records. Airtable has no per-booking topics field, so this is the
+    # closest available signal -- see the README note in the PR: several
+    # linked activities are logistics ("Travel / Transit"), and Activities
+    # does carry an Educational Topic field that would read better here.
+    focus = " · ".join(b.get("activities_requested") or []) or "[confirm from booking data]"
+
+    reef = b["reef_contact"]
+    welcome_body = [line for line in [reef.get("welcome_line"), pt.get("description")] if line]
+
+    return {
+        "docType": "proposal",
+        "assetDepth": 2,
+        "meta": {
+            "sampleFlag": False,
+            "generatedFrom": b["record_id"],
+            "generatedNote": f"Generated by generate_booking_package.py from live Airtable "
+                              f"fields on {datetime.utcnow().strftime('%Y-%m-%d')}.",
+        },
+        "proposal": {
+            "meta": {
+                "bookingId": b["record_id"],
+                "proposalVersion": f"v{b['proposal_version']}" if b.get("proposal_version") else "v1",
+                "proposalDate": date_pretty(b["proposal_sent_date"]) if b.get("proposal_sent_date") else "",
+                "programTypeLabel": label,
+                "programWord": word,
+            },
+            "group": {
+                "orgName": b["org_name"],
+                "contactName": b["contact_name"],
+                # render.js labels this chip "Your Contact's Role".
+                "gradeLevel": b["contact_role"],
+                "students": students,
+                "chaperones": chaperones,
+            },
+            "dates": {
+                "label": "Proposed",
+                "range": f"{date_pretty(b['arrival_date'])} - {date_pretty(b['departure_date'])}",
+            },
+            "roadmap": {
+                "steps": ROADMAP_STEPS,
+                # Cancelled has no mapped step and falls back to 1 -- see
+                # main(), which also does not route Cancelled here.
+                "currentStep": ROADMAP_STEP_BY_STATUS.get(b["status"], 1),
+            },
+            "cta": {
+                "primaryText": "Ready to Move Forward",
+                "primaryConfirmHeadline": "Thanks — we've got your response!",
+                "primaryConfirmBody": "A member of the REEF team will review your response and follow "
+                                      "up by email with next steps to confirm your program.",
+                "secondaryText": "Need to adjust something?",
+                "changeFormLabel": "What would you like us to adjust?",
+                "changeConfirmHeadline": "Thanks — we've got your note.",
+                "changeConfirmBody": "The REEF Ocean Explorers team will follow up by email to talk "
+                                     "through the change.",
+                "contactEmail": reef.get("email", "") or "explorers@REEF.org",
+                # Implementation Plan item 5 (the Zapier Catch Hook replacing
+                # Airtable's broken native webhook) is a separate follow-up.
+                # Until it exists render.js logs responses to the console and
+                # still shows the on-page confirmation.
+                "responseWebhookUrl": None,
+            },
+            "reefContact": {
+                "name": reef.get("name", ""),
+                "role": reef.get("title", ""),
+                # EPO REEF Personnel does carry a Photo attachment field.
+                # It is not wired up here: like the hero art it would need
+                # downloading (Airtable URLs expire), and staff headshots
+                # are a separate call from program photography.
+                "photo": None,
+                "welcomeLine": reef.get("welcome_line", ""),
+                "email": reef.get("email", ""),
+                "phone": reef.get("phone", ""),
+            },
+            "welcome": {
+                "body": welcome_body,
+                "signOff": reef.get("name", "") or "The REEF Ocean Explorers Team",
+            },
+            "glance": [
+                {"k": "Dates", "v": f"{date_pretty(b['arrival_date'])} - {date_pretty(b['departure_date'])}"},
+                {"k": "Group Size", "v": f"{students} students + {chaperones} chaperones"},
+                {"k": "Location", "v": b["location"] or "Key Largo (REEF)"},
+                {"k": "Focus", "v": focus},
+            ],
+            "pillars": PILLARS_BY_BOOKING_TYPE.get(b["booking_type"], DEFAULT_PILLARS),
+            "team": TEAM_BY_BOOKING_TYPE.get(b["booking_type"], DEFAULT_TEAM),
+            "days": days,
+            "included": [{
+                "title": f"Included in Your {label}",
+                "items": split_items(b["proposal_included"]),
+            }],
+            "notIncluded": split_items(b["proposal_not_included"]),
+            "photos": photos or {},
+            # No credit field exists on the Program Types hero attachments.
+            # REEF's brand standards expect photo credits, so this is a real
+            # gap -- called out in the PR rather than filled with a guess.
+            "photoCredits": {},
+            "pricing": {
+                "tileRate": {
+                    "label": "Per Student",
+                    "num": money(b["price_per_paid_space"]),
+                    "unit": f"per student for the full {word}",
+                },
+                "tileChaperones": {
+                    "label": "Complimentary Chaperones",
+                    "num": str(free_chaperones),
+                    "unit": "included at no charge",
+                },
+                "ratioNote": f"This proposal is built for {students} students and {chaperones} "
+                             f"chaperones, {free_chaperones} of them complimentary.",
+                # No Airtable field backs the pricing "conditions" list.
+                "conditions": [],
+                "estimatedTotal": money(b["total_package_price"]),
+                "estimatedTotalNote": f"<strong>{money(b['total_package_price'])}</strong> estimated "
+                                      f"total for the group and dates above. This estimate is revisited "
+                                      f"if activities, headcount, or dates change.",
+                "assumptions": split_items(b["proposal_assumptions"]),
+                # Deliberately empty: nothing in Airtable backs a
+                # "what could change the price" list, and inventing
+                # customer-facing pricing language is not this script's
+                # call. render.js omits the section when empty.
+                "whatCouldChange": [],
+            },
+        },
+    }
 
 
 # ---------------------------------------------------------------- Confirmed page
@@ -517,7 +891,17 @@ def main():
 
     booking_dir = BOOKINGS_OUT_DIR / slug
     booking_dir.mkdir(exist_ok=True)
-    confirmed_data = build_confirmed_page_data(b)
+
+    # Which page this booking gets is purely a function of Status. The slug
+    # is deliberately the same either way, so a booking's URL does not change
+    # when it moves from proposal to confirmed -- the page the customer
+    # already has a link to just becomes the pre-trip packet.
+    if b["status"] in PROPOSAL_STATUSES:
+        page_data = build_proposal_data(b, photos=download_hero_photos(b, booking_dir))
+        print(f"Status {b['status']!r} -> proposal page")
+    else:
+        page_data = build_confirmed_page_data(b)
+        print(f"Status {b['status']!r} -> confirmed/pre-trip page")
 
     # Test/QA records are deliberately run through the real publish pipeline
     # -- that end-to-end run IS the check (Unified Dashboard Implementation
@@ -533,11 +917,11 @@ def main():
     # before the write, after all page-shaping logic, so no present or future
     # branch above can leave a ZZZ record unbannered.
     if is_test_org(b["org_name"]):
-        confirmed_data.setdefault("meta", {})["sampleFlag"] = True
+        page_data.setdefault("meta", {})["sampleFlag"] = True
 
     with open(booking_dir / "data.js", "w") as f:
         f.write("/* GENERATED by generate_booking_package.py -- do not hand-edit. */\n")
-        f.write("window.BOOKING_DATA = " + json.dumps(confirmed_data, indent=2) + ";\n")
+        f.write("window.BOOKING_DATA = " + json.dumps(page_data, indent=2) + ";\n")
     print(f"Wrote {booking_dir / 'data.js'}")
 
     page_title = f"{b['org_name']} — Expedition Packet"
