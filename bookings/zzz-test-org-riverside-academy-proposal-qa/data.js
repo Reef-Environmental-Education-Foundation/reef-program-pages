@@ -44,7 +44,7 @@ window.BOOKING_DATA = {
       "changeFormLabel": "What would you like us to adjust?",
       "changeConfirmHeadline": "Thanks \u2014 we've got your note.",
       "changeConfirmBody": "The REEF Ocean Explorers team will follow up by email to talk through the change.",
-      "contactEmail": "rose@reef.org",
+      "contactEmail": "rose@REEF.org",
       "responseWebhookUrl": "https://hooks.zapier.com/hooks/catch/28743322/4hv7eqd/"
     },
     "reefContact": {
@@ -52,7 +52,7 @@ window.BOOKING_DATA = {
       "role": "Education Coordinator",
       "photo": null,
       "welcomeLine": "Rose has been building your group's itinerary and is your direct point of contact through booking.",
-      "email": "rose@reef.org",
+      "email": "rose@REEF.org",
       "phone": "305-852-0030"
     },
     "welcome": {
@@ -222,11 +222,11 @@ window.BOOKING_DATA = {
       },
       "ratioNote": "This proposal is built for 32 students and 5 chaperones, 4 of them complimentary.",
       "conditions": [
-        "Every group receives 1 complimentary chaperone space for every 9 total people (students + chaperones) in the group -- REEF calculates this automatically from your group size, so it updates if your numbers change.",
+        "Every group receives 1 complimentary chaperone space for every 9 total people (students + chaperones) in the group \u2014 REEF calculates this automatically from your group size, so it updates if your numbers change.",
         "Chaperones beyond the complimentary count shown above are billed at the same per-student rate."
       ],
       "estimatedTotal": "$9,822.75",
-      "estimatedTotalNote": "<strong>$9,822.75</strong> estimated total for the group and dates above, including REEF program fees and any applicable discount or sales tax. This estimate is valid for the group size and dates shown here -- REEF will re-quote automatically if activities, headcount, or dates change.",
+      "estimatedTotalNote": "<strong>$9,822.75</strong> estimated total for the group and dates above, including REEF program fees and any applicable discount or sales tax. This estimate is valid for the group size and dates shown here \u2014 REEF will re-quote automatically if activities, headcount, or dates change.",
       "assumptions": [
         "Based on a group of 32 students and 5 chaperones across both proposed program days.",
         "Rate assumes both days run as outlined",
