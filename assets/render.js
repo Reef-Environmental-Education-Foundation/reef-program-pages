@@ -733,7 +733,6 @@
         try {
           fetch(PD.cta.responseWebhookUrl, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
             mode: "cors",
             keepalive: true,
