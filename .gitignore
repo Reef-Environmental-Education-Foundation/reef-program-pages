@@ -1,0 +1,7 @@
+# Python bytecode cache. Generated locally whenever anyone runs a script in
+# pipeline/ (e.g. generate_booking_package.py or a verify_*.py script); never
+# belongs in the repo.
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
