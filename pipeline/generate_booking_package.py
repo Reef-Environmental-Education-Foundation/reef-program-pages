@@ -886,6 +886,21 @@ def create_review_task(b, page_url, contract_url):
     section for how to create one. If it's not set, this logs a warning
     and returns without failing the rest of the pipeline run.
     """
+    # QA/test records are run through the real publish pipeline on purpose
+    # (see the sampleFlag override in main()), but the review task is a
+    # process gate for a customer send that will never happen for a ZZZ
+    # booking -- every QA run was putting another "review before sending"
+    # task in Rose's queue for a group that does not exist. The page and
+    # contract are still generated exactly as before; only the Asana task
+    # is skipped. Placed at the top of the function, like the sampleFlag
+    # override, so no future call site can reintroduce it.
+    if is_test_org(b["org_name"]):
+        print(
+            f"Skipping Asana review task: {b['org_name']!r} is a test/QA record "
+            f"(no customer send to gate). The page was still generated normally."
+        )
+        return
+
     if not ASANA_API_KEY:
         print(
             "ASANA_API_KEY not set -- skipping review task creation. "
