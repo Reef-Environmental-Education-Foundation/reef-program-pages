@@ -522,7 +522,7 @@ def build_proposal_data(b, photos=None):
                 # Airtable's broken native webhook) is a separate follow-up.
                 # Until it exists render.js logs responses to the console and
                 # still shows the on-page confirmation.
-                "responseWebhookUrl": None,
+                "responseWebhookUrl": "https://hooks.zapier.com/hooks/catch/28743322/4hv7eqd/",
             },
             "reefContact": {
                 "name": reef.get("name", ""),
