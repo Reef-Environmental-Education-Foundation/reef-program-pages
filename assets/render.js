@@ -290,7 +290,7 @@
         el("div", { class: "section-head" }, [
           el("div", { class: "divider-mark" }),
           el("span", { class: "eyebrow" }, ["EXPEDITION AT A GLANCE"]),
-          el("h2", {}, [days.length + " day" + (days.length > 1 ? "s" : "") + ", one Florida Keys expedition"]),
+          el("h2", {}, [days.length + " day" + (days.length > 1 ? "s" : "") + ", one Florida Keys Expedition"]),
           el("p", { class: "dek" }, [data.glanceNote ||
             "A quick-scan summary for planning. Full detail — including “students will” outcomes and gear notes — follows on the day-by-day pages."]),
         ]),
@@ -592,7 +592,7 @@
     PD.photoCredits = PD.photoCredits || {};
     PD.pricing = PD.pricing || {};
 
-    const programWord = PD.meta.programWord || "expedition";
+    const programWord = PD.meta.programWord || "Expedition";
     const programTypeLabel = PD.meta.programTypeLabel || "Expedition";
 
     // ---- decorative hero art: layered SVG, used as a fallback for any
@@ -646,16 +646,28 @@
       return el("div", { class: "hero-art", html: html });
     }
 
+    // Section-specific alt text for real hero photography (accessibility
+    // fix, QA walkthrough 2026-09-09). The decorative SVG fallback stays
+    // role="presentation" with no alt needed -- it's purely ornamental.
+    const HERO_ALT_TEXT = {
+      overview: "REEF Ocean Explorers program overview",
+      experience: "Students taking part in a REEF Ocean Explorers activity",
+      days: "A REEF Ocean Explorers field activity in the Florida Keys",
+      included: "REEF Ocean Explorers Expedition activities and gear",
+      pricing: "REEF Ocean Exploration Center, Key Largo",
+      next: "The Florida Keys coastline near REEF's Ocean Exploration Center",
+    };
+
     // ---- real-photo hero: an <img> + scrim for text legibility. ----
-    function heroPhoto(uri) {
+    function heroPhoto(uri, kind) {
       return el("div", { class: "hero-art has-photo" }, [
-        el("img", { class: "hero-photo", src: uri, alt: "" }),
+        el("img", { class: "hero-photo", src: uri, alt: HERO_ALT_TEXT[kind] || "REEF Ocean Explorers" }),
         el("div", { class: "hero-scrim" }),
       ]);
     }
 
     function heroBlock(kind, photoUri, credit) {
-      const art = photoUri ? heroPhoto(photoUri) : heroSvg(kind);
+      const art = photoUri ? heroPhoto(photoUri, kind) : heroSvg(kind);
       const wrap = el("div", { class: "hero" }, [art]);
       if (credit) wrap.appendChild(el("div", { class: "hero-credit" }, [credit]));
       return wrap;
@@ -683,7 +695,14 @@
     }
 
     function roadmap() {
+      // QA walkthrough (2026-09-09): this booking-progress tracker could be
+      // confused with the six-chapter proposal navigation in the topbar.
+      // The "YOUR BOOKING STATUS" badge names what this widget actually is
+      // (booking-stage tracker, not a table of contents); the badge plus
+      // the card's own background/border already visually set it apart
+      // from the chapter nav — see .roadmap-badge in styles.css.
       const box = el("div", { class: "roadmap" }, [
+        el("span", { class: "roadmap-badge" }, ["YOUR BOOKING STATUS"]),
         el("div", { class: "roadmap-title" }, ["Where You Are In The Process"]),
       ]);
       const stepsWrap = el("div", { class: "roadmap-steps" });
@@ -750,10 +769,11 @@
     function ctaModule() {
       const root = el("div", { class: "cta-module" });
       let formOpen = false;
+      let confirmingReady = false;
 
       function pendingView() {
         const btnReady = el("button", { class: "btn btn-primary" }, [(PD.cta.primaryText || "Ready to Move Forward") + " →"]);
-        btnReady.addEventListener("click", function () { submitProposalResponse("ready_to_proceed", null); });
+        btnReady.addEventListener("click", function () { confirmingReady = true; render(); });
         const btnChange = el("button", { class: "cta-secondary-link" }, [PD.cta.secondaryText || "Need to adjust something?"]);
         btnChange.addEventListener("click", function () { formOpen = true; render(); });
         return el("div", {}, [
@@ -764,10 +784,39 @@
         ]);
       }
 
+      // QA walkthrough (2026-09-09): "Ready to Move Forward" jumped straight
+      // to the success state, so even though the copy says it doesn't sign
+      // anything, the button itself felt like a bigger commitment than it
+      // is. This interstitial makes the actual consequence explicit and
+      // requires a second, deliberate click before anything is submitted.
+      function confirmReadyView() {
+        const btnConfirm = el("button", { class: "btn btn-primary" }, ["Yes, we're ready →"]);
+        btnConfirm.addEventListener("click", function () { submitProposalResponse("ready_to_proceed", null); });
+        const btnBack = el("button", { class: "cta-secondary-link" }, ["Not yet, take me back"]);
+        btnBack.addEventListener("click", function () { confirmingReady = false; render(); });
+        return el("div", {}, [
+          el("span", { class: "eyebrow on-dark" }, ["CONFIRM"]),
+          el("h3", {}, ["This tells REEF you're ready for contract next"]),
+          el("p", {}, ["Confirming doesn't sign anything — it lets your REEF contact know your group is ready to move forward so they can prepare your agreement."]),
+          el("div", { class: "cta-row" }, [btnConfirm, btnBack]),
+        ]);
+      }
+
       function changeFormView() {
-        const ta = el("textarea", { class: "cta-textarea", rows: "3", placeholder: PD.cta.changeFormLabel || "What would you like us to adjust?" });
-        const submitBtn = el("button", { class: "btn btn-primary" }, ["Send Request"]);
+        const fieldId = "cta-change-request-" + Math.random().toString(36).slice(2, 8);
+        const label = el("label", { class: "cta-textarea-label", for: fieldId }, [PD.cta.changeFormLabel || "What would you like us to adjust?"]);
+        const ta = el("textarea", { id: fieldId, class: "cta-textarea", rows: "3" });
+        const submitBtn = el("button", { class: "btn btn-primary", disabled: "disabled" }, ["Send Request"]);
+        // QA walkthrough (2026-09-09): the textarea had no real label (only
+        // placeholder text, which disappears once typing starts) and
+        // Send Request was clickable on an empty field. Both fixed here;
+        // the button only enables once there's real (non-whitespace) text.
+        ta.addEventListener("input", function () {
+          if (ta.value.trim().length) submitBtn.removeAttribute("disabled");
+          else submitBtn.setAttribute("disabled", "disabled");
+        });
         submitBtn.addEventListener("click", function () {
+          if (!ta.value.trim().length) return;
           submitProposalResponse("change_requested", ta.value.trim());
         });
         const cancelBtn = el("button", { class: "cta-secondary-link" }, ["Never mind, take me back"]);
@@ -776,8 +825,10 @@
           el("span", { class: "eyebrow on-dark" }, ["REQUEST A CHANGE"]),
           el("h3", {}, ["What would you like us to adjust?"]),
           el("p", {}, ["Tell us what's changed — dates, group size, an activity — and your REEF contact will follow up with a revised proposal."]),
+          label,
           ta,
           el("div", { class: "cta-row" }, [submitBtn, cancelBtn]),
+          el("p", { class: "cta-fine", style: "margin-top:10px;" }, [PD.cta.changeResponseNote || "A REEF team member typically follows up by email within 1–2 business days."]),
         ]);
       }
 
@@ -807,6 +858,7 @@
         if (ctaState.status === "ready") root.appendChild(readyConfirmView());
         else if (ctaState.status === "change_requested") root.appendChild(changeConfirmedView());
         else if (formOpen) root.appendChild(changeFormView());
+        else if (confirmingReady) root.appendChild(confirmReadyView());
         else root.appendChild(pendingView());
       }
 
@@ -851,7 +903,7 @@
             el("div", { class: "contact-role" }, [PD.reefContact.role || ""]),
             el("div", { class: "contact-blurb" }, [PD.reefContact.welcomeLine || ""]),
             el("div", { class: "contact-links" }, [
-              el("a", { href: "mailto:" + (PD.reefContact.email || "explorers@reef.org") }, [PD.reefContact.email || "explorers@reef.org"]),
+              el("a", { href: "mailto:" + (PD.reefContact.email || "explorers@REEF.org") }, [PD.reefContact.email || "explorers@REEF.org"]),
               el("span", { style: "color:var(--p-slate-soft)" }, [PD.reefContact.phone || ""]),
             ]),
           ]),
@@ -879,8 +931,15 @@
           el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["MEET THE REEF EDUCATION TEAM"]), el("h2", {}, ["Meet a few of the educators your students may learn with at REEF"])]),
           el("div", { class: "team-note" }, ["REEF educators are matched to programs closer to your date. The educators below are a sample of who your students might learn alongside — not a confirmed assignment for your group."]),
           el("div", { class: "team-grid" }, PD.team.map(function (t) {
+            // QA walkthrough (2026-09-09): every team card used the same
+            // generic "◍" glyph, which read as impersonal. Real headshots
+            // aren't available yet (no Airtable field backs them), so this
+            // swaps in per-person initials -- a small change, but distinct
+            // per card rather than identical across all of them.
+            const initials = (t.name || "REEF").split(" ").filter(function (w) { return w.length; })
+              .map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase();
             return el("div", { class: "team-card" }, [
-              el("div", { class: "team-avatar" }, ["◍"]),
+              el("div", { class: "team-avatar" }, [initials]),
               el("div", { class: "name" }, [t.name]), el("div", { class: "role" }, [t.role]), el("div", { class: "bio" }, [t.bio]),
             ]);
           })),
@@ -1007,9 +1066,14 @@
         el("p", { class: "lede" }, ["If this proposed experience looks right, let us know and we'll move your group into the next stage of planning."]),
       ]));
       s.appendChild(el("div", { class: "container block" }, [roadmap()]));
+      const nextEmail = PD.cta.contactEmail || "explorers@REEF.org";
       s.appendChild(el("div", { class: "container block" }, [
         ctaModule(),
-        el("p", { class: "cta-fine", style: "margin-top:14px;" }, ["Prefer email? Reach us directly at " + (PD.cta.contactEmail || "explorers@reef.org") + "."]),
+        el("p", { class: "cta-fine", style: "margin-top:14px;" }, [
+          "Prefer email? Reach us directly at ",
+          el("a", { href: "mailto:" + nextEmail, style: "color:inherit;text-decoration:underline;" }, [nextEmail]),
+          ".",
+        ]),
       ]));
       s.appendChild(el("div", { class: "container" }, [bottomNav("Pricing & Details", "sec-pricing", null, null)]));
       return s;
@@ -1044,6 +1108,12 @@
           el("img", { class: "mark", src: defaultLogoPath(), alt: "" }),
           el("div", { class: "word" }, ["REEF", el("small", {}, ["Ocean Explorers"])]),
         ]),
+        // QA walkthrough (2026-09-09): on narrow screens the chapter nav is
+        // a horizontal scroller showing only a couple of items at a time,
+        // so it wasn't obvious there were six sections at all. This counter
+        // is hidden on wider screens (where the full nav is visible) and
+        // shown only on mobile -- see .chapter-counter in styles.css.
+        el("div", { class: "chapter-counter", id: "chapter-counter" }, ["1 / " + SECTIONS.length]),
         el("nav", { id: "chapter-nav", "aria-label": "Proposal sections" }),
       ]),
     ]));
@@ -1072,6 +1142,11 @@
       pageRoot.querySelectorAll(".chapter-link").forEach(function (btn) {
         btn.setAttribute("aria-current", btn.getAttribute("data-goto") === id ? "true" : "false");
       });
+      const counter = document.getElementById("chapter-counter");
+      if (counter) {
+        const idx = SECTIONS.findIndex(function (s) { return s.id === id; });
+        counter.textContent = (idx === -1 ? 1 : idx + 1) + " / " + SECTIONS.length;
+      }
     }
 
     // Real navigation (a chapter-nav click, or the URL's hash changing):
@@ -1113,7 +1188,7 @@
     mount("closing-cta", el("div", { class: "closing-cta" }, [
       el("div", {}, [
         el("h3", {}, ["Ready for your students to become part of it?"]),
-        el("p", {}, ["Reach out any time before your expedition — a REEF educator is glad to help shape the details around your group."]),
+        el("p", {}, ["Reach out any time before your Expedition — a REEF educator is glad to help shape the details around your group."]),
       ]),
       el("div", { class: "contact" }, [
         el("div", { class: "eyebrow" }, ["REEF OCEAN EXPLORERS"]),
