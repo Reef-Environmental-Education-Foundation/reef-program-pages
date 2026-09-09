@@ -399,7 +399,13 @@ def split_items(text):
     parts = [line.strip() for line in str(text).splitlines() if line.strip()]
     if len(parts) == 1:
         parts = re.split(r"(?<=[.;])\s+", parts[0])
-    return [part.strip().rstrip(";").strip() for part in parts if part.strip(" ;")]
+    cleaned = [part.strip().rstrip(";").strip() for part in parts if part.strip(" ;")]
+    # QA walkthrough (2026-09-09): staff type these fields with inconsistent
+    # capitalization (some items start mid-sentence lowercase, e.g. "pre- and
+    # post-activity debriefs..."), which reads as sloppy in a bulleted list.
+    # Capitalize only the first character -- leave everything else exactly
+    # as staff wrote it, so "REEF educator-led..." isn't touched.
+    return [item[0].upper() + item[1:] if item else item for item in cleaned]
 
 
 def download_hero_photos(b, booking_dir):

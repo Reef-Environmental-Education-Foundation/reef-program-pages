@@ -186,22 +186,22 @@ window.BOOKING_DATA = {
         "title": "Included in Your Expedition",
         "items": [
           "REEF educator-led instruction for every session and field activity",
-          "pre- and post-activity debriefs each day",
-          "citizen-science framing tied to REEF's Volunteer Fish Survey Project",
-          "offshore boat trip and guided reef snorkel survey",
-          "guided mangrove & seagrass kayak ecology tour",
-          "guided invasive lionfish lesson & dissection",
-          "fish ID and reef ecology teaching materials",
-          "lionfish dissection materials and lab setup",
-          "data sheets for the citizen-science survey activity."
+          "Pre- and post-activity debriefs each day",
+          "Citizen-science framing tied to REEF's Volunteer Fish Survey Project",
+          "Offshore boat trip and guided reef snorkel survey",
+          "Guided mangrove & seagrass kayak ecology tour",
+          "Guided invasive lionfish lesson & dissection",
+          "Fish ID and reef ecology teaching materials",
+          "Lionfish dissection materials and lab setup",
+          "Data sheets for the citizen-science survey activity."
         ]
       }
     ],
     "notIncluded": [
       "Transportation to and from REEF Campus, Key Largo",
-      "meals (unless a specific meal is added to your program)",
-      "personal snorkel gear, unless rental is added to your program",
-      "lodging, if your group is traveling from outside the Keys."
+      "Meals (unless a specific meal is added to your program)",
+      "Personal snorkel gear, unless rental is added to your program",
+      "Lodging, if your group is traveling from outside the Keys."
     ],
     "photos": {
       "overview": "photos/overview.jpeg",
