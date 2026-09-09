@@ -13,7 +13,7 @@ window.BOOKING_DATA = {
       "proposalVersion": "v1",
       "proposalDate": "Aug 28, 2026",
       "programTypeLabel": "Expedition",
-      "programWord": "expedition"
+      "programWord": "Expedition"
     },
     "group": {
       "orgName": "ZZZ TEST ORG \u2014 Riverside Academy (Proposal QA)",
@@ -44,7 +44,8 @@ window.BOOKING_DATA = {
       "changeFormLabel": "What would you like us to adjust?",
       "changeConfirmHeadline": "Thanks \u2014 we've got your note.",
       "changeConfirmBody": "The REEF Ocean Explorers team will follow up by email to talk through the change.",
-      "contactEmail": "rose@reef.org",
+      "contactEmail": "rose@REEF.org",
+      "changeResponseNote": "A REEF team member typically follows up by email within 1–2 business days.",
       "responseWebhookUrl": "https://hooks.zapier.com/hooks/catch/28743322/4hv7eqd/"
     },
     "reefContact": {
@@ -52,13 +53,12 @@ window.BOOKING_DATA = {
       "role": "Education Coordinator",
       "photo": null,
       "welcomeLine": "Rose has been building your group's itinerary and is your direct point of contact through booking.",
-      "email": "rose@reef.org",
+      "email": "rose@REEF.org",
       "phone": "305-852-0030"
     },
     "welcome": {
       "body": [
-        "Rose has been building your group's itinerary and is your direct point of contact through booking.",
-        "Compelling itineraries full of experiential learning adventures in the beautiful Florida Keys \u2014 the perfect experience for groups to make learning and environmental engagement fun. Using citizen science, Expeditions turn scientific exploration from abstract to tangible through hands-on field activities alongside REEF's ocean-focused programs. Expeditions are perfect for schools, colleges and universities, clubs, families, and even staff retreats. Programs combine educational programming with meaningful, engaging activities that support group learning \u2014 kayaking, snorkeling, and diving \u2014 based at the REEF Ocean Exploration Center for Marine Conservation in Key Largo, Florida."
+        "Rose has been building your group's itinerary and is your direct point of contact through booking."
       ],
       "signOff": "Rose Kelly"
     },
@@ -135,7 +135,7 @@ window.BOOKING_DATA = {
             "description": "Students learn how REEF volunteers identify fish and collect survey data, building the skills needed to participate in citizen science and marine biodiversity monitoring."
           },
           {
-            "time": "Session 2",
+            "time": "Session 3",
             "tag": "Workshop",
             "title": "Lionfish Lesson & Dissection",
             "description": "Students investigate invasive lionfish through a hands-on lesson and guided dissection, linking anatomy and adaptation to real conservation challenges in Florida Keys ecosystems."
@@ -157,17 +157,17 @@ window.BOOKING_DATA = {
           {
             "time": "Transit",
             "tag": "Travel/Transit",
-            "title": "Travel / Transit",
+            "title": "Travel to Today's Field Site",
             "description": "Move between program locations with time built in for group transitions, preparation, and the next learning experience in the Florida Keys."
           },
           {
-            "time": "Session 3",
+            "time": "Session 4",
             "tag": "Field Activity",
             "title": "Kayaking (Mangrove Tour)",
             "description": "Students explore mangroves and seagrass by kayak while investigating how coastal habitats support marine life, protect shorelines, and fit into the larger reef ecosystem (Observe)."
           },
           {
-            "time": "Session 4",
+            "time": "Session 5",
             "tag": "Field Activity",
             "title": "Boat Snorkel",
             "description": "Students travel by boat to the Florida Keys coral reef to practice fish identification, observe reef ecology in the field, and connect their observations to REEF citizen science (Observe \u2192 Connect to Conservation)."
@@ -186,22 +186,22 @@ window.BOOKING_DATA = {
         "title": "Included in Your Expedition",
         "items": [
           "REEF educator-led instruction for every session and field activity",
-          "pre- and post-activity debriefs each day",
-          "citizen-science framing tied to REEF's Volunteer Fish Survey Project",
-          "offshore boat trip and guided reef snorkel survey",
-          "guided mangrove & seagrass kayak ecology tour",
-          "guided invasive lionfish lesson & dissection",
-          "fish ID and reef ecology teaching materials",
-          "lionfish dissection materials and lab setup",
-          "data sheets for the citizen-science survey activity."
+          "Pre- and post-activity debriefs each day",
+          "Citizen-science framing tied to REEF's Volunteer Fish Survey Project",
+          "Offshore boat trip and guided reef snorkel survey",
+          "Guided mangrove & seagrass kayak ecology tour",
+          "Guided invasive lionfish lesson & dissection",
+          "Fish ID and reef ecology teaching materials",
+          "Lionfish dissection materials and lab setup",
+          "Data sheets for the citizen-science survey activity."
         ]
       }
     ],
     "notIncluded": [
       "Transportation to and from REEF Campus, Key Largo",
-      "meals (unless a specific meal is added to your program)",
-      "personal snorkel gear, unless rental is added to your program",
-      "lodging, if your group is traveling from outside the Keys."
+      "Meals (unless a specific meal is added to your program)",
+      "Personal snorkel gear, unless rental is added to your program",
+      "Lodging, if your group is traveling from outside the Keys."
     ],
     "photos": {
       "overview": "photos/overview.jpeg",
@@ -214,7 +214,7 @@ window.BOOKING_DATA = {
       "tileRate": {
         "label": "Per Student",
         "num": "$297.66",
-        "unit": "per student for the full expedition"
+        "unit": "per student for the full Expedition"
       },
       "tileChaperones": {
         "label": "Complimentary Chaperones",
@@ -222,9 +222,12 @@ window.BOOKING_DATA = {
         "unit": "included at no charge"
       },
       "ratioNote": "This proposal is built for 32 students and 5 chaperones, 4 of them complimentary.",
-      "conditions": [],
+      "conditions": [
+        "Every group receives 1 complimentary chaperone space for every 9 total people (students + chaperones) in the group — REEF calculates this automatically from your group size, so it updates if your numbers change.",
+        "Chaperones beyond the complimentary count shown above are billed at the same per-student rate."
+      ],
       "estimatedTotal": "$9,822.75",
-      "estimatedTotalNote": "<strong>$9,822.75</strong> estimated total for the group and dates above. This estimate is revisited if activities, headcount, or dates change.",
+      "estimatedTotalNote": "<strong>$9,822.75</strong> estimated total for the group and dates above, including REEF program fees and any applicable discount or sales tax. This estimate is valid for the group size and dates shown here — REEF will re-quote automatically if activities, headcount, or dates change.",
       "assumptions": [
         "Based on a group of 32 students and 5 chaperones across both proposed program days.",
         "Rate assumes both days run as outlined",

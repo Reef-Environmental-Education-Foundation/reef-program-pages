@@ -679,6 +679,15 @@ li{margin:0;}
 .proposal-shell .topbar-brand .word small{display:block;font-weight:500;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:#9FC3E0;}
 .proposal-shell #chapter-nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;}
 .proposal-shell #chapter-nav::-webkit-scrollbar{display:none;}
+/* Mobile-only "2 / 6" counter (QA walkthrough, 2026-09-09): the chapter
+   nav becomes a horizontal scroller on narrow screens showing only a
+   couple of items, so it wasn't obvious there were six sections at all.
+   Hidden by default (desktop shows every chapter-link already). */
+.proposal-shell .chapter-counter{
+  display:none;flex-shrink:0;font-size:10.5px;font-weight:800;letter-spacing:.04em;
+  color:#9FE3DB;background:rgba(255,255,255,.1);border-radius:20px;padding:4px 10px;
+  white-space:nowrap;
+}
 .proposal-shell .chapter-link{
   flex-shrink:0;
   appearance:none;border:none;background:transparent;color:#B7C9DE;
@@ -731,7 +740,15 @@ li{margin:0;}
 .proposal-shell .block-head .dek{color:var(--p-slate);margin-top:8px;font-size:15.5px;font-weight:500;}
 
 /* ---------------- ROADMAP STEPPER ---------------- */
-.proposal-shell .roadmap{display:flex;flex-direction:column;gap:0;background:var(--p-paper);border:1px solid var(--p-hairline);border-radius:12px;padding:18px 16px;box-shadow:var(--p-shadow);}
+.proposal-shell .roadmap{display:flex;flex-direction:column;gap:0;background:var(--p-paper);border:1px solid var(--p-hairline);border-left:3px solid var(--teal);border-radius:12px;padding:18px 16px;box-shadow:var(--p-shadow);}
+/* Badge that names this widget as a status tracker, distinct from the
+   six-chapter proposal nav in the topbar (QA walkthrough, 2026-09-09 —
+   the two were being confused with each other). */
+.proposal-shell .roadmap-badge{
+  display:inline-block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--teal-text);background:rgba(0,167,157,.12);border-radius:20px;padding:3px 10px;
+  margin-bottom:10px;width:fit-content;
+}
 .proposal-shell .roadmap-title{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--p-slate-soft);margin-bottom:14px;}
 .proposal-shell .roadmap-steps{display:flex;gap:6px;}
 .proposal-shell .rstep{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:7px;position:relative;}
@@ -778,6 +795,7 @@ li{margin:0;}
   color:#BFE0FF;font-size:13.5px;font-weight:600;text-decoration:underline;text-underline-offset:3px;padding:0;
 }
 .proposal-shell .cta-fine{color:#8FAFCB;font-size:12px;max-width:60ch;}
+.proposal-shell .cta-textarea-label{display:block;color:#D9E7F2;font-size:13.5px;font-weight:600;margin-bottom:8px;}
 .proposal-shell .cta-textarea{
   width:100%;border-radius:9px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);
   color:#fff;padding:10px 12px;font:inherit;font-size:14px;resize:vertical;
@@ -837,8 +855,12 @@ li{margin:0;}
 @media (min-width:640px){ .proposal-shell .team-grid{grid-template-columns:repeat(3,1fr);} }
 .proposal-shell .team-card{background:var(--p-paper);border:1px solid var(--p-hairline);border-radius:10px;padding:16px;text-align:center;box-shadow:var(--p-shadow);}
 .proposal-shell .team-avatar{
-  width:52px;height:52px;border-radius:50%;margin:0 auto 10px;background:var(--p-hairline);
-  display:flex;align-items:center;justify-content:center;color:var(--p-slate-soft);font-size:20px;
+  /* Per-person initials instead of one repeated generic glyph (QA
+     walkthrough, 2026-09-09) -- same teal gradient treatment as the
+     REEF-contact avatar so team cards read as personal, not decorative. */
+  width:52px;height:52px;border-radius:50%;margin:0 auto 10px;
+  background:linear-gradient(160deg,var(--teal),var(--reef-blue));
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:800;
 }
 .proposal-shell .team-card .name{font-weight:700;font-size:14px;color:var(--p-ink);}
 .proposal-shell .team-card .role{font-size:11.5px;color:var(--teal-text);font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin:2px 0 6px;}
@@ -908,7 +930,15 @@ li{margin:0;}
   display:flex;flex-direction:column;gap:2px;text-decoration:none;cursor:pointer;border:none;background:none;
   appearance:none;font-family:inherit;
 }
-.proposal-shell .nav-prev{color:var(--p-slate-soft);align-items:flex-start;}
+.proposal-shell .nav-prev{
+  /* QA walkthrough (2026-09-09): "previous" read as plain text next to a
+     button-styled "next" -- gave it the same border/padding/radius
+     treatment (lighter weight than .nav-next, which stays the primary
+     action) so both are recognizable as clickable buttons. */
+  color:var(--p-slate-soft);align-items:flex-start;
+  border:1px solid var(--p-hairline-strong);border-radius:11px;padding:12px 18px;
+}
+.proposal-shell .nav-prev:hover{background:var(--p-paper);border-color:var(--p-slate-soft);}
 .proposal-shell .nav-prev .lbl,.proposal-shell .nav-next .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
 .proposal-shell .nav-prev .name{font-size:14px;font-weight:600;color:var(--p-slate);}
 .proposal-shell .nav-prev:hover .name{color:var(--p-ink);}
@@ -933,4 +963,10 @@ li{margin:0;}
 @media (max-width:600px){
   .proposal-shell .hero{padding:32px 0 26px;}
   .proposal-shell #topbar .topbar-row{padding:8px 12px;}
+  .proposal-shell .chapter-counter{display:block;}
+  /* QA walkthrough (2026-09-09): the long "Focus" value in particular
+     felt cramped in a 2-column grid on phone-width screens. */
+  .proposal-shell .glance-grid{grid-template-columns:1fr;}
+  .proposal-shell .section-nav{flex-direction:column;align-items:stretch;}
+  .proposal-shell .nav-next{text-align:left;}
 }

@@ -18,7 +18,7 @@
         "description": "Students learn how REEF volunteers identify fish and collect survey data, building the skills needed to participate in citizen science and marine biodiversity monitoring."
       },
       {
-        "time": "Session 2",
+        "time": "Session 3",
         "tag": "Workshop",
         "title": "Lionfish Lesson & Dissection",
         "description": "Students investigate invasive lionfish through a hands-on lesson and guided dissection, linking anatomy and adaptation to real conservation challenges in Florida Keys ecosystems."
@@ -40,17 +40,17 @@
       {
         "time": "Transit",
         "tag": "Travel/Transit",
-        "title": "Travel / Transit",
+        "title": "Travel to Today's Field Site",
         "description": "Move between program locations with time built in for group transitions, preparation, and the next learning experience in the Florida Keys."
       },
       {
-        "time": "Session 3",
+        "time": "Session 4",
         "tag": "Field Activity",
         "title": "Kayaking (Mangrove Tour)",
         "description": "Students explore mangroves and seagrass by kayak while investigating how coastal habitats support marine life, protect shorelines, and fit into the larger reef ecosystem (Observe)."
       },
       {
-        "time": "Session 4",
+        "time": "Session 5",
         "tag": "Field Activity",
         "title": "Boat Snorkel",
         "description": "Students travel by boat to the Florida Keys coral reef to practice fish identification, observe reef ecology in the field, and connect their observations to REEF citizen science (Observe → Connect to Conservation)."

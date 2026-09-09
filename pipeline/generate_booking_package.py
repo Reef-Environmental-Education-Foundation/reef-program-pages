@@ -127,7 +127,12 @@ PAGES_BASE_URL = "https://reef-environmental-education-foundation.github.io/reef
 # record because Program Type Name is plural ("Expeditions") and only
 # covers 3 of the 5 Booking Type values.
 PROGRAM_WORDS_BY_BOOKING_TYPE = {
-    "Group Program - Expedition": ("Expedition", "expedition"),
+    # "Expedition" is REEF's brand term for this program type, so the mid-
+    # sentence word is capitalized the same as the label (QA walkthrough,
+    # 2026-09-09: "all references to REEF ... and Expedition should be
+    # capitalized"). The other booking types use genuinely generic nouns
+    # ("program", "rental"), which stay lowercase on purpose.
+    "Group Program - Expedition": ("Expedition", "Expedition"),
     "Group Program - Discovery": ("Discovery Program", "program"),
     "Facility Rental": ("Facility Rental", "rental"),
     "OXP – Virtual": ("Virtual Program", "program"),
@@ -336,6 +341,13 @@ def fetch_booking_data(record_id):
         "proposal_version": f.get("Proposal Version"),
         "proposal_sent_date": f.get("Proposal Sent Date"),
         "free_chaperones": f.get("# Free Chaperones", 0),
+        # The ratio behind "# Free Chaperones" (defaults to 9 when no
+        # override is set on this booking -- see the field's own formula:
+        # MIN(chaperones, ROUNDDOWN((students+chaperones)/threshold, 0))).
+        # Pulled through so the proposal can state the actual rule in
+        # plain language instead of only showing the resulting number
+        # (QA walkthrough, 2026-09-09 -- pricing clarity finding).
+        "free_chap_threshold": f.get("Free Chap Threshold Override") or 9,
         "activity_topics": activity_topics,
         "program_type": program_type,
         "asana_task_id": f.get("Asana Task ID", ""),
@@ -387,7 +399,13 @@ def split_items(text):
     parts = [line.strip() for line in str(text).splitlines() if line.strip()]
     if len(parts) == 1:
         parts = re.split(r"(?<=[.;])\s+", parts[0])
-    return [part.strip().rstrip(";").strip() for part in parts if part.strip(" ;")]
+    cleaned = [part.strip().rstrip(";").strip() for part in parts if part.strip(" ;")]
+    # QA walkthrough (2026-09-09): staff type these fields with inconsistent
+    # capitalization (some items start mid-sentence lowercase, e.g. "pre- and
+    # post-activity debriefs..."), which reads as sloppy in a bulleted list.
+    # Capitalize only the first character -- leave everything else exactly
+    # as staff wrote it, so "REEF educator-led..." isn't touched.
+    return [item[0].upper() + item[1:] if item else item for item in cleaned]
 
 
 def download_hero_photos(b, booking_dir):
@@ -470,7 +488,16 @@ def build_proposal_data(b, photos=None):
     focus = " · ".join(b.get("activity_topics") or []) or "[confirm from booking data]"
 
     reef = b["reef_contact"]
-    welcome_body = [line for line in [reef.get("welcome_line"), pt.get("description")] if line]
+    # QA walkthrough (2026-09-09): appending the Program Type's generic
+    # marketing description here made "A note from your REEF contact" read
+    # as marketing copy rather than a personal note from Rose (or whoever
+    # the contact is). The contact's own welcome_line is the personal note;
+    # the program description belongs to the Experience section (pillars),
+    # not attributed to a person who didn't write it. Fall back to the
+    # program description only if the contact has no welcome_line at all,
+    # so the note is never blank.
+    welcome_body = [reef.get("welcome_line")] if reef.get("welcome_line") else (
+        [pt.get("description")] if pt.get("description") else [])
 
     return {
         "docType": "proposal",
@@ -572,12 +599,29 @@ def build_proposal_data(b, photos=None):
                 },
                 "ratioNote": f"This proposal is built for {students} students and {chaperones} "
                              f"chaperones, {free_chaperones} of them complimentary.",
-                # No Airtable field backs the pricing "conditions" list.
-                "conditions": [],
+                # QA walkthrough (2026-09-09): the page showed the resulting
+                # numbers (rate, complimentary count, total) with no
+                # explanation of the math behind any of them. These two
+                # bullets state the actual rule -- both derived from the
+                # same fields "# Free Chaperones" / "# Billable Chaperones"
+                # already compute from (confirmed against the live Airtable
+                # formula, not guessed): 1 complimentary chaperone space per
+                # {threshold} total people, any chaperone beyond that billed
+                # at the per-student rate above.
+                "conditions": [
+                    f"Every group receives 1 complimentary chaperone space for every "
+                    f"{b['free_chap_threshold']} total people (students + chaperones) in the "
+                    f"group -- REEF calculates this automatically from your group size, so it "
+                    f"updates if your numbers change.",
+                    "Chaperones beyond the complimentary count shown above are billed at the "
+                    "same per-student rate.",
+                ],
                 "estimatedTotal": money(b["total_package_price"]),
                 "estimatedTotalNote": f"<strong>{money(b['total_package_price'])}</strong> estimated "
-                                      f"total for the group and dates above. This estimate is revisited "
-                                      f"if activities, headcount, or dates change.",
+                                      f"total for the group and dates above, including REEF program "
+                                      f"fees and any applicable discount or sales tax. This estimate is "
+                                      f"valid for the group size and dates shown here -- REEF will "
+                                      f"re-quote automatically if activities, headcount, or dates change.",
                 "assumptions": split_items(b["proposal_assumptions"]),
                 # Deliberately empty: nothing in Airtable backs a
                 # "what could change the price" list, and inventing
@@ -692,7 +736,7 @@ def build_confirmed_page_data(b):
                 "Review and sign your agreement once it's sent (see above).",
                 "Return your group's signed waivers and health/medical forms.",
                 "Confirm final headcount with your REEF educator at least 2 weeks before arrival.",
-                "Reach out any time with questions before your expedition.",
+                "Reach out any time with questions before your Expedition.",
             ],
         },
         "welcome": {
@@ -701,7 +745,7 @@ def build_confirmed_page_data(b):
                 "Florida Keys Marine Science Expedition -- where your students will identify reef fish, "
                 "explore real coral reef, mangrove, and seagrass habitats, and practice the same "
                 "citizen-science methods REEF's volunteer network uses across the Caribbean and beyond.",
-                "This is not a sightseeing trip. It's a working expedition: your students will observe, "
+                "This is not a sightseeing trip. It's a working Expedition: your students will observe, "
                 "identify, survey, investigate, and contribute -- and leave with a real sense of what it "
                 "means to practice marine science, not just read about it.",
             ],
