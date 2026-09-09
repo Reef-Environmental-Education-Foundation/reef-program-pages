@@ -246,6 +246,23 @@ def slugify(text):
     return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", text.lower())).strip("-")
 
 
+def reef_email(addr):
+    """Capitalize the REEF domain in a REEF staff address ("rose@reef.org" ->
+    "rose@REEF.org"). REEF is an acronym and is capitalized everywhere else in
+    customer-facing copy, but Airtable stores staff addresses lowercase, so the
+    2026-09-09 QA walkthrough's capitalization fix did not survive the next
+    regeneration when it was only hand-applied to the generated data.js.
+
+    Only the domain is touched, and only when it is exactly reef.org: the local
+    part is left alone (it is a real mailbox name), and a non-REEF address --
+    notably the customer's own Contact Email -- is returned unchanged.
+    """
+    if not addr or "@" not in addr:
+        return addr or ""
+    local, _, domain = addr.rpartition("@")
+    return f"{local}@REEF.org" if domain.lower() == "reef.org" else addr
+
+
 def is_test_org(org_name):
     """True for QA/test bookings, which REEF names with a leading "ZZZ"
     (e.g. "ZZZ TEST ORG -- Riverside Academy"). Matched case-insensitively
@@ -300,7 +317,7 @@ def fetch_booking_data(record_id):
         reef_contact = {
             "name": p.get("Full name", ""),
             "title": p.get("Customer-Facing Title", ""),
-            "email": p.get("Email", ""),
+            "email": reef_email(p.get("Email", "")),
             "phone": p.get("Phone", ""),
             "welcome_line": p.get("Proposal Welcome Line", ""),
         }
@@ -611,7 +628,7 @@ def build_proposal_data(b, photos=None):
                 "conditions": [
                     f"Every group receives 1 complimentary chaperone space for every "
                     f"{b['free_chap_threshold']} total people (students + chaperones) in the "
-                    f"group -- REEF calculates this automatically from your group size, so it "
+                    f"group \u2014 REEF calculates this automatically from your group size, so it "
                     f"updates if your numbers change.",
                     "Chaperones beyond the complimentary count shown above are billed at the "
                     "same per-student rate.",
@@ -620,7 +637,7 @@ def build_proposal_data(b, photos=None):
                 "estimatedTotalNote": f"<strong>{money(b['total_package_price'])}</strong> estimated "
                                       f"total for the group and dates above, including REEF program "
                                       f"fees and any applicable discount or sales tax. This estimate is "
-                                      f"valid for the group size and dates shown here -- REEF will "
+                                      f"valid for the group size and dates shown here \u2014 REEF will "
                                       f"re-quote automatically if activities, headcount, or dates change.",
                 "assumptions": split_items(b["proposal_assumptions"]),
                 # Deliberately empty: nothing in Airtable backs a
@@ -724,7 +741,7 @@ def build_confirmed_page_data(b):
             "kicker": "OCEAN EXPLORERS\nEXPEDITION PACKET",
             "eyebrowTag": "Florida Keys Marine Science Expedition",
             "headline": "From Student to Scientist in Key Largo",
-            "promise": "Turn the ocean into your classroom. Your students won't just study marine science -- they become part of it.",
+            "promise": "Turn the ocean into your classroom. Your students won't just study marine science \u2014 they become part of it.",
             "imageUrl": "../../assets/photos/hero-reef-shark.jpg",
             "imageCredit": "Photo: Jeffrey Haines / REEF",
         },
@@ -742,17 +759,17 @@ def build_confirmed_page_data(b):
         "welcome": {
             "body": [
                 "We're glad your group is joining us. This packet lays out what to expect from your "
-                "Florida Keys Marine Science Expedition -- where your students will identify reef fish, "
+                "Florida Keys Marine Science Expedition \u2014 where your students will identify reef fish, "
                 "explore real coral reef, mangrove, and seagrass habitats, and practice the same "
                 "citizen-science methods REEF's volunteer network uses across the Caribbean and beyond.",
                 "This is not a sightseeing trip. It's a working Expedition: your students will observe, "
-                "identify, survey, investigate, and contribute -- and leave with a real sense of what it "
+                "identify, survey, investigate, and contribute \u2014 and leave with a real sense of what it "
                 "means to practice marine science, not just read about it.",
             ],
             "signOff": "The REEF Ocean Explorers Team",
         },
-        "glanceNote": "A quick-scan summary for planning. Full detail -- including “students will” "
-                      "outcomes and gear notes -- follows on the day-by-day pages.",
+        "glanceNote": "A quick-scan summary for planning. Full detail \u2014 including “students will” "
+                      "outcomes and gear notes \u2014 follows on the day-by-day pages.",
         "days": days,
     }
 
@@ -913,12 +930,27 @@ def create_review_task(b, page_url, contract_url):
     print(f"Created Asana review task {task['gid']} (assigned to Rose): {task.get('permalink_url', '')}")
 
 
+# Search-engine exclusion for test/QA bookings. A ZZZ record is deliberately
+# run through the real publish pipeline (see the sampleFlag override in
+# main()), so its page lands on the public Pages site like any other -- the
+# on-page SAMPLE banner makes that obvious to a human who opens it, but not
+# to a search crawler that indexes the URL. This keeps test pages out of
+# search results entirely.
+#
+# It lives in the generated shell rather than in the page file because
+# index.html is rewritten on every publish: the 2026-09-09 QA walkthrough
+# added this tag by hand to bookings/zzz-test-org-riverside-academy-proposal-qa/
+# and the very next regeneration silently stripped it back out.
+TEST_PAGE_ROBOTS_META = (
+    '<meta name="robots" content="noindex, nofollow">\n'
+)
+
 BOOKING_PAGE_SHELL_TEMPLATE = """<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="preconnect" href="https://fonts.googleapis.com">
+{robots}<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&display=swap">
 <title>{title}</title>
 <link rel="stylesheet" href="../../assets/styles.css">
@@ -1018,7 +1050,12 @@ def main():
 
     page_title = f"{b['org_name']} — Expedition Packet"
     with open(booking_dir / "index.html", "w") as f:
-        f.write(BOOKING_PAGE_SHELL_TEMPLATE.format(title=page_title))
+        f.write(BOOKING_PAGE_SHELL_TEMPLATE.format(
+            title=page_title,
+            # Real bookings get no robots meta at all (unchanged behavior);
+            # only test/QA records are excluded from search.
+            robots=TEST_PAGE_ROBOTS_META if is_test_org(b["org_name"]) else "",
+        ))
     print(f"Wrote {booking_dir / 'index.html'}")
 
     # Contracts are gated on commitment, not just on which page was built.
