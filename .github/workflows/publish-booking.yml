@@ -31,7 +31,13 @@ jobs:
       - name: Install dependencies
         run: pip install requests python-docx
 
-      - name: Generate confirmed page + contract from live Airtable data
+      # Approved-to-Share lock (Martha, 2026-09-25): the script publishes ONLY
+      # if the booking is approved in Airtable (Approved to Share + matching
+      # Stage + Proposal Version + Approved By). Otherwise it builds an internal
+      # preview, attaches it to an Asana review task, and writes nothing under
+      # bookings/ or contracts/ -- so the commit step below finds no changes
+      # and nothing is pushed or deployed. See generate_booking_package.py.
+      - name: Generate page + contract (publishes only if Approved to Share)
         env:
           # Repo secret -- a read-only Airtable personal access token
           # scoped to the REEF Bookings | PILOT base (app3FIECuG8iQr7kY)

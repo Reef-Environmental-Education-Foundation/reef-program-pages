@@ -42,19 +42,37 @@ real day/time data model so this step isn't needed is tracked separately
 scope here per Martha's 2026-09-03 direction to skip the intake/data-model
 work for this push.
 
-Review gate (Martha, 2026-09-04): once the confirmed page + contract are
-generated below, this script also creates an Asana task for Rose to review
-both before staff send the link to the customer -- see create_review_task()
-near the bottom of the "Contract" section. The page/contract still
-auto-deploy to GitHub Pages exactly as before; the Asana task is a pure
-process gate for staff, not a technical block on deploy or on this script.
+Approved-to-Share lock (Martha, 2026-09-25): NOTHING is published to the
+public Pages site unless a REEF staff member has explicitly approved it in
+Airtable first. Before writing anything under bookings/ or contracts/, this
+script checks the booking's approval fields (see check_share_approval()):
+
+  - "Approved to Share" is checked,
+  - "Approved to Share - Stage" matches the page this run would build
+    ("Proposal" for Quoting / Proposal Sent / Verbal Yes; "Pre-trip Packet +
+    Contract" for Contracted and beyond) -- approving a proposal never
+    auto-approves the later pre-trip packet or contract,
+  - "Approved for Proposal Version" equals the booking's current "Proposal
+    Version" (when one is set), so a revised proposal needs a fresh approval,
+  - "Approved to Share By" names the person who approved it.
+
+If any check fails, the run is PREVIEW ONLY: the page (and contract, when the
+stage calls for one) is generated into a temp folder outside the repo, packed
+into a single self-contained HTML file with an "INTERNAL PREVIEW" banner and
+the customer response buttons disabled, and attached to an internal Asana
+review task for Rose. Nothing is written under bookings/ or contracts/, so
+the workflow's commit step finds no changes and nothing is pushed or deployed.
+Once approved and re-run, the page is published and the review task says so.
 """
 
+import base64
 import copy
 import json
+import mimetypes
 import os
 import re
 import sys
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -119,6 +137,13 @@ ASANA_OXP_PROJECT_GID = "1208312572861835"        # "OXP New Reservation Workflo
 ASANA_FACILITY_PROJECT_GID = "1210526829539105"   # "Facility Rental New Reservation Workflow"
 ASANA_REVIEWER_GID = "1209845394372396"           # Rose Kelly
 PAGES_BASE_URL = "https://reef-environmental-education-foundation.github.io/reef-program-pages"
+
+# Approved-to-Share lock (Martha, 2026-09-25) -- see module docstring.
+# Values must match the Bookings "Approved to Share - Stage" single-select
+# options exactly (em dash in the field name, matching Airtable).
+SHARE_STAGE_PROPOSAL = "Proposal"
+SHARE_STAGE_PRETRIP = "Pre-trip Packet + Contract"
+ASSETS_DIR = REPO_ROOT.parent / "assets"
 
 
 # Booking Type -> the customer-facing noun render.js drops into proposal
@@ -368,6 +393,13 @@ def fetch_booking_data(record_id):
         "activity_topics": activity_topics,
         "program_type": program_type,
         "asana_task_id": f.get("Asana Task ID", ""),
+        # Approved-to-Share lock (2026-09-25). Collaborator fields come back
+        # from the REST API as {"id", "email", "name"} objects.
+        "approved_to_share": bool(f.get("Approved to Share")),
+        "approved_stage": f.get("Approved to Share — Stage") or "",
+        "approved_version": f.get("Approved for Proposal Version"),
+        "approved_by": (f.get("Approved to Share By") or {}).get("name", ""),
+        "approved_date": f.get("Approved to Share Date") or "",
     }
 
 
@@ -856,6 +888,100 @@ def build_contract(b, out_path):
     doc.save(out_path)
 
 
+# ---------------------------------------------------------------- Approved-to-Share lock
+
+def check_share_approval(b, is_proposal):
+    """Returns a list of reasons this booking is NOT approved to be published
+    for the page this run would build. An empty list means approved.
+    See the module docstring for the rules (Martha, 2026-09-25)."""
+    needed_stage = SHARE_STAGE_PROPOSAL if is_proposal else SHARE_STAGE_PRETRIP
+    problems = []
+    if not b["approved_to_share"]:
+        problems.append("'Approved to Share' is not checked")
+    if b["approved_stage"] != needed_stage:
+        problems.append(
+            f"'Approved to Share — Stage' is {b['approved_stage'] or 'blank'!r}, "
+            f"but this run would build the {needed_stage!r} stage")
+    if b["proposal_version"] is not None and b["approved_version"] != b["proposal_version"]:
+        problems.append(
+            f"'Approved for Proposal Version' is {b['approved_version']!r} but the current "
+            f"'Proposal Version' is {b['proposal_version']!r} -- a revised proposal needs a fresh approval")
+    if not b["approved_by"]:
+        problems.append("'Approved to Share By' is blank")
+    return problems
+
+
+def _data_uri(path):
+    mime = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
+    return f"data:{mime};base64," + base64.b64encode(Path(path).read_bytes()).decode("ascii")
+
+
+def build_preview_html(page_data, booking_dir, title, reasons):
+    """Packs a generated page into ONE self-contained HTML file for internal
+    review: styles, render.js, page data, the REEF logo and hero photos are
+    all inlined, so the file opens straight from an Asana attachment with no
+    public URL involved. The customer response webhook is stripped so a
+    reviewer clicking the buttons writes nothing back to Airtable, and a
+    red INTERNAL PREVIEW banner sits above the page."""
+    data = copy.deepcopy(page_data)
+
+    def inline_photos(node):
+        if isinstance(node, dict):
+            return {k: inline_photos(v) for k, v in node.items()}
+        if isinstance(node, list):
+            return [inline_photos(v) for v in node]
+        if isinstance(node, str) and node.startswith("photos/") and (booking_dir / node).exists():
+            return _data_uri(booking_dir / node)
+        return node
+
+    data = inline_photos(data)
+    logo_uri = _data_uri(ASSETS_DIR / "reef-logo-white.png")
+    data.setdefault("hero", {})["logoUrl"] = logo_uri
+    cta = (data.get("proposal") or {}).get("cta")
+    if isinstance(cta, dict):
+        cta.pop("responseWebhookUrl", None)
+
+    css = (ASSETS_DIR / "styles.css").read_text()
+    js = (ASSETS_DIR / "render.js").read_text()
+    # render.js builds the nav logo path from the page's folder depth; point
+    # it at the inlined copy instead (harmless no-op if that line changes).
+    js = js.replace('return "../".repeat(depth) + "assets/reef-logo-white.png";',
+                    "return " + json.dumps(logo_uri) + ";")
+    shell = BOOKING_PAGE_SHELL_TEMPLATE.format(title="INTERNAL PREVIEW — " + title,
+                                               robots=TEST_PAGE_ROBOTS_META)
+    banner = (
+        '<div style="background:#b3261e;color:#fff;padding:14px 18px;font:600 15px/1.4 '
+        'system-ui,sans-serif;text-align:center;position:sticky;top:0;z-index:9999;">'
+        "INTERNAL PREVIEW — NOT PUBLISHED — DO NOT FORWARD TO THE CUSTOMER. "
+        "Response buttons are disabled in this preview.</div>\n"
+    )
+    shell = shell.replace('<link rel="stylesheet" href="../../assets/styles.css">',
+                          "<style>\n" + css + "\n</style>")
+    shell = shell.replace('<script src="data.js"></script>',
+                          "<script>window.BOOKING_DATA = " + json.dumps(data) + ";</script>")
+    shell = shell.replace('<script src="../../assets/render.js"></script>',
+                          "<script>\n" + js.replace("</script>", "<\\/script>") + "\n</script>")
+    shell = shell.replace("<body>\n", "<body>\n" + banner, 1)
+    out = booking_dir / "INTERNAL-PREVIEW.html"
+    out.write_text(shell)
+    return out
+
+
+def attach_to_asana(task_gid, path):
+    """Uploads a file as an attachment on an Asana task (internal only)."""
+    mime = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
+    with open(path, "rb") as fh:
+        resp = requests.post(
+            f"{ASANA_API_ROOT}/attachments",
+            headers={"Authorization": f"Bearer {ASANA_API_KEY}"},
+            data={"parent": task_gid},
+            files={"file": (Path(path).name, fh, mime)},
+            timeout=120,
+        )
+    resp.raise_for_status()
+    print(f"Attached {Path(path).name} to Asana task {task_gid}")
+
+
 # ---------------------------------------------------------------- Review gate (Asana)
 
 def asana_project_for_booking(booking_type):
@@ -867,7 +993,7 @@ def asana_project_for_booking(booking_type):
     return ASANA_OXP_PROJECT_GID
 
 
-def create_review_task(b, page_url, contract_url):
+def create_review_task(b, page_url, contract_url, preview_reasons=None, attachments=()):
     """Creates an Asana task gating human review before the generated
     proposal/contract is sent to the customer (Martha, 2026-09-04): the
     page and contract still auto-deploy exactly as before, but staff must
@@ -895,22 +1021,47 @@ def create_review_task(b, page_url, contract_url):
         )
         return
 
-    name = f"Review proposal + contract before sending — {b['org_name']}"
-    notes = (
-        f"Auto-generated by generate_booking_package.py for booking {b['record_id']}.\n\n"
-        "Review before this goes to the customer:\n"
-        f"- Proposal/pre-trip page: {page_url}\n"
-        "  (may take a couple of minutes to go live after this task is created)\n"
-        + (f"- Contract: {contract_url}\n\n" if contract_url else
-           "- Contract: not generated yet -- this booking is still pre-commitment "
-           "(Quoting / Proposal Sent / Verbal Yes). The contract is produced once "
-           "Status reaches 'Contracted'.\n\n")
-        + "Check dates, price, org/contact details, and the day-by-day content for accuracy.\n\n"
-        "This task is a process gate only -- marking it complete does not trigger anything "
-        "automated. It's the documented signal that a human has reviewed both documents and "
-        "it's OK for staff to send the link to the customer. Do not send the link before this "
-        "is checked off."
-    )
+    if preview_reasons is not None:
+        # PREVIEW run: nothing was published. The generated page is attached
+        # to this task as a self-contained file for internal review.
+        stage = SHARE_STAGE_PROPOSAL if contract_url is None else SHARE_STAGE_PRETRIP
+        name = f"PREVIEW (not published) — review before sharing — {b['org_name']}"
+        notes = (
+            f"Auto-generated by generate_booking_package.py for booking {b['record_id']}.\n\n"
+            "NOTHING HAS BEEN PUBLISHED OR SENT. This booking is not yet approved to share, "
+            "so the page was generated as an internal preview only:\n"
+            + "".join(f"- {r}\n" for r in preview_reasons)
+            + "\nThe attached INTERNAL-PREVIEW.html is the full page (open it in a browser"
+            + (", plus the attached contract .docx" if contract_url else "")
+            + "). Check dates, price, org/contact details, and the day-by-day content.\n\n"
+            "When it's ready to share, in REEF Bookings | PILOT set on this booking:\n"
+            "- Approved to Share: checked\n"
+            f"- Approved to Share — Stage: {stage}\n"
+            f"- Approved for Proposal Version: {b['proposal_version'] if b['proposal_version'] is not None else '(leave blank -- no Proposal Version set)'}\n"
+            "- Approved to Share By: your name\n"
+            "- Approved to Share Date: today\n"
+            "Then re-run the 'Publish Booking Package (manual)' workflow. Only then does the page "
+            f"go live at {page_url} -- and only then should anyone send the link to the customer."
+        )
+    else:
+        name = f"Published after approval — confirm before sending — {b['org_name']}"
+        notes = (
+            f"Auto-generated by generate_booking_package.py for booking {b['record_id']}.\n\n"
+            "Review before this goes to the customer:\n"
+            f"- Proposal/pre-trip page: {page_url}\n"
+            "  (may take a couple of minutes to go live after this task is created)\n"
+            + (f"- Contract: {contract_url}\n\n" if contract_url else
+               "- Contract: not generated yet -- this booking is still pre-commitment "
+               "(Quoting / Proposal Sent / Verbal Yes). The contract is produced once "
+               "Status reaches 'Contracted'.\n\n")
+            + "Check dates, price, org/contact details, and the day-by-day content for accuracy.\n\n"
+            "This task is a process gate only -- marking it complete does not trigger anything "
+            "automated. It's the documented signal that a human has reviewed both documents and "
+            "it's OK for staff to send the link to the customer. Do not send the link before this "
+            "is checked off."
+            f"\n\nApproved to share by {b['approved_by']} on {b['approved_date'] or '(no date set)'} "
+            f"(stage: {b['approved_stage']}, proposal version: {b['approved_version']})."
+        )
 
     payload = {"data": {"name": name, "notes": notes, "assignee": ASANA_REVIEWER_GID}}
     parent_gid = b.get("asana_task_id")
@@ -928,6 +1079,9 @@ def create_review_task(b, page_url, contract_url):
     resp.raise_for_status()
     task = resp.json()["data"]
     print(f"Created Asana review task {task['gid']} (assigned to Rose): {task.get('permalink_url', '')}")
+    for path in attachments:
+        attach_to_asana(task["gid"], path)
+    return task["gid"]
 
 
 # Search-engine exclusion for test/QA bookings. A ZZZ record is deliberately
@@ -1009,18 +1163,35 @@ def main():
         )
 
     slug = slugify(b["org_name"])
+    is_proposal = b["status"] in PROPOSAL_STATUSES
 
-    BOOKINGS_OUT_DIR.mkdir(parents=True, exist_ok=True)
-    CONTRACTS_OUT_DIR.mkdir(parents=True, exist_ok=True)
+    # Approved-to-Share lock (Martha, 2026-09-25): decided BEFORE anything is
+    # written. Unapproved runs write only to a temp folder outside the repo,
+    # so the workflow's `git add bookings/ contracts/` sees nothing to commit
+    # and nothing is pushed or deployed to the public site.
+    preview_reasons = check_share_approval(b, is_proposal)
+    preview = bool(preview_reasons)
+    if preview:
+        out_root = Path(tempfile.mkdtemp(prefix="reef-preview-"))
+        bookings_out, contracts_out = out_root / "bookings", out_root / "contracts"
+        print("NOT APPROVED TO SHARE -- PREVIEW ONLY, nothing will be published:")
+        for r in preview_reasons:
+            print(f"  - {r}")
+    else:
+        bookings_out, contracts_out = BOOKINGS_OUT_DIR, CONTRACTS_OUT_DIR
+        print(f"Approved to share by {b['approved_by']} ({b['approved_stage']}) -- publishing.")
 
-    booking_dir = BOOKINGS_OUT_DIR / slug
+    bookings_out.mkdir(parents=True, exist_ok=True)
+    contracts_out.mkdir(parents=True, exist_ok=True)
+
+    booking_dir = bookings_out / slug
     booking_dir.mkdir(exist_ok=True)
 
     # Which page this booking gets is purely a function of Status. The slug
     # is deliberately the same either way, so a booking's URL does not change
     # when it moves from proposal to confirmed -- the page the customer
     # already has a link to just becomes the pre-trip packet.
-    if b["status"] in PROPOSAL_STATUSES:
+    if is_proposal:
         page_data = build_proposal_data(b, photos=download_hero_photos(b, booking_dir))
         print(f"Status {b['status']!r} -> proposal page")
     else:
@@ -1064,8 +1235,8 @@ def main():
     # agreed to anything yet -- putting a signable agreement up at that
     # point invites a customer to sign terms nobody has negotiated. The
     # contract appears once the booking reaches Contracted.
-    contract_path = CONTRACTS_OUT_DIR / f"{slug}-contract.docx"
-    if b["status"] in PROPOSAL_STATUSES:
+    contract_path = contracts_out / f"{slug}-contract.docx"
+    if is_proposal:
         contract_url = None
         print(f"Skipping contract generation: status {b['status']!r} is pre-commitment "
               f"(no signable contract is published before 'Contracted').")
@@ -1075,7 +1246,15 @@ def main():
         print(f"Wrote {contract_path}")
 
     page_url = f"{PAGES_BASE_URL}/bookings/{slug}/"
-    create_review_task(b, page_url, contract_url)
+    if preview:
+        preview_html = build_preview_html(page_data, booking_dir, page_title, preview_reasons)
+        attachments = [preview_html] + ([contract_path] if contract_url else [])
+        create_review_task(b, page_url, contract_url,
+                           preview_reasons=preview_reasons, attachments=attachments)
+        print(f"PREVIEW ONLY -- wrote {preview_html} (attached to the Asana review task). "
+              "Nothing under bookings/ or contracts/ was changed, so nothing will be published.")
+    else:
+        create_review_task(b, page_url, contract_url)
 
 
 if __name__ == "__main__":
