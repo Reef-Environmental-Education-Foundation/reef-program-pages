@@ -106,3 +106,28 @@ The review-gate step in `pipeline/generate_booking_package.py` (see "How this is
 - Click **Add secret**.
 
 Once this secret exists, every run of the "Publish Booking Package" workflow automatically creates a review task assigned to Rose after generating a booking's page and contract. If the secret is missing, the workflow still generates and publishes the page and contract as normal -- it just skips creating the review task and logs a warning in the run's output.
+
+
+## Approved-to-Share lock (added 2026-09-25)
+
+Nothing is published to the public site until a REEF staff member approves it
+in Airtable. Running **Publish Booking Package (manual)** on a booking that is
+not approved produces an **internal preview only**: a single self-contained
+`INTERNAL-PREVIEW.html` (plus the contract `.docx` once the booking is
+Contracted or later) attached to an Asana review task for Rose. No files under
+`bookings/` or `contracts/` change, so nothing is committed or deployed.
+
+To publish, set these fields on the booking in **REEF Bookings | PILOT →
+Bookings**, then re-run the workflow:
+
+| Field | Value |
+|---|---|
+| Approved to Share | checked |
+| Approved to Share — Stage | `Proposal` (Quoting / Proposal Sent / Verbal Yes) or `Pre-trip Packet + Contract` (Contracted and later) |
+| Approved for Proposal Version | the booking's current Proposal Version (leave blank if none is set) |
+| Approved to Share By | the approver |
+| Approved to Share Date | date approved |
+
+A proposal approval never carries over to the pre-trip packet/contract, and a
+bumped Proposal Version needs a fresh approval. If the approval fields are
+missing entirely, every run is a preview, so the lock fails safe.
