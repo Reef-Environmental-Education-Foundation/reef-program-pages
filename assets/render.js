@@ -594,6 +594,11 @@
 
     const programWord = PD.meta.programWord || "Expedition";
     const programTypeLabel = PD.meta.programTypeLabel || "Expedition";
+    // Chapter 3's name follows the schedule format (2026-09-28): a rotation
+    // proposal reads "Schedule & Rotations", a single-day program "Schedule",
+    // a multi-day program "Day by Day". The pipeline sets it; this fallback
+    // covers older data.js files.
+    const scheduleLabel = PD.scheduleLabel || (PD.days.length > 1 ? "Day by Day" : "Schedule");
 
     // ---- decorative hero art: layered SVG, used as a fallback for any
     // section that doesn't have real photography yet. ----
@@ -766,20 +771,31 @@
       ctaRenderers.forEach(function (render) { render(); });
     }
 
+    // What the customer is approving -- the same facts as the rest of the
+    // proposal, restated in one place right before the approval click
+    // (2026-09-28 copy review). Built by the pipeline as PD.confirmSummary.
+    function confirmSummaryList(cls) {
+      const items = PD.confirmSummary || [];
+      if (!items.length) return null;
+      return el("dl", { class: "confirm-summary " + (cls || "") }, items.map(function (it) {
+        return el("div", { class: "cs-row" }, [el("dt", {}, [it.k]), el("dd", {}, [it.v])]);
+      }));
+    }
+
     function ctaModule() {
       const root = el("div", { class: "cta-module" });
       let formOpen = false;
       let confirmingReady = false;
 
       function pendingView() {
-        const btnReady = el("button", { class: "btn btn-primary" }, [(PD.cta.primaryText || "Ready to Move Forward") + " →"]);
+        const btnReady = el("button", { class: "btn btn-primary" }, [(PD.cta.primaryText || "Looks Good — Prepare My Contract") + "\u00a0→"]);
         btnReady.addEventListener("click", function () { confirmingReady = true; render(); });
-        const btnChange = el("button", { class: "cta-secondary-link" }, [PD.cta.secondaryText || "Need to adjust something?"]);
+        const btnChange = el("button", { class: "cta-secondary-link" }, [PD.cta.secondaryText || "Request a Change"]);
         btnChange.addEventListener("click", function () { formOpen = true; render(); });
         return el("div", {}, [
           el("span", { class: "eyebrow on-dark" }, ["YOUR NEXT STEP"]),
-          el("h3", {}, ["This is the program REEF has proposed for " + placeholder(PD.group.orgName, "your group")]),
-          el("p", {}, ["Review the itinerary, dates, group size, what's included, and pricing throughout this proposal. When it looks right, let us know below — this doesn't sign anything, it just tells REEF your group is ready to move forward."]),
+          el("h3", {}, ["Review your proposal for " + placeholder(PD.group.orgName, "your group")]),
+          el("p", {}, ["When the schedule, group size, inclusions, and pricing look right, approve the proposal and REEF will prepare your contract. Approving doesn't sign anything or commit a payment. If something needs to change, send us a request instead."]),
           el("div", { class: "cta-row" }, [btnReady, btnChange]),
         ]);
       }
@@ -790,21 +806,22 @@
       // is. This interstitial makes the actual consequence explicit and
       // requires a second, deliberate click before anything is submitted.
       function confirmReadyView() {
-        const btnConfirm = el("button", { class: "btn btn-primary" }, ["Yes, we're ready →"]);
+        const btnConfirm = el("button", { class: "btn btn-primary" }, [(PD.cta.confirmButtonText || "Approve Proposal") + "\u00a0→"]);
         btnConfirm.addEventListener("click", function () { submitProposalResponse("ready_to_proceed", null); });
         const btnBack = el("button", { class: "cta-secondary-link" }, ["Not yet, take me back"]);
         btnBack.addEventListener("click", function () { confirmingReady = false; render(); });
         return el("div", {}, [
-          el("span", { class: "eyebrow on-dark" }, ["CONFIRM"]),
-          el("h3", {}, ["This tells REEF you're ready for contract next"]),
-          el("p", {}, ["Confirming doesn't sign anything — it lets your REEF contact know your group is ready to move forward so they can prepare your agreement."]),
+          el("span", { class: "eyebrow on-dark" }, ["BEFORE YOU APPROVE"]),
+          el("h3", {}, ["You're approving this program"]),
+          confirmSummaryList("cta-summary"),
+          el("p", {}, ["After you approve, REEF will prepare your contract and confirm any remaining details with you. Approving doesn't sign anything or commit a payment."]),
           el("div", { class: "cta-row" }, [btnConfirm, btnBack]),
         ]);
       }
 
       function changeFormView() {
         const fieldId = "cta-change-request-" + Math.random().toString(36).slice(2, 8);
-        const label = el("label", { class: "cta-textarea-label", for: fieldId }, [PD.cta.changeFormLabel || "What would you like us to adjust?"]);
+        const label = el("label", { class: "cta-textarea-label", for: fieldId }, [PD.cta.changeFormLabel || "Tell us about any requested changes to dates, activities, timing, group size, transportation, meals, accessibility needs, or program content."]);
         const ta = el("textarea", { id: fieldId, class: "cta-textarea", rows: "3" });
         const submitBtn = el("button", { class: "btn btn-primary", disabled: "disabled" }, ["Send Request"]);
         // QA walkthrough (2026-09-09): the textarea had no real label (only
@@ -823,8 +840,8 @@
         cancelBtn.addEventListener("click", function () { formOpen = false; render(); });
         return el("div", {}, [
           el("span", { class: "eyebrow on-dark" }, ["REQUEST A CHANGE"]),
-          el("h3", {}, ["What would you like us to adjust?"]),
-          el("p", {}, ["Tell us what's changed — dates, group size, an activity — and your REEF contact will follow up with a revised proposal."]),
+          el("h3", {}, ["What should we change?"]),
+          el("p", {}, ["Your REEF contact will review your request, follow up by email, and send a revised proposal if the schedule or price changes."]),
           label,
           ta,
           el("div", { class: "cta-row" }, [submitBtn, cancelBtn]),
@@ -834,9 +851,9 @@
 
       function readyConfirmView() {
         return el("div", {}, [
-          el("span", { class: "eyebrow on-dark" }, ["✓ RESPONSE RECEIVED"]),
-          el("h3", {}, [PD.cta.primaryConfirmHeadline || "Thanks — we've got your response!"]),
-          el("p", {}, [PD.cta.primaryConfirmBody || "A member of the REEF team will review your response and follow up by email with next steps to confirm your program."]),
+          el("span", { class: "eyebrow on-dark" }, ["✓ PROPOSAL APPROVED"]),
+          el("h3", {}, [PD.cta.primaryConfirmHeadline || "Thank you — your proposal is approved."]),
+          el("p", {}, [PD.cta.primaryConfirmBody || "REEF will prepare your contract and confirm any remaining details with you by email."]),
           el("p", { class: "cta-fine" }, ["Logged for " + placeholder(PD.group.orgName, "your group") + " · " + fmtTimestamp(ctaState.payload.respondedAt)]),
         ]);
       }
@@ -844,8 +861,8 @@
       function changeConfirmedView() {
         const children = [
           el("span", { class: "eyebrow on-dark" }, ["✓ REQUEST SENT"]),
-          el("h3", {}, [PD.cta.changeConfirmHeadline || "Thanks — we've got your note."]),
-          el("p", {}, [PD.cta.changeConfirmBody || "The REEF Ocean Explorers team will follow up by email to talk through the change."]),
+          el("h3", {}, [PD.cta.changeConfirmHeadline || "Thank you — your change request is on its way."]),
+          el("p", {}, [PD.cta.changeConfirmBody || "Your REEF contact will follow up by email and send a revised proposal if anything changes."]),
         ];
         if (ctaState.payload && ctaState.payload.message) {
           children.push(el("p", { class: "cta-fine" }, ["Your note: “" + ctaState.payload.message + "”"]));
@@ -872,12 +889,17 @@
       const s = el("section", { id: "sec-overview", class: "page-section", "data-title": "Overview" });
       s.appendChild(heroBlock("overview", PD.photos.overview, PD.photoCredits.overview));
       s.querySelector(".hero").appendChild(el("div", { class: "hero-inner container" }, [
-        el("span", { class: "hero-eyebrow" }, ["A PROPOSAL PREPARED FOR YOUR GROUP"]),
+        el("span", { class: "hero-eyebrow" }, ["A PROPOSAL FOR " + placeholder(PD.group.orgName, "YOUR GROUP").toUpperCase()]),
         el("h1", {}, ["Florida Keys Ocean Explorers " + programTypeLabel]),
-        el("p", { class: "lede" }, ["Prepared for " + placeholder(PD.group.orgName, "your group") + " — a " + (PD.days.length === 1 ? "one-day" : PD.days.length + "-day") + " " + programWord + " built around your group's goals for the Florida Keys."]),
+        // 2026-09-28 copy review: one concrete sentence describing THIS
+        // program (built by the pipeline, or supplied per booking) instead
+        // of a generic "built around your group's goals" line.
+        el("p", { class: "lede" }, [PD.summary || ("A " + (PD.days.length === 1 ? "one-day" : PD.days.length + "-day") + " " + programWord + " prepared for " + placeholder(PD.group.orgName, "your group") + ".")]),
         el("div", { class: "hero-chips" }, [
-          ["Group", PD.group.orgName], ["Proposed Dates", PD.dates.range],
-          ["Your Contact's Role", PD.group.gradeLevel], ["Group Size", (PD.group.students || 0) + " students + " + (PD.group.chaperones || 0) + " chaperones"],
+          ["Group", PD.group.orgName],
+          [PD.days.length > 1 ? "Proposed Dates" : "Proposed Date", PD.dates.range],
+          [PD.group.contactLabel || "Group Contact", PD.group.contactLine || PD.group.contactName || PD.group.gradeLevel],
+          ["Group Size", (PD.group.students || 0) + " students + " + (PD.group.chaperones || 0) + " chaperones"],
         ].map(function (pair) { return el("div", { class: "hero-chip" }, [el("div", { class: "k" }, [pair[0]]), el("div", { class: "v" }, [placeholder(pair[1])])]); })),
       ]));
       s.appendChild(el("div", { class: "container block" }, [roadmap()]));
@@ -889,7 +911,7 @@
       s.appendChild(el("div", { class: "container block" }, [
         el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["AT A GLANCE"]), el("h2", {}, ["Your " + programWord + ", at a glance"])]),
         el("div", { class: "glance-grid" }, PD.glance.map(function (g) {
-          return el("div", { class: "glance-cell" }, [el("div", { class: "k" }, [g.k]), el("div", { class: "v" }, [g.v])]);
+          return el("div", { class: "glance-cell" + (g.wide ? " is-wide" : "") }, [el("div", { class: "k" }, [g.k]), el("div", { class: "v" }, [g.v])]);
         })),
       ]));
       s.appendChild(el("div", { class: "container block" }, [
@@ -901,7 +923,10 @@
           el("div", { class: "contact-body" }, [
             el("div", { class: "contact-name" }, [placeholder(PD.reefContact.name, "REEF Team")]),
             el("div", { class: "contact-role" }, [PD.reefContact.role || ""]),
-            el("div", { class: "contact-blurb" }, [PD.reefContact.welcomeLine || ""]),
+            // Skip the blurb when it would repeat the welcome note verbatim
+            // (2026-09-28: the same sentence appeared twice on Overview).
+            (PD.reefContact.welcomeLine && (PD.welcome.body || []).indexOf(PD.reefContact.welcomeLine) === -1)
+              ? el("div", { class: "contact-blurb" }, [PD.reefContact.welcomeLine]) : null,
             el("div", { class: "contact-links" }, [
               el("a", { href: "mailto:" + (PD.reefContact.email || "explorers@REEF.org") }, [PD.reefContact.email || "explorers@REEF.org"]),
               el("span", { style: "color:var(--p-slate-soft)" }, [PD.reefContact.phone || ""]),
@@ -918,8 +943,8 @@
       s.appendChild(heroBlock("experience", PD.photos.experience, PD.photoCredits.experience));
       s.querySelector(".hero").appendChild(el("div", { class: "hero-inner container" }, [
         el("span", { class: "hero-eyebrow" }, ["YOUR EXPERIENCE"]),
-        el("h1", {}, ["Real participation, not a spectator trip"]),
-        el("p", { class: "lede" }, ["What makes this " + programWord + " work — and how it connects your students to real marine science, not just a day at the beach."]),
+        el("h1", {}, ["Hands-on marine science, led by REEF educators"]),
+        el("p", { class: "lede" }, ["How your students will take part in real ocean conservation work during this " + programWord + ", and why it matters beyond the day itself."]),
       ]));
       s.appendChild(el("div", { class: "container block" }, [
         el("div", { class: "card-grid cols-2" }, PD.pillars.map(function (p) {
@@ -928,8 +953,8 @@
       ]));
       if (PD.team.length) {
         s.appendChild(el("div", { class: "container block" }, [
-          el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["MEET THE REEF EDUCATION TEAM"]), el("h2", {}, ["Meet a few of the educators your students may learn with at REEF"])]),
-          el("div", { class: "team-note" }, ["REEF educators are matched to programs closer to your date. The educators below are a sample of who your students might learn alongside — not a confirmed assignment for your group."]),
+          el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["THE REEF TEAM"]), el("h2", {}, ["Who your students will learn with"])]),
+          el("div", { class: "team-note" }, ["REEF assigns specific educators closer to your date. These are the roles that support every program like yours."]),
           el("div", { class: "team-grid" }, PD.team.map(function (t) {
             // QA walkthrough (2026-09-09): every team card used the same
             // generic "◍" glyph, which read as impersonal. Real headshots
@@ -945,7 +970,7 @@
           })),
         ]));
       }
-      s.appendChild(el("div", { class: "container" }, [bottomNav("Overview", "sec-overview", "Day by Day", "sec-days")]));
+      s.appendChild(el("div", { class: "container" }, [bottomNav("Overview", "sec-overview", scheduleLabel, "sec-days")]));
       return s;
     }
 
@@ -980,15 +1005,246 @@
       ]);
     }
 
+    // ================================================================
+    // ROTATION SCHEDULE (2026-09-28) -- reusable concurrent-cohort
+    // component, shown when PD.scheduleFormat === "rotation". Answers
+    // "who is where, and when": cohorts are rows, time runs left to
+    // right, each activity is a labeled cell spanning its real duration,
+    // and gaps between a cohort's activities show as transition time.
+    // On narrow screens the same grid is transposed (time runs down,
+    // cohorts across) so cohort-by-time relationships survive on a
+    // phone instead of collapsing into disconnected cards. Activity
+    // descriptions stay below the matrix. Data shape: see ROTATION
+    // SCHEMA in pipeline/generate_booking_package.py.
+    // ================================================================
+    function tmin(hhmm) { const p = String(hhmm).split(":"); return (+p[0]) * 60 + (+p[1]); }
+    function clockLabel(m, withSuffix) {
+      const h = Math.floor(m / 60), mm = m % 60;
+      const h12 = h % 12 || 12;
+      return h12 + ":" + String(mm).padStart(2, "0") + (withSuffix ? (h < 12 ? " AM" : " PM") : "");
+    }
+    function rangeLabel(s, e) {
+      const sa = s < 720 ? "AM" : "PM", ea = e < 720 ? "AM" : "PM";
+      return sa === ea ? clockLabel(s) + "–" + clockLabel(e, true) : clockLabel(s, true) + "–" + clockLabel(e, true);
+    }
+
+    function rotationModel(rot) {
+      const slot = rot.slotMinutes || 15;
+      const start = tmin(rot.startTime), end = tmin(rot.endTime);
+      const stations = {};
+      (rot.stations || []).forEach(function (st, i) {
+        stations[st.id] = Object.assign({ color: i % 6 }, st);
+      });
+      const cohorts = (rot.cohorts || []).map(function (c) {
+        const items = [];
+        (rot.assignments || []).forEach(function (a) {
+          if (a.cohort === c.id) items.push({ s: tmin(a.start), e: tmin(a.end), st: stations[a.station] });
+        });
+        (rot.shared || []).forEach(function (a) {
+          items.push({ s: tmin(a.start), e: tmin(a.end), st: stations[a.station], shared: true });
+        });
+        items.sort(function (x, y) { return x.s - y.s; });
+        // Fill gaps with transition time so the row always reads start-to-end.
+        const filled = [];
+        let cursor = start;
+        items.forEach(function (it) {
+          if (it.s > cursor) filled.push({ s: cursor, e: it.s, gap: true });
+          filled.push(it);
+          cursor = Math.max(cursor, it.e);
+        });
+        if (cursor < end) filled.push({ s: cursor, e: end, gap: true });
+        return { c: c, items: filled };
+      });
+      const span = end - start;
+      const tickStep = span > 360 ? 60 : 30;
+      return { slot: slot, start: start, end: end, n: span / slot, stations: stations, cohorts: cohorts, tickStep: tickStep };
+    }
+
+    function cohortSizeText(rot, c) {
+      if (c.size) return c.size + " students";
+      return rot.cohortSizeLabel || "";
+    }
+
+    function rotationCellContent(it, compact) {
+      if (it.gap) return [el("span", { class: "rc-gap-label" }, [(it.e - it.s) >= 30 ? "Transition" : ""])];
+      const name = compact ? (it.st.short || it.st.name) : ((it.e - it.s) >= 60 ? it.st.name : (it.st.short || it.st.name));
+      return [
+        el("span", { class: "rc-name" }, [name]),
+        el("span", { class: "rc-time mono" }, [rangeLabel(it.s, it.e)]),
+        (!compact && it.st.location && (it.e - it.s) >= 60) ? el("span", { class: "rc-loc" }, [it.st.location]) : null,
+      ];
+    }
+
+    function rotationDesktop(rot, M) {
+      const hasDep = !!rot.departure;
+      const cols = "var(--rot-label) repeat(" + M.n + ", minmax(0,1fr))" + (hasDep ? " var(--rot-dep)" : "");
+      const grid = el("div", { class: "rot-grid rot-desktop", style: "grid-template-columns:" + cols + ";", role: "img",
+        "aria-label": "Rotation schedule: " + M.cohorts.length + " cohorts from " + clockLabel(M.start, true) + " to " + clockLabel(M.end, true) + ". A text version follows." });
+      grid.appendChild(el("div", { class: "rot-corner", style: "grid-row:1;grid-column:1;" }, ["Cohort"]));
+      for (let t = M.start; t < M.end; t += M.tickStep) {
+        const i = (t - M.start) / M.slot;
+        const w = Math.min(M.tickStep, M.end - t) / M.slot;
+        grid.appendChild(el("div", { class: "rot-tick", style: "grid-row:1;grid-column:" + (i + 2) + " / span " + w + ";" },
+          [clockLabel(t, t === M.start || t === 720)]));
+      }
+      if (hasDep) grid.appendChild(el("div", { class: "rot-tick rot-tick-dep", style: "grid-row:1;grid-column:" + (M.n + 2) + ";" }, [clockLabel(tmin(rot.departure.time), true)]));
+      M.cohorts.forEach(function (row, r) {
+        const gr = r + 2;
+        grid.appendChild(el("div", { class: "rot-rowlabel", style: "grid-row:" + gr + ";grid-column:1;" }, [
+          el("span", { class: "rl-name" }, [row.c.label]),
+          cohortSizeText(rot, row.c) ? el("span", { class: "rl-size" }, [cohortSizeText(rot, row.c)]) : null,
+        ]));
+        row.items.forEach(function (it) {
+          const a = (it.s - M.start) / M.slot + 2, b = (it.e - M.start) / M.slot + 2;
+          const cls = (it.gap ? "rot-cell rot-gap" : "rot-cell rot-c" + (it.st.color % 6)) + ((it.e - it.s) <= 30 ? " is-narrow" : "");
+          grid.appendChild(el("div", { class: cls, style: "grid-row:" + gr + ";grid-column:" + a + " / " + b + ";" }, rotationCellContent(it, (it.e - it.s) <= 30)));
+        });
+      });
+      if (hasDep) {
+        grid.appendChild(el("div", { class: "rot-dep", style: "grid-row:2 / span " + M.cohorts.length + ";grid-column:" + (M.n + 2) + ";" }, [
+          el("span", { class: "rc-name" }, [rot.departure.label || "Departure"]),
+        ]));
+      }
+      return grid;
+    }
+
+    function rotationMobile(rot, M) {
+      const hasDep = !!rot.departure;
+      const nC = M.cohorts.length;
+      const rows = "auto repeat(" + M.n + ", var(--rot-slot-h))" + (hasDep ? " auto" : "");
+      const grid = el("div", { class: "rot-grid rot-mobile", style: "grid-template-columns:var(--rot-time) repeat(" + nC + ", minmax(0,1fr));grid-template-rows:" + rows + ";", role: "img",
+        "aria-label": "Rotation schedule, time runs down and cohorts run across. A text version follows." });
+      grid.appendChild(el("div", { class: "rot-corner", style: "grid-row:1;grid-column:1;" }, ["Time"]));
+      M.cohorts.forEach(function (row, ci) {
+        grid.appendChild(el("div", { class: "rot-colhead", style: "grid-row:1;grid-column:" + (ci + 2) + ";" }, [
+          el("span", { class: "rl-name" }, [row.c.label.replace(/^Cohort\s+/i, "")]),
+          el("span", { class: "rl-kicker" }, [/^Cohort\s+/i.test(row.c.label) ? "Cohort" : ""]),
+        ]));
+      });
+      for (let t = M.start; t < M.end; t += M.tickStep) {
+        const i = (t - M.start) / M.slot;
+        const h = Math.min(M.tickStep, M.end - t) / M.slot;
+        grid.appendChild(el("div", { class: "rot-vtick mono", style: "grid-column:1;grid-row:" + (i + 2) + " / span " + h + ";" }, [clockLabel(t, t === M.start || t === 720)]));
+      }
+      M.cohorts.forEach(function (row, ci) {
+        row.items.forEach(function (it) {
+          const a = (it.s - M.start) / M.slot + 2, b = (it.e - M.start) / M.slot + 2;
+          const cls = it.gap ? "rot-cell rot-gap" : "rot-cell rot-c" + (it.st.color % 6);
+          grid.appendChild(el("div", { class: cls, style: "grid-column:" + (ci + 2) + ";grid-row:" + a + " / " + b + ";" }, rotationCellContent(it, true)));
+        });
+      });
+      if (hasDep) {
+        grid.appendChild(el("div", { class: "rot-vtick mono", style: "grid-column:1;grid-row:" + (M.n + 2) + ";" }, [clockLabel(tmin(rot.departure.time), true)]));
+        grid.appendChild(el("div", { class: "rot-dep rot-dep-row", style: "grid-column:2 / span " + nC + ";grid-row:" + (M.n + 2) + ";" }, [
+          el("span", { class: "rc-name" }, [rot.departure.label || "Departure"]),
+        ]));
+      }
+      return grid;
+    }
+
+    function rotationLegend(rot, M) {
+      return el("ul", { class: "rot-legend", "aria-label": "Activities and locations" }, (rot.stations || []).map(function (st) {
+        const s = M.stations[st.id];
+        return el("li", {}, [
+          el("span", { class: "rot-swatch rot-c" + (s.color % 6) }),
+          el("span", { class: "lg-name" }, [s.name]),
+          s.location ? el("span", { class: "lg-loc" }, [s.location]) : null,
+        ]);
+      }));
+    }
+
+    function rotationTextList(rot, M) {
+      const details = el("details", { class: "rot-list" }, [el("summary", {}, ["View the schedule as a list by cohort"])]);
+      const wrap = el("div", { class: "rot-list-grid" });
+      M.cohorts.forEach(function (row) {
+        wrap.appendChild(el("div", { class: "rot-list-col" }, [
+          el("h4", {}, [row.c.label + (cohortSizeText(rot, row.c) ? " · " + cohortSizeText(rot, row.c) : "")]),
+          el("ul", {}, row.items.filter(function (it) { return !it.gap; }).map(function (it) {
+            return el("li", {}, [el("span", { class: "mono" }, [rangeLabel(it.s, it.e)]), " ", it.st.name + (it.st.location ? " (" + it.st.location + ")" : "")]);
+          }).concat(rot.departure ? [el("li", {}, [el("span", { class: "mono" }, [clockLabel(tmin(rot.departure.time), true)]), " ", rot.departure.label || "Departure"])] : [])),
+        ]));
+      });
+      details.appendChild(wrap);
+      return details;
+    }
+
+    function rotationSchedule(rot) {
+      const M = rotationModel(rot);
+      return el("div", { class: "rot-wrap" }, [
+        el("div", { class: "rot-frame" }, [rotationDesktop(rot, M), rotationMobile(rot, M)]),
+        rotationLegend(rot, M),
+        rot.departure && rot.departure.note ? el("p", { class: "rot-note rot-note-strong" }, [rot.departure.note]) : null,
+        (rot.notes || []).length ? el("ul", { class: "rot-notes" }, rot.notes.map(function (n) { return el("li", {}, [n]); })) : null,
+        rotationTextList(rot, M),
+      ]);
+    }
+
+    // Activity detail cards below the matrix: what students experience and
+    // learn, with WHEN derived from the rotation data (never hand-typed, so
+    // it can't disagree with the matrix).
+    function stationCards(day) {
+      const cards = (day.blocks || []).map(function (b) {
+        return el("div", { class: "station-card" + (b.color !== undefined && b.color !== null ? " rot-edge-c" + (b.color % 6) : "") }, [
+          b.tag ? el("span", { class: "tag" }, [b.tag]) : null,
+          el("h4", {}, [b.title || ""]),
+          b.when ? el("div", { class: "sc-when mono" }, [b.when]) : (b.time ? el("div", { class: "sc-when mono" }, [b.time]) : null),
+          b.location ? el("div", { class: "sc-loc" }, [b.location]) : null,
+          el("p", { class: "desc" }, [b.description || ""]),
+        ]);
+      });
+      return el("div", { class: "station-grid" }, cards);
+    }
+
+    function outcomesBox(day) {
+      return (day.studentsWill || []).length ? el("div", { class: "outcomes-box standalone" }, [
+        el("span", { class: "eyebrow" }, ["STUDENTS WILL…"]),
+        el("ul", {}, day.studentsWill.map(function (line) { return el("li", {}, [line]); })),
+        day.outcomesNote ? el("div", { class: "outcomes-note" }, [day.outcomesNote]) : null,
+      ]) : null;
+    }
+
     function buildDays() {
-      const s = el("section", { id: "sec-days", class: "page-section", "data-title": "Day by Day" });
+      const fmt = PD.scheduleFormat || "standard";
+      const s = el("section", { id: "sec-days", class: "page-section", "data-title": scheduleLabel });
       s.appendChild(heroBlock("days", PD.photos.days, PD.photoCredits.days));
+      let h1, lede;
+      if (fmt === "rotation" && PD.rotation) {
+        h1 = PD.rotation.heading || "One Coordinated Schedule";
+        lede = "Where each cohort will be, and when" + (PD.hours ? ", from " + PD.rotation.startLabel + " to " + PD.rotation.endLabel : "") + ".";
+      } else if (fmt === "pending") {
+        h1 = "Your schedule is being finalized";
+        lede = "The experiences below are part of your program. Exact times will follow.";
+      } else {
+        h1 = (PD.days.length === 1 ? "One day" : PD.days.length + " days") + ", one Florida Keys " + programWord;
+        lede = "What your students will do, and when.";
+      }
       s.querySelector(".hero").appendChild(el("div", { class: "hero-inner container" }, [
-        el("span", { class: "hero-eyebrow" }, ["DAY BY DAY"]),
-        el("h1", {}, [(PD.days.length === 1 ? "One day" : PD.days.length + " days") + ", one Florida Keys " + programWord]),
-        el("p", { class: "lede" }, ["What your students will actually do, day by day."]),
+        el("span", { class: "hero-eyebrow" }, [scheduleLabel.toUpperCase()]),
+        el("h1", {}, [h1]),
+        el("p", { class: "lede" }, [lede]),
       ]));
-      s.appendChild(el("div", { class: "container block" }, PD.days.map(dayCard)));
+      if (fmt === "rotation" && PD.rotation) {
+        s.appendChild(el("div", { class: "container block" }, [
+          PD.rotation.intro ? el("p", { class: "rot-intro" }, [PD.rotation.intro]) : null,
+          rotationSchedule(PD.rotation),
+        ]));
+        PD.days.forEach(function (day) {
+          s.appendChild(el("div", { class: "container block" }, [
+            el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["THE EXPERIENCES"]), el("h2", {}, ["What students will do at each stop"])]),
+            stationCards(day),
+            outcomesBox(day),
+          ]));
+        });
+      } else if (fmt === "pending") {
+        s.appendChild(el("div", { class: "container block" }, [
+          el("div", { class: "pending-panel" }, [
+            el("span", { class: "eyebrow" }, ["SCHEDULE COMING SOON"]),
+            el("p", {}, [PD.pendingNote || "Your detailed schedule is still being finalized. Your REEF contact will share exact times before your contract is prepared."]),
+          ]),
+        ].concat(PD.days.map(function (day) { return el("div", { style: "margin-top:20px;" }, [stationCards(day), outcomesBox(day)]); }))));
+      } else {
+        s.appendChild(el("div", { class: "container block" }, PD.days.map(dayCard)));
+      }
       s.appendChild(el("div", { class: "container" }, [bottomNav("Your Experience", "sec-experience", "What's Included", "sec-included")]));
       return s;
     }
@@ -998,23 +1254,32 @@
       s.appendChild(heroBlock("included", PD.photos.included, PD.photoCredits.included));
       s.querySelector(".hero").appendChild(el("div", { class: "hero-inner container" }, [
         el("span", { class: "hero-eyebrow" }, ["WHAT'S INCLUDED"]),
-        el("h1", {}, ["Here's exactly what's covered"]),
-        el("p", { class: "lede" }, ["Grouped so it's easy to scan — and just as clear about what isn't included."]),
+        el("h1", {}, ["What's included, and what your group brings"]),
+        el("p", { class: "lede" }, ["What REEF provides, what your group arranges, and anything that isn't part of this price."]),
       ]));
-      s.appendChild(el("div", { class: "container block" }, [
-        el("div", { class: "included-grid" }, PD.included.map(function (g) {
-          return el("div", { class: "included-card" }, [
-            el("h4", {}, [el("span", { class: "dot" }), g.title]),
-            el("ul", {}, (g.items || []).map(function (i) { return el("li", {}, [i]); })),
-          ]);
-        }).concat([
-          el("div", { class: "included-card not-included" }, [
-            el("h4", {}, [el("span", { class: "dot" }), "Not Included / Group Responsibilities"]),
-            el("ul", {}, PD.notIncluded.map(function (i) { return el("li", {}, [i]); })),
-          ]),
-        ])),
-      ]));
-      s.appendChild(el("div", { class: "container" }, [bottomNav("Day by Day", "sec-days", "Pricing & Details", "sec-pricing")]));
+      const cards = PD.included.filter(function (g) { return (g.items || []).length; }).map(function (g) {
+        return el("div", { class: "included-card" }, [
+          el("h4", {}, [el("span", { class: "dot" }), g.title]),
+          el("ul", {}, (g.items || []).map(function (i) { return el("li", {}, [i]); })),
+        ]);
+      });
+      if (PD.notIncluded.length) {
+        cards.push(el("div", { class: "included-card not-included" }, [
+          el("h4", {}, [el("span", { class: "dot" }), "Not included — arranged by your group"]),
+          el("ul", {}, PD.notIncluded.map(function (i) { return el("li", {}, [i]); })),
+        ]));
+      }
+      if ((PD.optional || []).length) {
+        cards.push(el("div", { class: "included-card optional-card" }, [
+          el("h4", {}, [el("span", { class: "dot" }), "Optional — not included in this price"]),
+          el("ul", {}, PD.optional.map(function (i) { return el("li", {}, [i]); })),
+        ]));
+      }
+      if (!cards.length) {
+        cards.push(el("div", { class: "included-card" }, [el("p", {}, ["Your REEF contact will confirm exactly what's included with your final proposal."])]));
+      }
+      s.appendChild(el("div", { class: "container block" }, [el("div", { class: "included-grid" }, cards)]));
+      s.appendChild(el("div", { class: "container" }, [bottomNav(scheduleLabel, "sec-days", "Pricing & Details", "sec-pricing")]));
       return s;
     }
 
@@ -1024,33 +1289,44 @@
       s.appendChild(heroBlock("pricing", PD.photos.pricing, PD.photoCredits.pricing));
       s.querySelector(".hero").appendChild(el("div", { class: "hero-inner container" }, [
         el("span", { class: "hero-eyebrow" }, ["PRICING & DETAILS"]),
-        el("h1", {}, ["What this program costs, per student"]),
-        el("p", { class: "lede" }, ["A straightforward rate, a complimentary chaperone ratio, and the few things that could change it."]),
+        el("h1", {}, ["Your estimated total"]),
+        el("p", { class: "lede" }, ["What your price includes, what it's based on, and what would change it."]),
       ]));
-      if (pr.tileRate || pr.tileChaperones) {
+      const tiles = [pr.tileTotal, pr.tileRate, pr.tileChaperones].filter(Boolean);
+      if (tiles.length) {
         s.appendChild(el("div", { class: "container block" }, [
-          el("div", { class: "price-tiles" }, [pr.tileRate, pr.tileChaperones].filter(Boolean).map(function (tile) {
-            return el("div", { class: "price-tile" }, [
+          el("div", { class: "price-tiles cols-" + tiles.length }, tiles.map(function (tile, i) {
+            return el("div", { class: "price-tile" + (i === 0 && pr.tileTotal ? " is-primary" : "") }, [
               el("div", { class: "tile-label" }, [tile.label]),
               el("div", { class: "tile-num" }, [tile.num]),
               el("div", { class: "tile-unit" }, [tile.unit]),
             ]);
           })),
-          pr.ratioNote ? el("p", { class: "price-ratio-note" }, [pr.ratioNote]) : null,
-          (pr.conditions || []).length ? el("ul", { class: "assumptions-list", style: "margin-top:10px;" }, pr.conditions.map(function (c) { return el("li", {}, [c]); })) : null,
           pr.estimatedTotalNote ? el("p", { class: "price-total-note", html: pr.estimatedTotalNote }) : null,
+        ]));
+      }
+      const cp = pr.chaperonePolicy;
+      if (cp || pr.ratioNote || (pr.conditions || []).length) {
+        s.appendChild(el("div", { class: "container block" }, [
+          el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["CHAPERONES"]), el("h2", {}, [cp ? cp.headline : "Complimentary chaperones"])]),
+          cp ? el("ul", { class: "assumptions-list" }, cp.lines.map(function (c) { return el("li", {}, [c]); }))
+             : el("div", {}, [
+                 pr.ratioNote ? el("p", { class: "price-ratio-note" }, [pr.ratioNote]) : null,
+                 (pr.conditions || []).length ? el("ul", { class: "assumptions-list", style: "margin-top:10px;" }, pr.conditions.map(function (c) { return el("li", {}, [c]); })) : null,
+               ]),
         ]));
       }
       if ((pr.assumptions || []).length) {
         s.appendChild(el("div", { class: "container block" }, [
-          el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["ASSUMPTIONS BEHIND THIS RATE"])]),
+          el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["PRICING BASED ON"])]),
           el("ul", { class: "assumptions-list" }, pr.assumptions.map(function (a) { return el("li", {}, [a]); })),
         ]));
       }
       if ((pr.whatCouldChange || []).length) {
         s.appendChild(el("div", { class: "container block" }, [
-          el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["WHAT COULD CHANGE THE PRICE"])]),
+          el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["WHAT WOULD CHANGE YOUR TOTAL"])]),
           el("ul", { class: "assumptions-list" }, pr.whatCouldChange.map(function (a) { return el("li", {}, [a]); })),
+          el("p", { class: "price-ratio-note", style: "margin-top:10px;" }, ["Any of these would come to you as a revised proposal before anything is final."]),
         ]));
       }
       s.appendChild(el("div", { class: "container" }, [bottomNav("What's Included", "sec-included", "Next Steps", "sec-next")]));
@@ -1063,9 +1339,21 @@
       s.querySelector(".hero").appendChild(el("div", { class: "hero-inner container" }, [
         el("span", { class: "hero-eyebrow" }, ["NEXT STEPS"]),
         el("h1", {}, ["Ready to bring your students to REEF?"]),
-        el("p", { class: "lede" }, ["If this proposed experience looks right, let us know and we'll move your group into the next stage of planning."]),
+        el("p", { class: "lede" }, ["Approve this proposal and REEF will prepare your contract, or tell us what you'd like to change."]),
       ]));
       s.appendChild(el("div", { class: "container block" }, [roadmap()]));
+      if ((PD.confirmSummary || []).length) {
+        s.appendChild(el("div", { class: "container block" }, [
+          el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["WHAT YOU'RE APPROVING"]), el("h2", {}, ["Your program, in one place"])]),
+          confirmSummaryList("on-light"),
+        ]));
+      }
+      if ((PD.nextSteps || []).length) {
+        s.appendChild(el("div", { class: "container block" }, [
+          el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["WHAT HAPPENS NEXT"])]),
+          el("ol", { class: "next-steps-ol" }, PD.nextSteps.map(function (n) { return el("li", {}, [n]); })),
+        ]));
+      }
       const nextEmail = PD.cta.contactEmail || "explorers@REEF.org";
       s.appendChild(el("div", { class: "container block" }, [
         ctaModule(),
@@ -1083,7 +1371,7 @@
     const SECTIONS = [
       { id: "sec-overview", label: "Overview", build: buildOverview },
       { id: "sec-experience", label: "Your Experience", build: buildExperience },
-      { id: "sec-days", label: "Day by Day", build: buildDays },
+      { id: "sec-days", label: scheduleLabel, build: buildDays },
       { id: "sec-included", label: "What's Included", build: buildIncluded },
       { id: "sec-pricing", label: "Pricing & Details", build: buildPricing },
       { id: "sec-next", label: "Next Steps", build: buildNext },

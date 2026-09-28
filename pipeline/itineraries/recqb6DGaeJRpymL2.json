@@ -1,41 +1,98 @@
-[
-  {
-    "dayNumber": 1,
-    "totalDays": 1,
-    "title": "One Day on the Reef",
-    "theme": "Four groups rotate through three hands-on experiences at John Pennekamp Coral Reef State Park, 9:00 AM to 2:30 PM.",
-    "blocks": [
-      {
-        "time": "9:00 AM or 12:15 PM",
-        "tag": "Field Activity",
-        "title": "Glass-Bottom Boat Tour",
-        "description": "Students observe coral habitats and marine life from above on a glass-bottom boat excursion, pairing accessible reef viewing with guided interpretation. Groups C & D sail 9:00–11:30 AM; Groups A & B sail 12:15–2:30 PM."
-      },
-      {
-        "time": "Morning or afternoon",
-        "tag": "Citizen Science",
-        "title": "Citizen Science & Fish ID",
-        "description": "Students learn how REEF volunteers identify fish and collect survey data, building the skills needed to participate in citizen science and marine biodiversity monitoring. Groups A & B in the morning; Groups C & D in the afternoon."
-      },
-      {
-        "time": "Morning or afternoon",
-        "tag": "Workshop",
-        "title": "Lionfish Lesson & Dissection",
-        "description": "Students investigate invasive lionfish through a hands-on lesson and guided dissection, linking anatomy and adaptation to real conservation challenges in Florida Keys ecosystems. Groups A & B in the morning; Groups C & D in the afternoon."
-      },
-      {
-        "time": "11:00 AM–12:30 PM",
-        "tag": "Break",
-        "title": "Picnic Lunch at Pennekamp",
-        "description": "Groups break for a packed picnic lunch at the park's picnic tables, staggered between rotations."
-      }
+{
+  "schemaVersion": 2,
+  "scheduleFormat": "rotation",
+  "sourceNote": "Rotation transcribed 2026-09-28 from Rose Kelly's 'Single day Sample Schedule, March 17' (Asana task 1214401891978636, attachment image.png, 2026-09-14). Internal only; never rendered.",
+  "location": "John Pennekamp Coral Reef State Park, Key Largo",
+  "summary": "A one-day marine science program for 115 students, organized into four cohorts rotating through three hands-on experiences at John Pennekamp Coral Reef State Park.",
+  "rotation": {
+    "heading": "Four Cohorts, One Coordinated Day",
+    "intro": "Students will be divided into four cohorts of approximately 28–29 students. Cohorts rotate among the boat tour, citizen science and fish identification, lionfish programming, and staggered lunch periods. Activities run concurrently, so the schedule below shows where each cohort will be throughout the day.",
+    "startTime": "09:00",
+    "endTime": "14:30",
+    "slotMinutes": 15,
+    "cohortSizeLabel": "About 28–29 students",
+    "cohorts": [
+      {"id": "A", "label": "Cohort A", "size": null},
+      {"id": "B", "label": "Cohort B", "size": null},
+      {"id": "C", "label": "Cohort C", "size": null},
+      {"id": "D", "label": "Cohort D", "size": null}
     ],
-    "studentsWill": [
-      "Observe living coral reef habitats and marine life from the glass-bottom boat (Observe).",
-      "Learn REEF's fish identification and survey methods used by citizen scientists (Identify).",
-      "Investigate invasive lionfish anatomy and adaptation through a guided dissection (Understand).",
-      "Connect what they see to REEF's ongoing reef conservation and invasive-species work (Connect to Conservation)."
+    "stations": [
+      {"id": "boat", "name": "Glass-Bottom Boat Tour", "short": "Boat Tour", "location": "Park marina", "type": "experience", "color": 0},
+      {"id": "fishid", "name": "Citizen Science & Fish Identification", "short": "Fish ID", "location": "Pennekamp", "type": "experience", "color": 1},
+      {"id": "lionfish", "name": "Lionfish Lesson & Dissection", "short": "Lionfish", "location": "Pennekamp", "type": "experience", "color": 2},
+      {"id": "lunch", "name": "Picnic Lunch", "short": "Lunch", "location": "Park picnic area", "type": "meal", "color": 3}
     ],
-    "outcomesNote": null
-  }
-]
+    "assignments": [
+      {"cohort": "A", "station": "fishid", "start": "09:00", "end": "10:30"},
+      {"cohort": "A", "station": "lionfish", "start": "10:30", "end": "11:00"},
+      {"cohort": "A", "station": "lunch", "start": "11:00", "end": "12:00"},
+      {"cohort": "A", "station": "boat", "start": "12:15", "end": "14:30"},
+
+      {"cohort": "B", "station": "lionfish", "start": "09:00", "end": "10:30"},
+      {"cohort": "B", "station": "fishid", "start": "10:30", "end": "11:00"},
+      {"cohort": "B", "station": "lunch", "start": "11:00", "end": "12:00"},
+      {"cohort": "B", "station": "boat", "start": "12:15", "end": "14:30"},
+
+      {"cohort": "C", "station": "boat", "start": "09:00", "end": "11:30"},
+      {"cohort": "C", "station": "lunch", "start": "11:30", "end": "12:30"},
+      {"cohort": "C", "station": "fishid", "start": "12:30", "end": "13:30"},
+      {"cohort": "C", "station": "lionfish", "start": "13:30", "end": "14:30"},
+
+      {"cohort": "D", "station": "boat", "start": "09:00", "end": "11:30"},
+      {"cohort": "D", "station": "lunch", "start": "11:30", "end": "12:30"},
+      {"cohort": "D", "station": "lionfish", "start": "12:30", "end": "13:30"},
+      {"cohort": "D", "station": "fishid", "start": "13:30", "end": "14:30"}
+    ],
+    "departure": {
+      "time": "14:30",
+      "label": "Departure",
+      "note": "The program ends at 2:30 PM. Optional activities after 2:30 PM are not part of this proposal."
+    },
+    "notes": [
+      "Your group arrives on three buses, and the program begins at 9:00 AM.",
+      "Short gaps between activities are transition time for moving between the marina, the picnic area, and program areas."
+    ]
+  },
+  "days": [
+    {
+      "dayNumber": 1,
+      "totalDays": 1,
+      "title": "One Day on the Reef",
+      "theme": "Four cohorts rotate through three hands-on experiences at John Pennekamp Coral Reef State Park, 9:00 AM to 2:30 PM.",
+      "blocks": [
+        {
+          "station": "boat",
+          "tag": "Field Experience",
+          "title": "Glass-Bottom Boat Tour",
+          "description": "Students view living coral reef habitat and the fish that depend on it from a glass-bottom boat, with a REEF educator helping them connect what they see to how healthy reefs work."
+        },
+        {
+          "station": "fishid",
+          "tag": "Citizen Science",
+          "title": "Citizen Science & Fish Identification",
+          "description": "Students learn how REEF's volunteer divers and snorkelers identify fish and record what they see, then practice the same identification and survey skills used in REEF's Volunteer Fish Survey Project."
+        },
+        {
+          "station": "lionfish",
+          "tag": "Hands-On Lab",
+          "title": "Lionfish Lesson & Dissection",
+          "description": "Students investigate invasive lionfish through a guided dissection, looking at anatomy and adaptations and learning why lionfish are a conservation challenge for Florida Keys reefs."
+        },
+        {
+          "station": "lunch",
+          "tag": "Break",
+          "title": "Picnic Lunch",
+          "description": "Each cohort has a scheduled picnic lunch at the park. Lunch is not provided, so students and chaperones should bring a packed lunch."
+        }
+      ],
+      "studentsWill": [
+        "Observe living coral reef habitat and marine life from the glass-bottom boat.",
+        "Learn and practice the fish identification and survey methods REEF's citizen scientists use.",
+        "Investigate invasive lionfish anatomy and adaptations through a guided dissection.",
+        "Connect what they see to REEF's ongoing reef conservation and invasive-species work."
+      ],
+      "outcomesNote": null
+    }
+  ]
+}

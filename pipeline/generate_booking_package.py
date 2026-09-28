@@ -309,6 +309,96 @@ def us_date(iso):
     return f"{d.month}/{d.day}/{d.year % 100:02d}"
 
 
+def date_span(arrival_iso, departure_iso):
+    """Customer-facing date line (2026-09-28 copy review):
+        one day            -> "March 17, 2027"      (not "Mar 17, 2027 - Mar 17, 2027")
+        same month         -> "April 13–14, 2027"
+        different months   -> "March 30 – April 2, 2027"
+        different years    -> "December 30, 2026 – January 2, 2027"
+    """
+    if not arrival_iso:
+        return ""
+    a = datetime.strptime(arrival_iso[:10], "%Y-%m-%d")
+    d = datetime.strptime((departure_iso or arrival_iso)[:10], "%Y-%m-%d")
+    if a == d:
+        return f"{a:%B} {a.day}, {a.year}"
+    if a.year != d.year:
+        return f"{a:%B} {a.day}, {a.year} – {d:%B} {d.day}, {d.year}"
+    if a.month != d.month:
+        return f"{a:%B} {a.day} – {d:%B} {d.day}, {a.year}"
+    return f"{a:%B} {a.day}–{d.day}, {a.year}"
+
+
+def date_weekday(iso):
+    return datetime.strptime(iso[:10], "%Y-%m-%d").strftime("%A") if iso else ""
+
+
+# Bookings.Location values -> customer-facing wording. The raw values are
+# internal categories ("Off-site Florida Keys") that read like a database
+# field on a customer page. An itinerary JSON "location" overrides this.
+CUSTOMER_LOCATION = {
+    "Key Largo (REEF)": "REEF Ocean Exploration Center, Key Largo",
+    "Off-site Florida Keys": "Florida Keys field sites",
+    "Hybrid": "REEF Ocean Exploration Center and Florida Keys field sites",
+}
+
+# Organization Type -> the label for the customer's own contact person
+# ("School Contact" rather than the old "Your Contact's Role").
+CONTACT_LABEL_BY_ORG_TYPE = {
+    "K-12 School": "School Contact",
+    "College / University": "Group Contact",
+}
+
+
+def join_list(items):
+    items = [i for i in items if i]
+    if len(items) <= 2:
+        return " and ".join(items)
+    return ", ".join(items[:-1]) + ", and " + items[-1]
+
+
+def max_complimentary_chaperones(students, threshold):
+    """Largest chaperone count that is still fully complimentary under the
+    Expedition rule MIN(chaperones, FLOOR((students + chaperones) / threshold))."""
+    c = 0
+    while (students + c + 1) // threshold >= c + 1:
+        c += 1
+    return c
+
+
+def chaperone_policy(b):
+    """Plain-language explanation of the complimentary chaperone count,
+    computed from the same rule as the Bookings '# Free Chaperones' formula
+    (checked against the live formula 2026-09-28), so the customer can see
+    WHY their number is what it is instead of decoding an internal rule."""
+    s, c, free = b["students"] or 0, b["chaperones"] or 0, b["free_chaperones"] or 0
+    discovery = "Discovery" in (b.get("pricing_model") or "") and not b.get("free_chap_override")
+    lines = []
+    if discovery:
+        cap = s // 15
+        lines.append(f"One chaperone space is complimentary for every 15 students. With {s} students, "
+                     f"your group can bring up to {cap} chaperone{'s' if cap != 1 else ''} at no charge.")
+    else:
+        t = b["free_chap_threshold"]
+        total = s + c
+        earned = total // t
+        cap = max_complimentary_chaperones(s, t)
+        lines.append(f"One chaperone space is complimentary for every {t} people in your group, counting "
+                     f"students and chaperones together. Your group of {s} students and {c} chaperones "
+                     f"({total} people) earns {earned} complimentary space{'s' if earned != 1 else ''}.")
+        if cap >= c:
+            lines.append(f"With {s} students, you can bring up to {cap} chaperones before any chaperone is billed.")
+    if c and free >= c:
+        headline = f"All {c} chaperone{'s' if c != 1 else ''} are complimentary."
+    elif c:
+        headline = f"{free} of your {c} chaperones are complimentary."
+    else:
+        headline = "No chaperones are listed yet."
+    lines.append("Each additional chaperone beyond the complimentary spaces is billed at the "
+                 "per-student rate shown above.")
+    return headline, lines
+
+
 def fetch_booking_data(record_id):
     """Pulls the Bookings record + its linked REEF Personnel contact and
     normalizes them into one plain dict. Every value here traces to a
@@ -322,6 +412,8 @@ def fetch_booking_data(record_id):
     # each linked record has to be fetched to get anything human-readable.
     activity_topics = fetch_linked_names(
         BOOKINGS_BASE, ACTIVITIES_TABLE, f.get("Activities Requested"), "Educational Topic")
+    activity_names = fetch_linked_names(
+        BOOKINGS_BASE, ACTIVITIES_TABLE, f.get("Activities Requested"), "Activity Name")
 
     program_type = {}
     program_type_ids = f.get("Program Type") or []
@@ -390,7 +482,17 @@ def fetch_booking_data(record_id):
         # plain language instead of only showing the resulting number
         # (QA walkthrough, 2026-09-09 -- pricing clarity finding).
         "free_chap_threshold": f.get("Free Chap Threshold Override") or 9,
+        "free_chap_override": f.get("Free Chap Threshold Override"),
+        "pricing_model": f.get("Pricing Model (auto)", ""),
+        "org_type": f.get("Organization Type", ""),
+        # Concurrent-rotation setup question (added 2026-09-28): "Yes --
+        # rotating cohorts" / "No -- full group together" / "Not yet
+        # determined". Blank = decide from the captured itinerary.
+        "rotation_setting": f.get("Concurrent Cohort Rotation", ""),
+        "cohort_count": f.get("# Cohorts"),
+        "proposal_optional": f.get("Proposal — Optional Add-Ons (Not Priced)", ""),
         "activity_topics": activity_topics,
+        "activity_names": activity_names,
         "program_type": program_type,
         "asana_task_id": f.get("Asana Task ID", ""),
         # Approved-to-Share lock (2026-09-25). Collaborator fields come back
@@ -491,6 +593,18 @@ def download_hero_photos(b, booking_dir):
 
 
 def load_itinerary(record_id):
+    """Returns the booking's captured itinerary, normalized to a dict:
+
+        {"days": [...], "rotation": dict|None, "scheduleFormat": str|None,
+         "summary": str|None, "location": str|None}
+
+    Two file shapes are accepted, so every itinerary captured before
+    2026-09-28 keeps working unchanged:
+      - legacy: a bare JSON list of day objects (standard day-by-day format)
+      - schemaVersion 2: an object with "days" plus an optional "rotation"
+        block (concurrent-cohort rotation schedule), "scheduleFormat",
+        "summary" and customer-facing "location". See ROTATION SCHEMA below.
+    """
     path = ITINERARIES_DIR / f"{record_id}.json"
     if not path.exists():
         raise NoItineraryCaptured(
@@ -500,10 +614,203 @@ def load_itinerary(record_id):
             "(see OXP_System_Connection_Roadmap_2026-09-03.md, priority #4, for the real fix)."
         )
     with open(path) as fh:
-        return json.load(fh)
+        raw = json.load(fh)
+    if isinstance(raw, list):
+        return {"days": raw, "rotation": None, "scheduleFormat": None,
+                "summary": None, "location": None}
+    rotation = raw.get("rotation")
+    if rotation:
+        validate_rotation(rotation, record_id)
+    return {
+        "days": raw.get("days") or [],
+        "rotation": rotation,
+        "scheduleFormat": raw.get("scheduleFormat"),
+        "summary": raw.get("summary"),
+        "location": raw.get("location"),
+    }
+
+
+# ---------------------------------------------------------------- Rotation schedule
+#
+# ROTATION SCHEMA (itineraries/<record_id>.json -> "rotation"), added
+# 2026-09-28 for bookings where participant cohorts complete activities
+# concurrently (e.g. Ben Gamla: four cohorts rotating through three
+# experiences). render.js draws it as a cohort-by-time matrix; nothing
+# here is specific to any one booking.
+#
+#   heading (optional)        "Four Cohorts, One Coordinated Day"; auto if omitted
+#   intro (optional)          customer-facing paragraph above the matrix
+#   startTime / endTime       "HH:MM" 24h, the program window shown
+#   slotMinutes (optional)    grid resolution, default 15; every time must land on it
+#   cohortSizeLabel (opt.)    e.g. "About 28-29 students" until exact sizes are set
+#   cohorts   [ {id, label, size|null} ]
+#   stations  [ {id, name, short, location, type: experience|meal|shared, color: 0-5} ]
+#   assignments [ {cohort, station, start, end} ]   one row per cohort per activity
+#   shared (optional) [ {station, start, end} ]     whole-group blocks (arrival, welcome)
+#   departure (optional) {time, label, note}
+#   notes (optional) [string]                       customer-relevant logistics only
+#
+# Gaps between a cohort's assignments render as transition time. Overlaps,
+# unknown ids and times outside the window fail loudly here rather than
+# producing a schedule that silently misstates where a cohort is.
+
+class InvalidRotation(Exception):
+    """Raised when a captured rotation schedule is internally inconsistent."""
+
+
+def _minutes(hhmm):
+    h, m = hhmm.split(":")
+    return int(h) * 60 + int(m)
+
+
+def clock(hhmm):
+    """'13:30' -> '1:30 PM'."""
+    total = _minutes(hhmm)
+    h, m = divmod(total, 60)
+    suffix = "AM" if h < 12 else "PM"
+    h12 = h % 12 or 12
+    return f"{h12}:{m:02d} {suffix}"
+
+
+def clock_range(start, end):
+    """'09:00','11:30' -> '9:00–11:30 AM'; spans noon -> '11:30 AM–12:30 PM'."""
+    a, b = clock(start), clock(end)
+    if a[-2:] == b[-2:]:
+        return f"{a[:-3]}–{b}"
+    return f"{a}–{b}"
+
+
+def validate_rotation(rot, record_id):
+    problems = []
+    slot = rot.get("slotMinutes") or 15
+    try:
+        start, end = _minutes(rot["startTime"]), _minutes(rot["endTime"])
+    except (KeyError, ValueError):
+        raise InvalidRotation(f"{record_id}: rotation needs startTime and endTime as HH:MM")
+    cohorts = {c["id"] for c in rot.get("cohorts") or []}
+    stations = {s["id"] for s in rot.get("stations") or []}
+    if not cohorts:
+        problems.append("no cohorts")
+    if not stations:
+        problems.append("no stations")
+    by_cohort = {}
+    for a in (rot.get("assignments") or []) + [dict(x, cohort="*") for x in rot.get("shared") or []]:
+        if a["cohort"] != "*" and a["cohort"] not in cohorts:
+            problems.append(f"assignment for unknown cohort {a['cohort']!r}")
+        if a["station"] not in stations:
+            problems.append(f"assignment for unknown station {a['station']!r}")
+        s, e = _minutes(a["start"]), _minutes(a["end"])
+        if not (start <= s < e <= end):
+            problems.append(f"{a['cohort']} {a['station']} {a['start']}-{a['end']} is outside "
+                            f"{rot['startTime']}-{rot['endTime']} or ends before it starts")
+        if (s - start) % slot or (e - start) % slot:
+            problems.append(f"{a['cohort']} {a['station']} {a['start']}-{a['end']} is not on the "
+                            f"{slot}-minute grid")
+        targets = cohorts if a["cohort"] == "*" else [a["cohort"]]
+        for c in targets:
+            by_cohort.setdefault(c, []).append((s, e, a["station"]))
+    for c, spans in by_cohort.items():
+        spans.sort()
+        for (s1, e1, st1), (s2, e2, st2) in zip(spans, spans[1:]):
+            if s2 < e1:
+                problems.append(f"cohort {c}: {st1} and {st2} overlap")
+    if problems:
+        raise InvalidRotation(f"{record_id}: rotation schedule is inconsistent: " + "; ".join(problems))
+
+
+def station_times(rot):
+    """{station_id: "Cohorts C & D: 9:00–11:30 AM · Cohorts A & B: 12:15–2:30 PM"}
+    Derived from the assignments, so the activity cards below the matrix can
+    never disagree with it. Cohorts sharing an identical time are grouped."""
+    labels = {c["id"]: c["label"] for c in rot["cohorts"]}
+    order = [c["id"] for c in rot["cohorts"]]
+    out = {}
+    for st in rot["stations"]:
+        slots = {}
+        for a in rot["assignments"]:
+            if a["station"] == st["id"]:
+                slots.setdefault((a["start"], a["end"]), []).append(a["cohort"])
+        parts = []
+        for (s, e), cs in sorted(slots.items(), key=lambda kv: _minutes(kv[0][0])):
+            cs = sorted(cs, key=order.index)
+            if len(cs) == 1:
+                who = labels[cs[0]]
+            else:
+                who = "Cohorts " + ", ".join(cs[:-1]) + " & " + cs[-1]
+            parts.append(f"{who}: {clock_range(s, e)}")
+        for sh in rot.get("shared") or []:
+            if sh["station"] == st["id"]:
+                parts.append(f"All cohorts: {clock_range(sh['start'], sh['end'])}")
+        out[st["id"]] = " · ".join(parts)
+    return out
+
+
+NUMBER_WORDS = {1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five", 6: "Six",
+                7: "Seven", 8: "Eight", 9: "Nine", 10: "Ten"}
+
+
+def number_word(n, lower=False):
+    w = NUMBER_WORDS.get(n, str(n))
+    return w.lower() if lower else w
 
 
 # ---------------------------------------------------------------- Proposal page
+
+class NoRotationCaptured(NoItineraryCaptured):
+    """Raised when Bookings says cohorts rotate concurrently ("Concurrent
+    Cohort Rotation" = Yes) but the captured itinerary has no rotation
+    schedule. Same deliberate-failure pattern as NoItineraryCaptured."""
+
+
+def resolve_schedule_format(b, itin):
+    """Which Day-by-Day presentation a proposal gets (2026-09-28):
+
+      "rotation" -- cohorts rotate among concurrent activities; render.js
+                    draws the cohort-by-time Rotation Schedule matrix.
+      "standard" -- the whole group follows one schedule; the simpler
+                    chronological day-by-day cards.
+      "pending"  -- not yet determined; a clear "schedule being finalized"
+                    state with no internal planning language.
+
+    The Bookings field "Concurrent Cohort Rotation" is the setup question
+    staff answer. Blank falls back to what the captured itinerary contains,
+    so bookings captured before this field existed are unchanged."""
+    setting = (b.get("rotation_setting") or "").strip().lower()
+    rot = itin.get("rotation")
+    if setting.startswith("yes"):
+        if not rot:
+            raise NoRotationCaptured(
+                f"Booking {b['record_id']} is set to 'Concurrent Cohort Rotation = Yes' but "
+                f"itineraries/{b['record_id']}.json has no 'rotation' block. Capture the cohort "
+                "schedule (cohorts, stations, times) first -- see ROTATION SCHEMA in this file.")
+        fmt = "rotation"
+    elif setting.startswith("not yet"):  # must precede the "no" check
+        fmt = "pending"
+    elif setting.startswith("no"):
+        fmt = "standard"
+    else:
+        fmt = "rotation" if rot else (itin.get("scheduleFormat") or "standard")
+        if fmt == "rotation" and not rot:
+            fmt = "standard"
+    if fmt == "rotation" and b.get("cohort_count") and int(b["cohort_count"]) != len(rot["cohorts"]):
+        raise InvalidRotation(
+            f"Booking {b['record_id']}: '# Cohorts' is {b['cohort_count']} but the captured rotation "
+            f"has {len(rot['cohorts'])} cohorts. Fix one so the proposal and Airtable agree.")
+    return fmt
+
+
+def first_clause(text):
+    """'Meals. Lunch time is built in...' -> 'Meals' (for the approval summary)."""
+    return re.split(r"(?<=[a-z0-9)])[.;:]\s|\s\u2014\s|\s\(", text, maxsplit=1)[0].rstrip(".")
+
+
+def lower_first(text):
+    """'Transportation to...' -> 'transportation to...' for mid-sentence use;
+    leaves acronyms/proper starts like 'REEF' or 'John Pennekamp' alone."""
+    if len(text) > 1 and text[0].isupper() and text[1].islower() and text.split(" ")[0] not in ("John",):
+        return text[0].lower() + text[1:]
+    return text
+
 
 def build_proposal_data(b, photos=None):
     """Builds the docType "proposal" shape -- the advanced six-section
@@ -513,40 +820,142 @@ def build_proposal_data(b, photos=None):
 
     Note the two separate meta objects render.js reads: the shared
     top-level data.meta (sampleFlag, used by both modes) and the
-    proposal-specific data.proposal.meta."""
+    proposal-specific data.proposal.meta.
+
+    Copy and structure revised 2026-09-28 (system-wide customer-facing
+    review): consistent terminology -- "group" is the whole booking,
+    "cohort" a rotating subset, "experience"/"station" an activity,
+    "schedule" the timing -- plus the concurrent-rotation format, a plain-
+    language chaperone policy, and an approval summary before the CTA."""
     pt = b.get("program_type") or {}
     label, word = PROGRAM_WORDS_BY_BOOKING_TYPE.get(b["booking_type"], DEFAULT_PROGRAM_WORDS)
+    is_group_program = b["booking_type"] != "Facility Rental"
 
-    # load_itinerary() output already matches the proposal's days schema
-    # (dayNumber/totalDays/title/theme/blocks/studentsWill/outcomesNote),
-    # so unlike build_confirmed_page_data() -- which reshapes it to add
-    # morningLabel/afternoonLabel/learningOutcome for the glance table --
-    # it is passed through as-is.
-    days = copy.deepcopy(load_itinerary(b["record_id"]))
+    itin = load_itinerary(b["record_id"])
+    days = copy.deepcopy(itin["days"])
+    schedule_format = resolve_schedule_format(b, itin)
+    rot = copy.deepcopy(itin["rotation"]) if schedule_format == "rotation" else None
 
     students = b["students"] or 0
     chaperones = b["chaperones"] or 0
     free_chaperones = b["free_chaperones"] or 0
+    n_days = len(days) or 1
+    length_word = f"{number_word(n_days, lower=True)}-day"
 
-    # "Focus" is the deduped Educational Topic values of the linked
-    # Activities Requested records, rather than the activity names
-    # themselves: the names include pure logistics ("Travel / Transit",
-    # "Welcome Program (arrival)") that read badly as a program focus,
-    # and repeat the day-by-day section further down the page. Activities
-    # with no topic set drop out of the join entirely.
-    focus = " · ".join(b.get("activity_topics") or []) or "[confirm from booking data]"
+    dates_line = date_span(b["arrival_date"], b["departure_date"])
+    location = itin.get("location") or CUSTOMER_LOCATION.get(b["location"], b["location"]) \
+        or "REEF Ocean Exploration Center, Key Largo"
+    group_line = f"{students} students + {chaperones} chaperones"
+
+    hours = None
+    experiences = []
+    if rot:
+        hours = clock_range(rot["startTime"], rot["endTime"])
+        times = station_times(rot)
+        experiences = [s["name"] for s in rot["stations"] if s.get("type", "experience") == "experience"]
+        n_cohorts = len(rot["cohorts"])
+        rot.setdefault("heading", f"{number_word(n_cohorts)} Cohorts, One Coordinated Day"
+                       if n_days == 1 else f"{number_word(n_cohorts)} Cohorts, One Coordinated Schedule")
+        rot["startLabel"] = clock(rot["startTime"])
+        rot["endLabel"] = clock(rot["endTime"])
+        for d in days:
+            for blk in d.get("blocks", []):
+                if blk.get("station"):
+                    blk["when"] = times.get(blk["station"], "")
+                    st = next((s for s in rot["stations"] if s["id"] == blk["station"]), {})
+                    blk["color"] = st.get("color")
+                    blk["location"] = st.get("location")
+        format_line = (f"{number_word(n_cohorts)} cohorts rotating through "
+                       f"{number_word(len(experiences), lower=True)} hands-on experiences")
+    else:
+        experiences = b.get("activity_names") or []
+        format_line = "Full group together" if n_days == 1 else f"{n_days}-day itinerary"
+
+    if itin.get("summary"):
+        summary = itin["summary"]
+    elif not is_group_program:
+        summary = f"A {word} at {location}, prepared for {b['org_name'] or 'your group'}."
+    elif rot:
+        summary = (f"A {length_word} marine science {word} for {students} students, organized into "
+                   f"{number_word(len(rot['cohorts']), lower=True)} cohorts rotating through "
+                   f"{number_word(len(experiences), lower=True)} hands-on experiences at {location}.")
+    else:
+        summary = (f"A {length_word} marine science {word} for {students} students and "
+                   f"{chaperones} chaperones at {location}.")
+
+    if schedule_format == "rotation":
+        schedule_label = "Schedule & Rotations"
+    elif n_days == 1:
+        schedule_label = "Schedule"
+    else:
+        schedule_label = "Day by Day"
+
+    focus = " · ".join(b.get("activity_topics") or []) or None
 
     reef = b["reef_contact"]
-    # QA walkthrough (2026-09-09): appending the Program Type's generic
-    # marketing description here made "A note from your REEF contact" read
-    # as marketing copy rather than a personal note from Rose (or whoever
-    # the contact is). The contact's own welcome_line is the personal note;
-    # the program description belongs to the Experience section (pillars),
-    # not attributed to a person who didn't write it. Fall back to the
-    # program description only if the contact has no welcome_line at all,
-    # so the note is never blank.
+    reef_first = (reef.get("name") or "").split(" ")[0] or "Your REEF contact"
+    # QA walkthrough (2026-09-09): the contact's own welcome_line is the
+    # personal note; the Program Type description is only a fallback.
     welcome_body = [reef.get("welcome_line")] if reef.get("welcome_line") else (
         [pt.get("description")] if pt.get("description") else [])
+
+    contact_label = CONTACT_LABEL_BY_ORG_TYPE.get(b.get("org_type"), "Group Contact")
+    contact_line = ", ".join(x for x in [b["contact_name"], b["contact_role"]] if x)
+
+    included = split_items(b["proposal_included"])
+    not_included = split_items(b["proposal_not_included"])
+    optional = split_items(b.get("proposal_optional"))
+
+    glance = [
+        {"k": "Date" if n_days == 1 else "Dates", "v": dates_line},
+        {"k": "Group Size", "v": group_line},
+        {"k": "Program Hours" if hours else "Length", "v": hours or (f"{n_days} days" if n_days > 1 else "One day")},
+        {"k": "Location", "v": location},
+        {"k": "Format", "v": format_line, "wide": True},
+    ]
+    if focus:
+        glance.append({"k": "Focus", "v": focus, "wide": True})
+
+    policy_headline, policy_lines = chaperone_policy(b)
+    total = money(b["total_package_price"])
+
+    what_could_change = [
+        "Changes to your student or chaperone count",
+        "A different date or program hours",
+        "Adding or removing activities",
+    ] + [f"Adding an optional item ({lower_first(first_clause(o))})" for o in optional]
+
+    confirm_summary = [
+        {"k": "Date", "v": f"{date_weekday(b['arrival_date'])}, {dates_line}" if n_days == 1 else dates_line},
+        {"k": "Group", "v": f"{students} students and {chaperones} chaperones"
+                            + (f" (all {chaperones} complimentary)" if chaperones and free_chaperones >= chaperones
+                               else f" ({free_chaperones} complimentary)" if chaperones else "")},
+    ]
+    if rot:
+        confirm_summary.append({"k": "Format", "v": format_line})
+    if experiences:
+        confirm_summary.append({"k": "Activities", "v": join_list(experiences)})
+    confirm_summary.append({"k": "Location & hours" if hours else "Location",
+                            "v": f"{location}, {hours}" if hours else location})
+    confirm_summary.append({"k": "Estimated total", "v": total})
+    if not_included:
+        clauses = [first_clause(x) for x in not_included]
+        confirm_summary.append({"k": "Not included",
+                                "v": join_list(clauses[:1] + [lower_first(c) for c in clauses[1:]])})
+
+    deposit = b.get("deposit_due_now") or 0
+    next_steps = split_items(b.get("proposal_next_steps")) or [
+        "Review each section of this proposal with your team.",
+        "Select “Looks Good — Prepare My Contract,” or “Request a Change” if anything needs adjusting.",
+        f"{reef_first} prepares your contract with the payment schedule"
+        + (f", starting with a {money(deposit)} deposit to hold your date." if deposit else "."),
+        "Once the contract is signed, REEF confirms final logistics with you, including headcount, arrival details, and what to bring.",
+    ]
+
+    change_topics = ("cohort assignments, activity timing, group size, transportation, meals, "
+                     "accessibility needs, or program content") if rot else (
+                    "dates, activities, timing, group size, transportation, meals, accessibility "
+                    "needs, or program content")
 
     return {
         "docType": "proposal",
@@ -565,18 +974,29 @@ def build_proposal_data(b, photos=None):
                 "programTypeLabel": label,
                 "programWord": word,
             },
+            "summary": summary,
+            "scheduleFormat": schedule_format,
+            "scheduleLabel": schedule_label,
+            "rotation": rot,
+            "pendingNote": (f"Your detailed schedule is still being finalized. {reef_first} will share "
+                            "exact times before your contract is prepared. The activities below are "
+                            "included either way."),
             "group": {
                 "orgName": b["org_name"],
                 "contactName": b["contact_name"],
-                # render.js labels this chip "Your Contact's Role".
+                "contactLabel": contact_label,
+                "contactLine": contact_line,
+                # Kept for older render.js builds; the chip now uses contactLabel/contactLine.
                 "gradeLevel": b["contact_role"],
                 "students": students,
                 "chaperones": chaperones,
             },
             "dates": {
                 "label": "Proposed",
-                "range": f"{date_pretty(b['arrival_date'])} - {date_pretty(b['departure_date'])}",
+                "range": dates_line,
             },
+            "location": location,
+            "hours": hours,
             "roadmap": {
                 "steps": ROADMAP_STEPS,
                 # Cancelled has no mapped step and falls back to 1 -- see
@@ -584,29 +1004,25 @@ def build_proposal_data(b, photos=None):
                 "currentStep": ROADMAP_STEP_BY_STATUS.get(b["status"], 1),
             },
             "cta": {
-                "primaryText": "Ready to Move Forward",
-                "primaryConfirmHeadline": "Thanks — we've got your response!",
-                "primaryConfirmBody": "A member of the REEF team will review your response and follow "
-                                      "up by email with next steps to confirm your program.",
-                "secondaryText": "Need to adjust something?",
-                "changeFormLabel": "What would you like us to adjust?",
-                "changeConfirmHeadline": "Thanks — we've got your note.",
-                "changeConfirmBody": "The REEF Ocean Explorers team will follow up by email to talk "
-                                     "through the change.",
+                "primaryText": "Looks Good — Prepare My Contract",
+                "confirmButtonText": "Approve Proposal",
+                "primaryConfirmHeadline": "Thank you — your proposal is approved.",
+                "primaryConfirmBody": f"{reef_first} will prepare your contract and confirm any remaining "
+                                      "details with you by email. Approving doesn't sign anything or "
+                                      "commit a payment; the contract is the next step.",
+                "secondaryText": "Request a Change",
+                "changeFormLabel": f"Tell us about any requested changes to {change_topics}.",
+                "changeConfirmHeadline": "Thank you — your change request is on its way.",
+                "changeConfirmBody": f"{reef_first} will follow up by email and send a revised "
+                                     "proposal if anything changes.",
                 "contactEmail": reef.get("email", "") or "explorers@REEF.org",
-                # Implementation Plan item 5 (the Zapier Catch Hook replacing
-                # Airtable's broken native webhook) is a separate follow-up.
-                # Until it exists render.js logs responses to the console and
-                # still shows the on-page confirmation.
                 "responseWebhookUrl": "https://hooks.zapier.com/hooks/catch/28743322/4hv7eqd/",
             },
+            "confirmSummary": confirm_summary,
+            "nextSteps": next_steps,
             "reefContact": {
                 "name": reef.get("name", ""),
                 "role": reef.get("title", ""),
-                # EPO REEF Personnel does carry a Photo attachment field.
-                # It is not wired up here: like the hero art it would need
-                # downloading (Airtable URLs expire), and staff headshots
-                # are a separate call from program photography.
                 "photo": None,
                 "welcomeLine": reef.get("welcome_line", ""),
                 "email": reef.get("email", ""),
@@ -616,26 +1032,25 @@ def build_proposal_data(b, photos=None):
                 "body": welcome_body,
                 "signOff": reef.get("name", "") or "The REEF Ocean Explorers Team",
             },
-            "glance": [
-                {"k": "Dates", "v": f"{date_pretty(b['arrival_date'])} - {date_pretty(b['departure_date'])}"},
-                {"k": "Group Size", "v": f"{students} students + {chaperones} chaperones"},
-                {"k": "Location", "v": b["location"] or "Key Largo (REEF)"},
-                {"k": "Focus", "v": focus},
-            ],
+            "glance": glance,
             "pillars": PILLARS_BY_BOOKING_TYPE.get(b["booking_type"], DEFAULT_PILLARS),
             "team": TEAM_BY_BOOKING_TYPE.get(b["booking_type"], DEFAULT_TEAM),
             "days": days,
             "included": [{
-                "title": f"Included in Your {label}",
-                "items": split_items(b["proposal_included"]),
+                "title": f"Included in your {label}",
+                "items": included,
             }],
-            "notIncluded": split_items(b["proposal_not_included"]),
+            "notIncluded": not_included,
+            "optional": optional,
             "photos": photos or {},
             # No credit field exists on the Program Types hero attachments.
-            # REEF's brand standards expect photo credits, so this is a real
-            # gap -- called out in the PR rather than filled with a guess.
             "photoCredits": {},
             "pricing": {
+                "tileTotal": {
+                    "label": "Estimated Total",
+                    "num": total,
+                    "unit": f"for {students} students and {chaperones} chaperones",
+                },
                 "tileRate": {
                     "label": "Per Student",
                     "num": money(b["price_per_paid_space"]),
@@ -643,40 +1058,19 @@ def build_proposal_data(b, photos=None):
                 },
                 "tileChaperones": {
                     "label": "Complimentary Chaperones",
-                    "num": str(free_chaperones),
-                    "unit": "included at no charge",
+                    "num": f"{free_chaperones} of {chaperones}" if chaperones else "0",
+                    "unit": "chaperone spaces at no charge",
                 },
-                "ratioNote": f"This proposal is built for {students} students and {chaperones} "
-                             f"chaperones, {free_chaperones} of them complimentary.",
-                # QA walkthrough (2026-09-09): the page showed the resulting
-                # numbers (rate, complimentary count, total) with no
-                # explanation of the math behind any of them. These two
-                # bullets state the actual rule -- both derived from the
-                # same fields "# Free Chaperones" / "# Billable Chaperones"
-                # already compute from (confirmed against the live Airtable
-                # formula, not guessed): 1 complimentary chaperone space per
-                # {threshold} total people, any chaperone beyond that billed
-                # at the per-student rate above.
-                "conditions": [
-                    f"Every group receives 1 complimentary chaperone space for every "
-                    f"{b['free_chap_threshold']} total people (students + chaperones) in the "
-                    f"group \u2014 REEF calculates this automatically from your group size, so it "
-                    f"updates if your numbers change.",
-                    "Chaperones beyond the complimentary count shown above are billed at the "
-                    "same per-student rate.",
-                ],
-                "estimatedTotal": money(b["total_package_price"]),
-                "estimatedTotalNote": f"<strong>{money(b['total_package_price'])}</strong> estimated "
-                                      f"total for the group and dates above, including REEF program "
-                                      f"fees and any applicable discount or sales tax. This estimate is "
-                                      f"valid for the group size and dates shown here \u2014 REEF will "
-                                      f"re-quote automatically if activities, headcount, or dates change.",
+                "chaperonePolicy": {"headline": policy_headline, "lines": policy_lines},
+                "estimatedTotal": total,
+                "estimatedTotalNote": (f"<strong>{total}</strong> is your estimated total, based on the "
+                                       "details below. It includes REEF's program fees and every item "
+                                       "listed under What's Included. If anything below changes, REEF "
+                                       "will send a revised proposal with an updated total."),
+                # Customer-relevant "Pricing Based On" list (was "Assumptions
+                # behind this rate"), from Bookings "Proposal — Assumptions".
                 "assumptions": split_items(b["proposal_assumptions"]),
-                # Deliberately empty: nothing in Airtable backs a
-                # "what could change the price" list, and inventing
-                # customer-facing pricing language is not this script's
-                # call. render.js omits the section when empty.
-                "whatCouldChange": [],
+                "whatCouldChange": what_could_change,
             },
         },
     }
@@ -685,7 +1079,16 @@ def build_proposal_data(b, photos=None):
 # ---------------------------------------------------------------- Confirmed page
 
 def build_confirmed_page_data(b):
-    days_raw = load_itinerary(b["record_id"])
+    itin = load_itinerary(b["record_id"])
+    days_raw = copy.deepcopy(itin["days"])
+    if itin["rotation"]:
+        # The pre-trip page has no rotation matrix yet; give each activity its
+        # cohort times as text so the confirmed page stays accurate.
+        times = station_times(itin["rotation"])
+        for d in days_raw:
+            for blk in d.get("blocks", []):
+                if blk.get("station") and not blk.get("time"):
+                    blk["time"] = times.get(blk["station"], "")
     days = []
     for d in days_raw:
         days.append({
@@ -1219,7 +1622,8 @@ def main():
         f.write("window.BOOKING_DATA = " + json.dumps(page_data, indent=2) + ";\n")
     print(f"Wrote {booking_dir / 'data.js'}")
 
-    page_title = f"{b['org_name']} — Expedition Packet"
+    page_title = (f"{b['org_name']} — REEF Proposal" if is_proposal
+                  else f"{b['org_name']} — Expedition Packet")
     with open(booking_dir / "index.html", "w") as f:
         f.write(BOOKING_PAGE_SHELL_TEMPLATE.format(
             title=page_title,
