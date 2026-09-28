@@ -1,0 +1,69 @@
+{
+  "_comment": "REEF-wide, customer-facing text reused by every audience view (Approve & Share, 2026-09-28). Everything here is REEF's own standard language, most of it taken from the current contract template (templates/Benjamin_School_Expedition_Contract_TEMPLATE.docx). Booking-specific content lives in itineraries/<record_id>.json -> audiences. Do not put anything here that could be wrong for some booking: when in doubt, leave it to the booking file. This repo is public -- never put private or internal notes here.",
+
+  "aboutReef": "REEF (Reef Environmental Education Foundation) is a marine conservation nonprofit based in Key Largo, Florida. Since 1990, REEF has trained volunteer divers and snorkelers to identify and survey fish through the Volunteer Fish Survey Project, building one of the world's largest marine life databases. REEF educators bring that same hands-on, science-first approach to every student program.",
+
+  "supervision": [
+    "Teachers and adult chaperones accompanying the group are directly responsible for students at all times, including during free time and meals.",
+    "An adult chaperone must accompany student groups with participants under 18."
+  ],
+
+  "vendorNote": "Boat and park activities are run by independent operators who follow their own safety protocols. The boat captain makes final decisions about schedule changes for weather or safety.",
+
+  "_paymentTermsNote": "The deposit / payment 2 / final payment lines are built per booking from the Bookings payment fields (Deposit Due Now, Payment 2 Due Date, Final Payment Due Date), because the schedule differs by payment tier. Only tier-independent lines live here.",
+  "paymentTerms": [
+    "The final payment is due 90 days before the program.",
+    "A 10% late fee applies to payments more than 14 days past due."
+  ],
+
+  "cancellationTerms": [
+    "More than 90 days before the program: full refund, minus $100 per day of scheduled programming.",
+    "60–90 days before: 50% of the deposit held by REEF is refundable.",
+    "Fewer than 60 days before: no refund.",
+    "This schedule also applies if group size decreases by 50% or more. Cancellations must be made in writing."
+  ],
+
+  "termsNote": "These are REEF's standard terms. Your contract states the final terms for your group, including any vendor-specific changes.",
+
+  "educatorResources": [
+    "Learn about REEF's Volunteer Fish Survey Project and fish identification resources at www.REEF.org."
+  ],
+
+  "familyContactDefault": "Questions about the day? Please contact your child's school.",
+
+  "viewCopy": {
+    "administrator": {
+      "title": "Administrator Approval Summary",
+      "audience": "School or organization leadership",
+      "description": "A concise summary for the person who approves the program: purpose, logistics, responsibilities, price, and terms.",
+      "includes": ["Purpose and educational value", "Date, location, hours and group size", "Schedule overview", "Safety, supervision, transportation and meals", "Price, inclusions and terms", "Outstanding decisions"]
+    },
+    "educator": {
+      "title": "Educator Plan",
+      "draftTitle": "Draft Educator Plan",
+      "audience": "Teachers and program staff",
+      "description": "The planning view for teachers: learning objectives, the full schedule, and the logistics your team coordinates.",
+      "includes": ["Learning objectives", "Full schedule and cohort rotation", "Teacher and chaperone assignments", "Arrival, lunch and departure logistics", "What to bring and supervision", "Preparation resources"]
+    },
+    "family": {
+      "title": "Family & Chaperone Overview",
+      "audience": "Parents, guardians and chaperones",
+      "description": "What students will experience and how to prepare. No pricing or contract terms.",
+      "includes": ["What students will experience", "Date and general location", "A simple schedule", "What to wear and bring", "Lunch and transportation", "Chaperone expectations"]
+    },
+    "student": {
+      "title": "Student Preview",
+      "audience": "Students",
+      "description": "A short, visual preview to build excitement before the day.",
+      "includes": ["The activities students will do", "Marine science topics", "What the day will feel like", "What to bring"]
+    }
+  },
+
+  "needs": [
+    {"key": "approval", "label": "Get school or organizational approval", "view": "administrator"},
+    {"key": "staff", "label": "Review with teachers or program staff", "view": "educator"},
+    {"key": "families", "label": "Share information with parents or chaperones", "view": "family"},
+    {"key": "students", "label": "Build student or participant excitement", "view": "student"},
+    {"key": "changes", "label": "Request changes from REEF", "action": "change"}
+  ]
+}
