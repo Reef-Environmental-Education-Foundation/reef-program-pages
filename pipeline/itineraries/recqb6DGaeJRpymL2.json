@@ -1,0 +1,41 @@
+[
+  {
+    "dayNumber": 1,
+    "totalDays": 1,
+    "title": "One Day on the Reef",
+    "theme": "Four groups rotate through three hands-on experiences at John Pennekamp Coral Reef State Park, 9:00 AM to 2:30 PM.",
+    "blocks": [
+      {
+        "time": "9:00 AM or 12:15 PM",
+        "tag": "Field Activity",
+        "title": "Glass-Bottom Boat Tour",
+        "description": "Students observe coral habitats and marine life from above on a glass-bottom boat excursion, pairing accessible reef viewing with guided interpretation. Groups C & D sail 9:00–11:30 AM; Groups A & B sail 12:15–2:30 PM."
+      },
+      {
+        "time": "Morning or afternoon",
+        "tag": "Citizen Science",
+        "title": "Citizen Science & Fish ID",
+        "description": "Students learn how REEF volunteers identify fish and collect survey data, building the skills needed to participate in citizen science and marine biodiversity monitoring. Groups A & B in the morning; Groups C & D in the afternoon."
+      },
+      {
+        "time": "Morning or afternoon",
+        "tag": "Workshop",
+        "title": "Lionfish Lesson & Dissection",
+        "description": "Students investigate invasive lionfish through a hands-on lesson and guided dissection, linking anatomy and adaptation to real conservation challenges in Florida Keys ecosystems. Groups A & B in the morning; Groups C & D in the afternoon."
+      },
+      {
+        "time": "11:00 AM–12:30 PM",
+        "tag": "Break",
+        "title": "Picnic Lunch at Pennekamp",
+        "description": "Groups break for a packed picnic lunch at the park's picnic tables, staggered between rotations."
+      }
+    ],
+    "studentsWill": [
+      "Observe living coral reef habitats and marine life from the glass-bottom boat (Observe).",
+      "Learn REEF's fish identification and survey methods used by citizen scientists (Identify).",
+      "Investigate invasive lionfish anatomy and adaptation through a guided dissection (Understand).",
+      "Connect what they see to REEF's ongoing reef conservation and invasive-species work (Connect to Conservation)."
+    ],
+    "outcomesNote": null
+  }
+]
