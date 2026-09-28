@@ -394,8 +394,9 @@ def chaperone_policy(b):
         headline = f"{free} of your {c} chaperones are complimentary."
     else:
         headline = "No chaperones are listed yet."
-    lines.append("Each additional chaperone beyond the complimentary spaces is billed at the "
-                 "per-student rate shown above.")
+    # Policy (Martha, 2026-09-28): anyone beyond the complimentary ratio pays the full per-participant package, same as a student.
+    lines.append("Each additional chaperone beyond the complimentary spaces pays the full "
+                 "per-participant package price, the same as a student.")
     return headline, lines
 
 
