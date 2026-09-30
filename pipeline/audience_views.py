@@ -236,6 +236,10 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on):
         "hours": pd.get("hours"),
         "programName": f"Florida Keys Ocean Explorers {pd['meta'].get('programTypeLabel') or 'Program'}",
         "summary": pd.get("summary"),
+        # Draft Program Schedule notice (2026-09-30): the same flag the
+        # proposal uses, so every schedule a school hands out (cohort table,
+        # rotation matrix, family schedule) carries the draft line too.
+        "scheduleDraft": bool(pd.get("scheduleDraft")),
     }
     def reef_contact():
         return {k: reef.get(k, "") for k in ("name", "role", "email", "phone")}
