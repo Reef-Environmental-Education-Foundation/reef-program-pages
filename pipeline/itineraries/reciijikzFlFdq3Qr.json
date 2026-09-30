@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 2,
+  "scheduleFormat": "standard",
+  "sourceNote": "Drafted 2026-09-30 from Rose Kelly's sample 4-day itinerary plus Martha's six content blocks; day 4 kayaking/dives moved to an optional add-on. Internal only; never rendered.",
+  "location": "Key Largo, Florida",
+  "summary": "A four-day marine science program for 12 students and 2 chaperones in Key Largo, combining classroom learning with two coral reef snorkels and fish surveys.",
+  "days": [
+    {
+      "dayNumber": 1,
+      "totalDays": 4,
+      "title": "What Is REEF?",
+      "theme": "Arrive in Key Largo, settle into your houseboats, and start learning how citizen scientists protect reefs.",
+      "blocks": [
+        {
+          "time": "1:00 PM–2:00 PM",
+          "tag": "Arrival",
+          "title": "Arrival & Welcome",
+          "description": "Your group arrives in Key Largo and checks in to the Ocean First houseboats. REEF educators welcome the group and preview the days ahead."
+        },
+        {
+          "time": "2:15 PM–3:30 PM",
+          "tag": "Citizen Science",
+          "title": "Citizen Science & the Volunteer Fish Survey Project",
+          "description": "Students learn how REEF's volunteer divers and snorkelers record the fish they see, and why that data matters to scientists and reef managers. They practice the survey method they will use on the reef."
+        },
+        {
+          "time": "3:45 PM–5:00 PM",
+          "tag": "Fish ID",
+          "title": "Caribbean Fish Identification",
+          "description": "A hands-on introduction to identifying common Caribbean reef fish by family, body shape, color, and behavior, building the skills students use on their reef snorkel."
+        }
+      ],
+      "studentsWill": [
+        "Learn what REEF is and how citizen scientists protect reefs.",
+        "Understand how REEF fish survey data is collected and used.",
+        "Begin identifying common Caribbean reef fish."
+      ],
+      "outcomesNote": null
+    },
+    {
+      "dayNumber": 2,
+      "totalDays": 4,
+      "title": "Become a Citizen Scientist",
+      "theme": "Take your survey skills to the reef, then investigate an invasive species up close.",
+      "blocks": [
+        {
+          "time": "9:00 AM–1:00 PM",
+          "tag": "Field Experience",
+          "title": "Reef Snorkel & Fish Surveys",
+          "description": "Students board a boat to a Key Largo coral reef and snorkel to explore marine ecology firsthand: how corals, fish, and other reef organisms depend on each other. They record the fish they find using the survey method they learned. Boat times are confirmed once your dates are set."
+        },
+        {
+          "time": "1:00 PM–2:15 PM",
+          "tag": "Break",
+          "title": "Lunch (on your own)",
+          "description": "Lunch is not included in this proposal. Your group can bring lunch or pick up food nearby."
+        },
+        {
+          "time": "2:30 PM–4:00 PM",
+          "tag": "Hands-On Lab",
+          "title": "Invasive Species: Lionfish Lesson & Dissection",
+          "description": "Students investigate invasive lionfish through a guided dissection, looking at anatomy and adaptations and learning why lionfish are a conservation challenge for Florida Keys reefs."
+        }
+      ],
+      "studentsWill": [
+        "Snorkel a Key Largo coral reef and record the fish they find.",
+        "See how corals, fish, and other reef organisms depend on each other.",
+        "Investigate invasive lionfish through a guided dissection."
+      ],
+      "outcomesNote": null
+    },
+    {
+      "dayNumber": 3,
+      "totalDays": 4,
+      "title": "One Big Reef: Coral Reef Ecology",
+      "theme": "Study how a coral reef works, meet the species that need protection, and return to the water for a second survey.",
+      "blocks": [
+        {
+          "time": "9:00 AM–10:30 AM",
+          "tag": "Marine Ecology",
+          "title": "Coral Reef Ecology",
+          "description": "A Florida Keys coral lesson on how reefs are built, how the organisms on them depend on each other, and how coral restoration helps reefs recover."
+        },
+        {
+          "time": "10:45 AM–12:15 PM",
+          "tag": "Conservation",
+          "title": "Endangered Species of the Florida Keys",
+          "description": "Students learn which marine species in the Keys are threatened or endangered, such as sea turtles and staghorn and elkhorn corals, why they are at risk, and what people are doing to protect them."
+        },
+        {
+          "time": "12:15 PM–1:30 PM",
+          "tag": "Break",
+          "title": "Lunch (on your own)",
+          "description": "Lunch is not included in this proposal. Your group can bring lunch or pick up food nearby."
+        },
+        {
+          "time": "1:30 PM–5:00 PM",
+          "tag": "Field Experience",
+          "title": "Reef Snorkel & Fish Surveys",
+          "description": "Students return to the reef to apply what they learned about coral ecology and endangered species, and record a second set of fish surveys. Boat times are confirmed once your dates are set."
+        }
+      ],
+      "studentsWill": [
+        "Explain how coral reefs function as connected ecosystems.",
+        "Identify threatened and endangered species of the Florida Keys and the actions protecting them.",
+        "Record a second set of reef fish surveys."
+      ],
+      "outcomesNote": null
+    },
+    {
+      "dayNumber": 4,
+      "totalDays": 4,
+      "title": "Advanced Citizen Scientists",
+      "theme": "Level up your fish ID skills and explore where marine science can take you.",
+      "blocks": [
+        {
+          "time": "9:00 AM–10:15 AM",
+          "tag": "Careers",
+          "title": "Careers in Marine Science",
+          "description": "Students hear how people build careers in marine science and conservation, and have time to ask questions about the paths they could take."
+        },
+        {
+          "time": "10:30 AM–12:00 PM",
+          "tag": "Fish ID",
+          "title": "Level 2 Fish ID Review & Exam",
+          "description": "Students review Caribbean fish identification and take the Level 2 exam toward becoming a REEF Level 2 surveyor."
+        },
+        {
+          "time": "12:00 PM",
+          "tag": "Departure",
+          "title": "Departure",
+          "description": "Your group checks out and departs. Lunch is not included in this proposal."
+        }
+      ],
+      "studentsWill": [
+        "Explore career paths in marine science and conservation.",
+        "Review and apply advanced Caribbean fish identification skills.",
+        "Take the exam toward REEF Level 2 surveyor status."
+      ],
+      "outcomesNote": null
+    }
+  ]
+}

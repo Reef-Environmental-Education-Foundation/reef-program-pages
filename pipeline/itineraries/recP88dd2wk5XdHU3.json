@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 2,
+  "scheduleFormat": "standard",
+  "sourceNote": "Drafted 2026-09-30 from Rose Kelly's sample 2-day itinerary plus Martha's six content blocks (marine ecology, Caribbean fish ID, careers, invasive species, citizen science, endangered species); kayaking moved to an optional add-on. Internal only; never rendered.",
+  "location": "Key Largo, Florida",
+  "summary": "A two-day marine science program for 12 students and 2 chaperones in Key Largo, combining classroom learning with a coral reef snorkel and fish surveys.",
+  "days": [
+    {
+      "dayNumber": 1,
+      "totalDays": 2,
+      "title": "Fish ID & Citizen Science",
+      "theme": "Learn how REEF's citizen scientists identify fish, then put those skills to work on a coral reef snorkel.",
+      "blocks": [
+        {
+          "time": "9:30 AM–10:45 AM",
+          "tag": "Citizen Science",
+          "title": "Citizen Science & the Volunteer Fish Survey Project",
+          "description": "Students learn how REEF's volunteer divers and snorkelers record the fish they see, and why that data matters to scientists and reef managers. They practice the survey method they will use on the reef."
+        },
+        {
+          "time": "11:00 AM–12:15 PM",
+          "tag": "Fish ID",
+          "title": "Caribbean Fish Identification",
+          "description": "A hands-on introduction to identifying common Caribbean reef fish by family, body shape, color, and behavior, building the skills students use on their reef snorkel."
+        },
+        {
+          "time": "12:15 PM–1:15 PM",
+          "tag": "Break",
+          "title": "Lunch (on your own)",
+          "description": "Lunch is not included in this proposal. Your group can bring lunch or pick up food nearby."
+        },
+        {
+          "time": "1:30 PM–5:00 PM",
+          "tag": "Field Experience",
+          "title": "Reef Snorkel & Fish Surveys",
+          "description": "Students board a boat to a Key Largo coral reef and snorkel to explore marine ecology firsthand: how corals, fish, and other reef organisms depend on each other. They record the fish they find using the survey method they learned. Boat times are confirmed once your dates are set."
+        }
+      ],
+      "studentsWill": [
+        "Learn how REEF's citizen scientists collect and use fish survey data.",
+        "Identify common Caribbean reef fish by family, shape, color, and behavior.",
+        "Snorkel a Key Largo coral reef and record the fish they find.",
+        "See how corals, fish, and other organisms depend on one another."
+      ],
+      "outcomesNote": null
+    },
+    {
+      "dayNumber": 2,
+      "totalDays": 2,
+      "title": "Conservation & Careers",
+      "theme": "Explore the challenges facing Florida Keys marine life and the people working to solve them.",
+      "blocks": [
+        {
+          "time": "9:00 AM–10:00 AM",
+          "tag": "Conservation",
+          "title": "Endangered Species of the Florida Keys",
+          "description": "Students learn which marine species in the Keys are threatened or endangered, such as sea turtles and staghorn and elkhorn corals, why they are at risk, and what people are doing to protect them."
+        },
+        {
+          "time": "10:15 AM–11:45 AM",
+          "tag": "Hands-On Lab",
+          "title": "Invasive Species: Lionfish Lesson & Dissection",
+          "description": "Students investigate invasive lionfish through a guided dissection, looking at anatomy and adaptations and learning why lionfish are a conservation challenge for Florida Keys reefs."
+        },
+        {
+          "time": "12:00 PM–1:00 PM",
+          "tag": "Careers",
+          "title": "Careers in Marine Science",
+          "description": "Students hear how people build careers in marine science and conservation, and have time to ask questions about the paths they could take."
+        },
+        {
+          "time": "1:00 PM–2:00 PM",
+          "tag": "Break",
+          "title": "Lunch (on your own) & Departure",
+          "description": "Lunch is not included in this proposal. Your group departs after lunch, around 2:00 PM."
+        }
+      ],
+      "studentsWill": [
+        "Learn which Florida Keys marine species are threatened or endangered and how they are being protected.",
+        "Investigate invasive lionfish through a guided dissection.",
+        "Explore career paths in marine science and conservation.",
+        "Connect what they learned to REEF's ongoing citizen science and conservation work."
+      ],
+      "outcomesNote": null
+    }
+  ]
+}
