@@ -201,6 +201,7 @@
     if ((data.days || []).length) items.push({ label: "Daily Schedule", targetId: "day-by-day" });
     if (data.gear && (data.gear.groups || []).length) items.push({ label: "What to Bring", targetId: "gear" });
     items.push({ label: "Forms & Next Steps", targetId: "next-steps" });
+    if (data.share) items.push({ label: "Share", targetId: "share-views" });
     return items;
   }
 
@@ -349,6 +350,13 @@
   function renderDayByDay(data) {
     const days = data.days || [];
     if (!days.length) return;
+    // 2026-09-28: a rotating-cohort booking now gets the same rotation
+    // matrix on its pre-trip page (was text-only). Wrapped in
+    // .proposal-shell.embed so it uses the proposal's matrix styles.
+    const rot = data.rotation ? el("div", { class: "proposal-shell embed" }, [
+      data.rotation.intro ? el("p", { class: "rot-intro" }, [data.rotation.intro]) : null,
+      rotationSchedule(data.rotation),
+    ]) : null;
     mount("day-by-day", el("div", { class: "section" }, [
       el("div", { class: "container" }, [
         el("div", { class: "section-head" }, [
@@ -356,7 +364,25 @@
           el("span", { class: "eyebrow" }, ["DAY-BY-DAY ITINERARY"]),
           el("h2", {}, [days.length > 1 ? ("Day 1–" + days.length + " in detail") : "Day 1 in detail"]),
         ]),
+        rot,
         el("div", {}, days.map(renderDayCard)),
+      ]),
+    ]));
+  }
+
+  // Pre-trip page: the same audience materials, now in their confirmed
+  // (or still-draft, before Confirmed) form -- the "Group Planning Hub"
+  // lives here, on the same URL, not in a second portal.
+  function renderShareViews(data) {
+    if (!data.share) return;
+    mount("share-views", el("div", { class: "section" }, [
+      el("div", { class: "container" }, [
+        el("div", { class: "section-head" }, [
+          el("div", { class: "divider-mark" }),
+          el("span", { class: "eyebrow" }, ["SHARE WITH YOUR TEAM"]),
+          el("h2", {}, ["Group planning materials"]),
+        ]),
+        el("div", { class: "proposal-shell embed" }, [shareSection(data.share, { withNeeds: false, showAll: true, bookingKey: (data.meta || {}).generatedFrom })]),
       ]),
     ]));
   }
@@ -508,6 +534,526 @@
   }
 
   // ================================================================
+  // APPROVE & SHARE (2026-09-28) -- shared by the proposal's final step,
+  // the pre-trip page, and the four audience views.
+  //
+  // One booking record, one source of truth, several focused views. The
+  // pipeline (pipeline/audience_views.py) writes each audience view to
+  // bookings/<slug>/share/<view>/ with its OWN data.js containing only
+  // what that audience may see -- so nothing here hides fields in the
+  // browser. GitHub Pages is public static hosting: whatever a page loads
+  // is readable by anyone with the link. See PRIVACY.md.
+  //
+  // In the self-contained INTERNAL-PREVIEW.html, the four views are
+  // inlined as window.REEF_PREVIEW_VIEWS and opened with ?view=<key>.
+  // ================================================================
+  function safeStore(key, value) {
+    try {
+      if (value === undefined) return JSON.parse(window.localStorage.getItem(key) || "null");
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch (err) { return null; }
+    return null;
+  }
+
+  function isPreview() { return !!window.REEF_PREVIEW_VIEWS; }
+
+  function viewHref(v, print) {
+    if (isPreview()) return "?view=" + v.key + (print ? "&print=1" : "");
+    return v.path + (print ? "?print=1" : "");
+  }
+
+  function copyText(text, btn) {
+    const done = function () {
+      const old = btn.textContent;
+      btn.textContent = "Link copied";
+      setTimeout(function () { btn.textContent = old; }, 1800);
+    };
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+        return;
+      }
+    } catch (err) { /* fall through */ }
+    fallbackCopy(text);
+    done();
+  }
+  function fallbackCopy(text) {
+    const ta = el("textarea", { style: "position:fixed;left:-9999px;top:0;" });
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (err) { /* ignore */ }
+    document.body.removeChild(ta);
+  }
+
+  function statusBadge(o) {
+    return el("span", { class: "share-status is-" + (o.status || "draft") }, [
+      (o.statusLabel || "Draft") + " · " + (o.version || "v1") + (o.lastUpdated ? " · Updated " + o.lastUpdated : ""),
+    ]);
+  }
+
+  function shareCard(v, share) {
+    const copyBtn = el("button", { class: "share-btn" }, ["Copy link"]);
+    copyBtn.addEventListener("click", function () { copyText(v.url, copyBtn); });
+    return el("article", { class: "share-card", "data-view": v.key }, [
+      el("div", { class: "share-card-top" }, [
+        statusBadge(share),
+        v.pricing ? null : el("span", { class: "share-flag" }, ["No pricing"]),
+      ]),
+      el("h4", {}, [v.title]),
+      el("div", { class: "share-aud" }, ["For " + v.audience]),
+      el("p", { class: "share-desc" }, [v.description]),
+      el("ul", { class: "share-includes" }, (v.includes || []).map(function (i) { return el("li", {}, [i]); })),
+      el("div", { class: "share-actions" }, [
+        el("a", { class: "share-btn is-primary", href: viewHref(v), target: isPreview() ? "_self" : "_blank", rel: "noopener" }, ["Preview"]),
+        copyBtn,
+        el("a", { class: "share-btn", href: viewHref(v, true), target: isPreview() ? "_self" : "_blank", rel: "noopener" }, ["Print or Save PDF"]),
+      ]),
+    ]);
+  }
+
+  function rolesPanel(share) {
+    const roles = share.roles || [];
+    if (!roles.length) return null;
+    return el("div", { class: "roles-panel" }, [
+      el("span", { class: "eyebrow" }, ["WHO'S INVOLVED"]),
+      el("ul", {}, roles.map(function (r) {
+        return el("li", {}, [
+          el("span", { class: "role-who" }, [r.name ? r.name + (r.title ? ", " + r.title : "") : r.title]),
+          el("span", { class: "role-what" }, [(r.roleLabels || []).join(" · ") + (r.approvalAuthority ? " · Approves the program" : "") + (r.note ? " · " + r.note : "")]),
+        ]);
+      })),
+    ]);
+  }
+
+  // Share cards with progressive disclosure: only the views matching the
+  // coordinator's selected needs are shown (all, if they ask to see all).
+  function shareSection(share, opts) {
+    opts = opts || {};
+    const storeKey = "reef-share-needs-" + (opts.bookingKey || "");
+    let selected = safeStore(storeKey) || [];
+    let showAll = !!opts.showAll;
+    const root = el("div", { class: "share-section", id: "share-anchor" });
+    const cardsWrap = el("div", { class: "share-grid" });
+    const hint = el("p", { class: "share-hint" });
+    const showAllBtn = el("button", { class: "cta-secondary-link on-light" }, ["Show all sharing materials"]);
+    showAllBtn.addEventListener("click", function () { showAll = !showAll; update(); });
+    const cards = (share.views || []).map(function (v) { return shareCard(v, share); });
+    cards.forEach(function (c) { cardsWrap.appendChild(c); });
+
+    function update() {
+      const wanted = {};
+      (share.needs || []).forEach(function (n) { if (selected.indexOf(n.key) !== -1 && n.view) wanted[n.view] = true; });
+      let shown = 0;
+      cards.forEach(function (c) {
+        const on = showAll || wanted[c.getAttribute("data-view")];
+        c.hidden = !on;
+        if (on) shown++;
+      });
+      hint.textContent = shown ? "" : "Choose what applies above to see the right materials for each audience.";
+      hint.hidden = !!shown;
+      showAllBtn.textContent = showAll ? "Show only what I selected" : "Show all sharing materials";
+      if (opts.onNeedsChange) opts.onNeedsChange(selected.slice());
+    }
+
+    if (opts.withNeeds !== false && (share.needs || []).length) {
+      const fs = el("fieldset", { class: "needs-picker" }, [
+        el("legend", {}, ["What needs to happen before your group can confirm?"]),
+        el("p", { class: "needs-dek" }, ["Choose any that apply."]),
+      ]);
+      (share.needs || []).forEach(function (n) {
+        const id = "need-" + n.key;
+        const cb = el("input", { type: "checkbox", id: id, value: n.key });
+        if (selected.indexOf(n.key) !== -1) cb.checked = true;
+        cb.addEventListener("change", function () {
+          selected = selected.filter(function (k) { return k !== n.key; });
+          if (cb.checked) selected.push(n.key);
+          safeStore(storeKey, selected);
+          update();
+          if (cb.checked && n.action === "change" && opts.onRequestChange) opts.onRequestChange();
+        });
+        fs.appendChild(el("label", { class: "need-chip", for: id }, [cb, el("span", {}, [n.label])]));
+      });
+      root.appendChild(fs);
+    }
+    root.appendChild(el("div", { class: "block-head", style: "margin-top:28px;" }, [
+      el("span", { class: "eyebrow" }, ["SHARE FOR REVIEW"]),
+      el("h2", {}, ["Materials for each audience"]),
+      el("p", { class: "dek" }, ["Each link opens a focused page built from this same proposal, so dates, schedule and details always match. Sharing a page doesn't approve anything."]),
+    ]));
+    root.appendChild(hint);
+    root.appendChild(cardsWrap);
+    if (opts.withNeeds !== false) root.appendChild(el("div", { class: "share-foot" }, [showAllBtn]));
+    root.appendChild(el("div", { class: "share-self" }, [
+      el("strong", {}, ["You share these materials yourself. "]),
+      "Copy a link and send it by email or through your usual school channels. REEF doesn't contact your staff or families directly.",
+      isPreview() ? el("span", { class: "share-preview-note" }, [" (Internal preview: links go live only once REEF approves and publishes this proposal.)"]) : null,
+    ]));
+    root.appendChild(rolesPanel(share));
+    root.appendChild(el("p", { class: "share-privacy" }, [share.privacyNote || ""]));
+    update();
+    return root;
+  }
+
+  // ?view=<key> on the coordinator page: in the internal preview, render
+  // the inlined view; on the live site, go to that view's own page (which
+  // loads only its own data). Returns true if it handled the request.
+  function routeView(data) {
+    let key = null;
+    try { key = new URLSearchParams(location.search).get("view"); } catch (err) { key = null; }
+    if (!key) return false;
+    if (window.REEF_PREVIEW_VIEWS && window.REEF_PREVIEW_VIEWS[key]) {
+      renderAudienceView(window.REEF_PREVIEW_VIEWS[key]);
+      return true;
+    }
+    const share = (data.proposal && data.proposal.share) || data.share;
+    const v = share && (share.views || []).filter(function (x) { return x.key === key; })[0];
+    if (v) { location.replace(v.path); return true; }
+    return false;
+  }
+
+  // ================================================================
+  // AUDIENCE VIEW MODE (docType "audience") -- one focused, printable
+  // page per audience. Reuses the proposal design system (.proposal-shell)
+  // plus .audience-shell rules. Data shape: pipeline/audience_views.py.
+  // ================================================================
+  function renderAudienceView(data) {
+    const V = data.view || {};
+    const pageRoot = document.querySelector(".page") || document.body;
+    pageRoot.innerHTML = "";
+    pageRoot.className = "page proposal-shell audience-shell view-" + (V.view || "x");
+    document.title = (V.orgName ? V.orgName + " — " : "") + (V.title || "REEF") + " — REEF";
+
+    function list(items, cls) {
+      return el("ul", { class: "a-list " + (cls || "") }, (items || []).map(function (i) { return el("li", {}, [i]); }));
+    }
+    function sec(eyebrow, heading, children, extraCls) {
+      const kids = (children || []).filter(Boolean);
+      if (!kids.length) return null;
+      return el("section", { class: "container block a-sec " + (extraCls || "") }, [
+        el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, [eyebrow]), heading ? el("h2", {}, [heading]) : null]),
+      ].concat(kids));
+    }
+    function has(a) { return a && (a.length === undefined || a.length); }
+    function kvGrid(rows) {
+      return el("div", { class: "glance-grid" }, rows.map(function (g) {
+        return el("div", { class: "glance-cell" + (g.wide ? " is-wide" : "") }, [el("div", { class: "k" }, [g.k]), el("div", { class: "v" }, [g.v])]);
+      }));
+    }
+    function dl(rows) {
+      return el("dl", { class: "confirm-summary on-light" }, rows.map(function (r) {
+        return el("div", { class: "cs-row" }, [el("dt", {}, [r.k]), el("dd", {}, [r.v])]);
+      }));
+    }
+    function contactCard(c) {
+      if (!c || !c.name) return null;
+      return el("div", { class: "contact-card" }, [
+        el("div", { class: "contact-avatar" }, [(c.name || "REEF").split(" ").map(function (w) { return w[0]; }).join("")]),
+        el("div", { class: "contact-body" }, [
+          el("div", { class: "contact-name" }, [c.name]),
+          el("div", { class: "contact-role" }, [c.role || ""]),
+          el("div", { class: "contact-links" }, [
+            c.email ? el("a", { href: "mailto:" + c.email }, [c.email]) : null,
+            c.phone ? el("span", {}, [c.phone]) : null,
+          ]),
+        ]),
+      ]);
+    }
+    function experienceCards(items, numbered) {
+      return el("div", { class: "station-grid" }, (items || []).map(function (x, i) {
+        return el("div", { class: "station-card" + (x.color !== undefined && x.color !== null ? " rot-edge-c" + (x.color % 6) : "") }, [
+          numbered ? el("span", { class: "a-num" }, [String(i + 1)]) : null,
+          el("h4", {}, [x.title]),
+          el("p", { class: "desc" }, [x.text]),
+        ]);
+      }));
+    }
+    function hhmmRange(t) {
+      const p = String(t).split("-");
+      return p.length === 2 ? rangeLabel(tmin(p[0]), tmin(p[1])) : t;
+    }
+
+    // ---- top bar + header ----
+    const printBtn = el("button", { class: "share-btn on-dark" }, ["Print or Save PDF"]);
+    printBtn.addEventListener("click", function () { window.print(); });
+    const copyBtn = el("button", { class: "share-btn on-dark" }, ["Copy link"]);
+    copyBtn.addEventListener("click", function () { copyText(V.url || location.href.split("?")[0], copyBtn); });
+    const topActions = [copyBtn, printBtn];
+    if (isPreview()) {
+      topActions.unshift(el("a", { class: "share-btn on-dark", href: location.pathname }, ["← Back to proposal"]));
+    }
+    pageRoot.appendChild(el("header", { id: "topbar", class: "no-print-bg" }, [
+      el("div", { class: "topbar-row" }, [
+        el("div", { class: "topbar-brand" }, [
+          el("img", { class: "mark", src: defaultLogoPath(), alt: "" }),
+          el("div", { class: "word" }, ["REEF", el("small", {}, ["Ocean Explorers"])]),
+        ]),
+        el("div", { class: "a-top-actions no-print" }, topActions),
+      ]),
+    ]));
+    if (data.meta && data.meta.sampleFlag) {
+      pageRoot.appendChild(el("div", { class: "sample-flag" }, [el("strong", {}, ["SAMPLE — DESIGN REVIEW ONLY"]), "  ·  illustrative content, not a confirmed program"]));
+    }
+    const isDraft = V.status !== "confirmed";
+    pageRoot.appendChild(el("div", { class: "a-status-ribbon is-" + (isDraft ? "draft" : "confirmed") }, [
+      isDraft ? "Proposed program · Draft schedule · Details may change until your contract is confirmed"
+              : "Confirmed program",
+    ]));
+    const chips = [
+      [isDraft ? "Proposed Date" : "Date", V.dateLine],
+      V.view === "family" || V.view === "student" ? ["Where", V.location] : null,
+      V.hours ? ["Hours", V.hours] : null,
+      ["Version", (V.version || "v1") + (V.lastUpdated ? " · Updated " + V.lastUpdated : "")],
+    ].filter(Boolean);
+    const header = el("div", { class: "hero a-hero" }, [
+      el("div", { class: "hero-art", html: '<svg viewBox="0 0 1200 300" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" role="presentation"><rect width="1200" height="300" fill="#0F2A4E"/><path d="M0,300 L0,230 Q150,190 300,225 T600,220 Q750,185 900,215 T1200,210 L1200,300 Z" fill="#155E62" opacity=".9"/><circle cx="1040" cy="80" r="6" fill="#2C8F8A" opacity=".6"/><circle cx="1080" cy="120" r="4" fill="#2C8F8A" opacity=".6"/></svg>' }),
+      el("div", { class: "hero-inner container" }, [
+        el("span", { class: "hero-eyebrow" }, [(V.orgName || "").toUpperCase() + (V.audienceLabel ? " · FOR " + V.audienceLabel.toUpperCase() : "")]),
+        el("h1", {}, [V.view === "student" ? (V.headline || V.title) : V.title]),
+        el("p", { class: "lede" }, [V.view === "student" ? (V.intro || "") : (V.view === "family" ? (V.intro || V.summary || "") : (V.summary || V.programName || ""))]),
+        el("div", { class: "hero-chips" }, chips.map(function (c) {
+          return el("div", { class: "hero-chip" }, [el("div", { class: "k" }, [c[0]]), el("div", { class: "v" }, [placeholder(c[1])])]);
+        })),
+      ]),
+    ]);
+    pageRoot.appendChild(header);
+
+    const main = el("main", { id: "main", class: "a-main" });
+    const add = function (node) { if (node) main.appendChild(node); };
+
+    // ---------------- ADMINISTRATOR ----------------
+    if (V.view === "administrator") {
+      add(sec("PURPOSE", "Program purpose and educational value", [
+        V.purpose ? el("p", { class: "a-lead" }, [V.purpose]) : null,
+        has(V.value) ? el("div", { class: "card-grid cols-2" }, V.value.map(function (p) {
+          return el("div", { class: "pillar-card" }, [el("h4", {}, [p.title]), el("p", {}, [p.text])]);
+        })) : null,
+      ]));
+      add(sec("AT A GLANCE", "Date, location, hours and group", [kvGrid(V.facts || [])]));
+      if (V.cohortSchedule) {
+        add(sec("SCHEDULE OVERVIEW", "Where each cohort is, and when", [
+          el("div", { class: "a-table-wrap" }, [el("table", { class: "a-table" }, [
+            el("thead", {}, [el("tr", {}, [el("th", {}, ["Cohort"]), el("th", {}, ["Schedule"])])]),
+            el("tbody", {}, V.cohortSchedule.map(function (c) {
+              return el("tr", {}, [el("th", { scope: "row" }, [c.cohort]), el("td", {}, [c.items.map(function (it) {
+                return hhmmRange(it.time) + " " + it.name;
+              }).join(" · ")])]);
+            })),
+          ])]),
+          el("p", { class: "a-fine" }, ["The Educator Plan has the full rotation matrix."]),
+        ]));
+      } else if (has(V.simpleSchedule)) {
+        add(sec("SCHEDULE OVERVIEW", "The day at a glance", [dl(V.simpleSchedule.map(function (s) { return { k: s.time, v: s.label }; }))]));
+      }
+      add(sec("LEARNING OUTCOMES", "What students will learn", [has(V.outcomes) ? list(V.outcomes, "dash") : null]));
+      add(sec("RESPONSIBILITIES", "Safety, supervision, transportation and meals", [
+        has(V.responsibilities) ? dl(V.responsibilities.map(function (r) { return { k: r.area, v: r.text }; })) : null,
+      ]));
+      const pr = V.pricing || {};
+      add(sec("PRICE", "Estimated total", [
+        pr.total ? el("div", { class: "price-tiles cols-2" }, [
+          el("div", { class: "price-tile is-primary" }, [el("div", { class: "tile-label" }, ["Estimated Total"]), el("div", { class: "tile-num" }, [pr.total]),
+            el("div", { class: "tile-unit" }, [(V.counts ? V.counts.students + " students and " + V.counts.chaperones + " chaperones" : "")])]),
+          pr.perStudent ? el("div", { class: "price-tile" }, [el("div", { class: "tile-label" }, ["Per Student"]), el("div", { class: "tile-num" }, [pr.perStudent]), el("div", { class: "tile-unit" }, ["for the full program"])]) : null,
+        ]) : null,
+        pr.chaperones ? el("p", { class: "a-fine" }, [pr.chaperones + " " + (pr.note || "")]) : null,
+        el("div", { class: "included-grid", style: "margin-top:18px;" }, [
+          has(V.included) ? el("div", { class: "included-card" }, [el("h4", {}, [el("span", { class: "dot" }), "Included"]), list(V.included)]) : null,
+          has(V.notIncluded) ? el("div", { class: "included-card not-included" }, [el("h4", {}, [el("span", { class: "dot" }), "Not included — arranged by your group"]), list(V.notIncluded)]) : null,
+          has(V.optional) ? el("div", { class: "included-card optional-card" }, [el("h4", {}, [el("span", { class: "dot" }), "Optional — not included in this price"]), list(V.optional)]) : null,
+        ].filter(Boolean)),
+      ]));
+      add(sec("TERMS", "Payment, cancellation and approval", [
+        has(V.paymentTerms) ? el("h3", { class: "a-h3" }, ["Payment"]) : null, has(V.paymentTerms) ? list(V.paymentTerms) : null,
+        has(V.cancellationTerms) ? el("h3", { class: "a-h3" }, ["Cancellation"]) : null, has(V.cancellationTerms) ? list(V.cancellationTerms) : null,
+        el("h3", { class: "a-h3" }, ["Approval"]),
+        list(["Approving this summary tells REEF to prepare your contract. It isn't a signature and doesn't commit a payment."]),
+        V.termsNote ? el("p", { class: "a-fine" }, [V.termsNote]) : null,
+      ]));
+      add(sec("OUTSTANDING DECISIONS", "Still to be decided", [has(V.outstanding) ? list(V.outstanding) : null]));
+      add(sec("STATUS", "Proposal status", [
+        el("p", {}, [statusBadge(V)]),
+        has(V.decisionMakers) ? el("p", { class: "a-fine" }, ["Approves the program: " + V.decisionMakers.map(function (r) {
+          return r.name ? r.name + (r.title ? ", " + r.title : "") : r.title + (r.note ? " (" + r.note.toLowerCase() + ")" : "");
+        }).join("; ")]) : null,
+        V.approval && V.approval.enabled ? adminApproval(V) : null,
+        contactCard(V.reefContact),
+      ]));
+    }
+
+    // ---------------- EDUCATOR ----------------
+    if (V.view === "educator") {
+      add(sec("LEARNING OBJECTIVES", "What students will learn", [has(V.objectives) ? list(V.objectives, "dash") : null]));
+      if (V.scheduleFormat === "rotation" && V.rotation) {
+        add(sec("FULL SCHEDULE", isDraftLabel("Cohort rotation"), [
+          V.rotation.intro ? el("p", { class: "rot-intro" }, [V.rotation.intro]) : null,
+          rotationSchedule(V.rotation),
+        ], "a-rot"));
+        (V.days || []).forEach(function (d) { add(sec("THE EXPERIENCES", "What happens at each stop", [stationCards(d)])); });
+      } else if (V.scheduleFormat === "pending") {
+        add(sec("FULL SCHEDULE", "Schedule being finalized", [el("div", { class: "pending-panel" }, [el("p", {}, [V.pendingNote || "Exact times will follow."])])]
+          .concat((V.days || []).map(stationCards))));
+      } else {
+        (V.days || []).forEach(function (d) {
+          add(sec("DAY " + d.dayNumber + (d.totalDays > 1 ? " OF " + d.totalDays : ""), d.title, [
+            dl((d.blocks || []).map(function (b) { return { k: b.time || "", v: (b.title || "") + (b.description ? " — " + b.description : "") }; })),
+          ]));
+        });
+      }
+      if (has(V.cohortAssignments)) {
+        add(sec("COHORT ASSIGNMENTS", "Teachers and chaperones by cohort", [
+          el("div", { class: "a-table-wrap" }, [el("table", { class: "a-table a-fill" }, [
+            el("thead", {}, [el("tr", {}, ["Cohort", "Students", "Teacher(s)", "Chaperones"].map(function (h) { return el("th", {}, [h]); }))]),
+            el("tbody", {}, V.cohortAssignments.map(function (c) {
+              return el("tr", {}, [
+                el("th", { scope: "row" }, [c.cohort]),
+                el("td", {}, [c.size ? String(c.size) : (V.rotation && V.rotation.cohortSizeLabel) || ""]),
+                el("td", { class: c.teachers ? "" : "a-blank" }, [c.teachers || ""]),
+                el("td", { class: c.chaperones ? "" : "a-blank" }, [c.chaperones || ""]),
+              ]);
+            })),
+          ])]),
+          V.assignmentsNote ? el("p", { class: "a-fine" }, [V.assignmentsNote]) : null,
+        ]));
+      }
+      add(sec("LOGISTICS", "Arrival, transitions, lunch and departure", [has(V.logistics) ? dl(V.logistics) : null]));
+      add(sec("WHAT TO BRING", null, [has(V.bring) ? list(V.bring) : null]));
+      add(sec("ACCESSIBILITY", "Accessibility and accommodations", [
+        el("p", {}, [V.accessibility || "Let REEF know about any accessibility or accommodation needs as early as you can, so we can plan activities and transitions around them."]),
+      ]));
+      add(sec("SUPERVISION", "Supervision expectations", [
+        V.counts ? el("p", { class: "a-fine" }, [V.counts.students + " students · " + V.counts.chaperones + " chaperones"]) : null,
+        has(V.supervision) ? list(V.supervision) : null,
+      ]));
+      add(sec("RESOURCES", "Preparation and follow-up", [has(V.resources) ? list(V.resources) : null]));
+      add(sec("STILL TO PLAN", "Remaining planning decisions", [has(V.remaining) ? list(V.remaining) : null]));
+      add(sec("YOUR REEF CONTACT", null, [contactCard(V.reefContact)]));
+    }
+
+    // ---------------- FAMILY ----------------
+    if (V.view === "family") {
+      add(sec("THE EXPERIENCE", "What students will experience", [experienceCards(V.experiences)]));
+      add(sec("WHY IT MATTERS", null, [has(V.whyItMatters) ? el("div", { class: "prose" }, V.whyItMatters.map(function (p) { return el("p", {}, [p]); })) : null]));
+      add(sec("WHEN & WHERE", isDraft ? "Proposed schedule" : "Schedule", [
+        dl([{ k: "Date", v: V.dateLine }, { k: "Where", v: V.location }].filter(function (r) { return r.v; })),
+        has(V.schedule) ? el("ol", { class: "a-timeline" }, V.schedule.map(function (s) {
+          return el("li", {}, [el("span", { class: "mono" }, [s.time]), el("span", {}, [s.label])]);
+        })) : null,
+      ]));
+      add(sec("PACKING", "What to wear and bring", [
+        has(V.clothing) ? list(V.clothing) : null,
+        has(V.bring) ? list(V.bring) : null,
+        (has(V.clothing) || has(V.bring)) ? el("p", { class: "a-fine" }, ["Your school will share any additional packing details before the day."]) : null,
+      ]));
+      add(sec("LUNCH & TRANSPORTATION", null, [
+        dl([{ k: "Lunch", v: V.lunch }, { k: "Transportation", v: V.transportation }].filter(function (r) { return r.v; })),
+      ]));
+      add(sec("CHAPERONES", "What chaperones should expect", [has(V.chaperoneExpectations) ? list(V.chaperoneExpectations) : null]));
+      add(sec("FAMILY DEADLINES", null, [has(V.deadlines) ? list(V.deadlines) : null]));
+      add(sec("FROM YOUR SCHOOL", null, [V.fundraising ? el("p", {}, [V.fundraising]) : null]));
+      add(sec("ABOUT REEF", null, [V.aboutReef ? el("p", {}, [V.aboutReef]) : null]));
+      add(sec("QUESTIONS", null, [el("p", { class: "a-lead" }, [V.contactInstructions || ""])]));
+    }
+
+    // ---------------- STUDENT ----------------
+    if (V.view === "student") {
+      add(sec("YOUR DAY", "What you'll do", [experienceCards(V.experiences, true)], "a-student-day"));
+      add(sec("WHAT YOU'LL EXPLORE", null, [has(V.topics) ? el("div", { class: "a-chips" }, V.topics.map(function (t) { return el("span", {}, [t]); })) : null]));
+      add(sec("WHAT IT'LL FEEL LIKE", null, [has(V.feel) ? list(V.feel) : null]));
+      add(sec("WHAT TO BRING", null, [has(V.bring) ? list(V.bring) : null]));
+      add(sec("GET READY", "Before the trip", [has(V.classroomPrep) ? list(V.classroomPrep) : null]));
+    }
+
+    function isDraftLabel(txt) { return isDraft ? "Draft schedule: " + txt.toLowerCase() : txt; }
+
+    pageRoot.appendChild(main);
+    pageRoot.appendChild(el("footer", { id: "site-footer" }, [
+      "Reef Environmental Education Foundation · P.O. Box 370246, Key Largo, FL 33037 · 305-852-0030 · ",
+      el("a", { href: "https://www.reef.org" }, ["www.REEF.org"]),
+      el("span", { class: "tag" }, [(V.title || "") + " · " + (V.statusLabel || "Draft") + " " + (V.version || "") + (V.lastUpdated ? " · Updated " + V.lastUpdated : "")]),
+    ]));
+
+    let wantsPrint = false;
+    try { wantsPrint = new URLSearchParams(location.search).get("print") === "1"; } catch (err) { wantsPrint = false; }
+    if (wantsPrint) setTimeout(function () { window.print(); }, 600);
+  }
+
+  // Administrator approval / feedback. No login exists, so this is a
+  // record of intent that REEF confirms by email -- never a signature.
+  function adminApproval(V) {
+    const A = V.approval || {};
+    const root = el("div", { class: "cta-module a-approve" });
+    let mode = "choose";
+    let sent = null;
+    function field(label, id, attrs) {
+      return el("div", { class: "a-field" }, [el("label", { for: id }, [label]), el("input", Object.assign({ id: id, type: "text" }, attrs || {}))]);
+    }
+    function send(kind, name, role, message) {
+      const payload = {
+        bookingId: A.bookingId, orgName: V.orgName, proposalVersion: V.version,
+        respondedAt: new Date().toISOString(), view: "administrator",
+        response: kind === "approve" ? "admin_approved" : "admin_feedback",
+        responderName: name, responderRole: role, message: message || null,
+      };
+      if (A.webhookUrl && !isPreview()) {
+        try {
+          fetch(A.webhookUrl, { method: "POST", body: JSON.stringify(payload), mode: "cors", keepalive: true })
+            .catch(function (err) { console.error("[REEF admin response] webhook POST failed", err); });
+        } catch (err) { console.error(err); }
+      } else if (!isPreview()) {
+        const subject = (V.orgName || "") + " — " + (kind === "approve" ? "Administrator approval" : "Administrator feedback") + " (" + (V.version || "v1") + ")";
+        const body = (kind === "approve" ? "I approve this proposal so REEF can prepare the contract." : "Feedback on the proposal:") +
+          "\n\n" + (message ? message + "\n\n" : "") + "Name: " + name + "\nRole: " + role + "\nProposal: " + (V.version || "") + ", updated " + (V.lastUpdated || "");
+        window.location.href = "mailto:" + (A.emailTo || "explorers@REEF.org") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+      } else {
+        console.log("[REEF admin response — internal preview, not sent]", payload);
+      }
+      sent = payload;
+      render();
+    }
+    function render() {
+      root.innerHTML = "";
+      if (sent) {
+        root.appendChild(el("div", {}, [
+          el("span", { class: "eyebrow on-dark" }, [sent.response === "admin_approved" ? "✓ APPROVAL SENT" : "✓ FEEDBACK SENT"]),
+          el("h3", {}, [sent.response === "admin_approved" ? "Thank you. REEF will confirm by email." : "Thank you. REEF will follow up by email."]),
+          el("p", { class: "cta-fine" }, [A.webhookUrl ? "Recorded for " + sent.responderName + "." : "If your email app didn't open, email " + (A.emailTo || "explorers@REEF.org") + " directly."]),
+        ]));
+        return;
+      }
+      const nameId = "adm-name", roleId = "adm-role";
+      const kids = [
+        el("span", { class: "eyebrow on-dark" }, ["FOR THE APPROVING ADMINISTRATOR"]),
+        el("h3", {}, [mode === "feedback" ? "Send feedback to REEF" : "Approve or send feedback"]),
+        el("p", {}, ["Approving tells REEF to prepare the contract. It isn't a signature and doesn't commit a payment. REEF confirms every approval by email."]),
+        field("Your name", nameId, { autocomplete: "name" }),
+        field("Your role or title", roleId, { autocomplete: "organization-title" }),
+      ];
+      let ta = null;
+      if (mode === "feedback") {
+        ta = el("textarea", { id: "adm-msg", class: "cta-textarea", rows: "3" });
+        kids.push(el("label", { class: "cta-textarea-label", for: "adm-msg" }, ["What would you like changed or clarified?"]));
+        kids.push(ta);
+      }
+      const primary = el("button", { class: "btn btn-primary" }, [mode === "feedback" ? "Send Feedback" : "Approve Program"]);
+      const secondary = el("button", { class: "cta-secondary-link" }, [mode === "feedback" ? "Back" : "Send feedback instead"]);
+      const err = el("p", { class: "cta-fine a-err", role: "alert" });
+      primary.addEventListener("click", function () {
+        const n = document.getElementById(nameId).value.trim(), r = document.getElementById(roleId).value.trim();
+        if (!n || !r) { err.textContent = "Please add your name and role."; return; }
+        if (mode === "feedback" && !(ta && ta.value.trim())) { err.textContent = "Please add your feedback."; return; }
+        send(mode === "feedback" ? "feedback" : "approve", n, r, ta ? ta.value.trim() : null);
+      });
+      secondary.addEventListener("click", function () { mode = mode === "feedback" ? "choose" : "feedback"; render(); });
+      kids.push(el("div", { class: "cta-row" }, [primary, secondary]));
+      kids.push(err);
+      kids.forEach(function (k) { root.appendChild(k); });
+    }
+    render();
+    return el("div", { class: "no-print" }, [root]);
+  }
+
+  // ================================================================
   // PROPOSAL MODE (docType: "proposal") — advanced six-section
   // customer proposal experience, ported from the Dropbox review
   // build (ocean-explorers-proposal-riverside-academy.html, Sprint
@@ -573,6 +1119,205 @@
   // }
   // ================================================================
 
+  // ================================================================
+  // ROTATION SCHEDULE (2026-09-28) -- reusable concurrent-cohort
+  // component (hoisted to module scope 2026-09-28 so the pre-trip page and
+  // the audience views reuse it), shown when PD.scheduleFormat === "rotation". Answers
+  // "who is where, and when": cohorts are rows, time runs left to
+  // right, each activity is a labeled cell spanning its real duration,
+  // and gaps between a cohort's activities show as transition time.
+  // On narrow screens the same grid is transposed (time runs down,
+  // cohorts across) so cohort-by-time relationships survive on a
+  // phone instead of collapsing into disconnected cards. Activity
+  // descriptions stay below the matrix. Data shape: see ROTATION
+  // SCHEMA in pipeline/generate_booking_package.py.
+  // ================================================================
+  function tmin(hhmm) { const p = String(hhmm).split(":"); return (+p[0]) * 60 + (+p[1]); }
+  function clockLabel(m, withSuffix) {
+    const h = Math.floor(m / 60), mm = m % 60;
+    const h12 = h % 12 || 12;
+    return h12 + ":" + String(mm).padStart(2, "0") + (withSuffix ? (h < 12 ? " AM" : " PM") : "");
+  }
+  function rangeLabel(s, e) {
+    const sa = s < 720 ? "AM" : "PM", ea = e < 720 ? "AM" : "PM";
+    return sa === ea ? clockLabel(s) + "–" + clockLabel(e, true) : clockLabel(s, true) + "–" + clockLabel(e, true);
+  }
+
+  function rotationModel(rot) {
+    const slot = rot.slotMinutes || 15;
+    const start = tmin(rot.startTime), end = tmin(rot.endTime);
+    const stations = {};
+    (rot.stations || []).forEach(function (st, i) {
+      stations[st.id] = Object.assign({ color: i % 6 }, st);
+    });
+    const cohorts = (rot.cohorts || []).map(function (c) {
+      const items = [];
+      (rot.assignments || []).forEach(function (a) {
+        if (a.cohort === c.id) items.push({ s: tmin(a.start), e: tmin(a.end), st: stations[a.station] });
+      });
+      (rot.shared || []).forEach(function (a) {
+        items.push({ s: tmin(a.start), e: tmin(a.end), st: stations[a.station], shared: true });
+      });
+      items.sort(function (x, y) { return x.s - y.s; });
+      // Fill gaps with transition time so the row always reads start-to-end.
+      const filled = [];
+      let cursor = start;
+      items.forEach(function (it) {
+        if (it.s > cursor) filled.push({ s: cursor, e: it.s, gap: true });
+        filled.push(it);
+        cursor = Math.max(cursor, it.e);
+      });
+      if (cursor < end) filled.push({ s: cursor, e: end, gap: true });
+      return { c: c, items: filled };
+    });
+    const span = end - start;
+    const tickStep = span > 360 ? 60 : 30;
+    return { slot: slot, start: start, end: end, n: span / slot, stations: stations, cohorts: cohorts, tickStep: tickStep };
+  }
+
+  function cohortSizeText(rot, c) {
+    if (c.size) return c.size + " students";
+    return rot.cohortSizeLabel || "";
+  }
+
+  function rotationCellContent(it, compact) {
+    if (it.gap) return [el("span", { class: "rc-gap-label" }, [(it.e - it.s) >= 30 ? "Transition" : ""])];
+    const name = compact ? (it.st.short || it.st.name) : ((it.e - it.s) >= 60 ? it.st.name : (it.st.short || it.st.name));
+    return [
+      el("span", { class: "rc-name" }, [name]),
+      el("span", { class: "rc-time mono" }, [rangeLabel(it.s, it.e)]),
+      (!compact && it.st.location && (it.e - it.s) >= 60) ? el("span", { class: "rc-loc" }, [it.st.location]) : null,
+    ];
+  }
+
+  function rotationDesktop(rot, M) {
+    const hasDep = !!rot.departure;
+    const cols = "var(--rot-label) repeat(" + M.n + ", minmax(0,1fr))" + (hasDep ? " var(--rot-dep)" : "");
+    const grid = el("div", { class: "rot-grid rot-desktop", style: "grid-template-columns:" + cols + ";", role: "img",
+      "aria-label": "Rotation schedule: " + M.cohorts.length + " cohorts from " + clockLabel(M.start, true) + " to " + clockLabel(M.end, true) + ". A text version follows." });
+    grid.appendChild(el("div", { class: "rot-corner", style: "grid-row:1;grid-column:1;" }, ["Cohort"]));
+    for (let t = M.start; t < M.end; t += M.tickStep) {
+      const i = (t - M.start) / M.slot;
+      const w = Math.min(M.tickStep, M.end - t) / M.slot;
+      grid.appendChild(el("div", { class: "rot-tick", style: "grid-row:1;grid-column:" + (i + 2) + " / span " + w + ";" },
+        [clockLabel(t, t === M.start || t === 720)]));
+    }
+    if (hasDep) grid.appendChild(el("div", { class: "rot-tick rot-tick-dep", style: "grid-row:1;grid-column:" + (M.n + 2) + ";" }, [clockLabel(tmin(rot.departure.time), true)]));
+    M.cohorts.forEach(function (row, r) {
+      const gr = r + 2;
+      grid.appendChild(el("div", { class: "rot-rowlabel", style: "grid-row:" + gr + ";grid-column:1;" }, [
+        el("span", { class: "rl-name" }, [row.c.label]),
+        cohortSizeText(rot, row.c) ? el("span", { class: "rl-size" }, [cohortSizeText(rot, row.c)]) : null,
+      ]));
+      row.items.forEach(function (it) {
+        const a = (it.s - M.start) / M.slot + 2, b = (it.e - M.start) / M.slot + 2;
+        const cls = (it.gap ? "rot-cell rot-gap" : "rot-cell rot-c" + (it.st.color % 6)) + ((it.e - it.s) <= 30 ? " is-narrow" : "");
+        grid.appendChild(el("div", { class: cls, style: "grid-row:" + gr + ";grid-column:" + a + " / " + b + ";" }, rotationCellContent(it, (it.e - it.s) <= 30)));
+      });
+    });
+    if (hasDep) {
+      grid.appendChild(el("div", { class: "rot-dep", style: "grid-row:2 / span " + M.cohorts.length + ";grid-column:" + (M.n + 2) + ";" }, [
+        el("span", { class: "rc-name" }, [rot.departure.label || "Departure"]),
+      ]));
+    }
+    return grid;
+  }
+
+  function rotationMobile(rot, M) {
+    const hasDep = !!rot.departure;
+    const nC = M.cohorts.length;
+    const rows = "auto repeat(" + M.n + ", var(--rot-slot-h))" + (hasDep ? " auto" : "");
+    const grid = el("div", { class: "rot-grid rot-mobile", style: "grid-template-columns:var(--rot-time) repeat(" + nC + ", minmax(0,1fr));grid-template-rows:" + rows + ";", role: "img",
+      "aria-label": "Rotation schedule, time runs down and cohorts run across. A text version follows." });
+    grid.appendChild(el("div", { class: "rot-corner", style: "grid-row:1;grid-column:1;" }, ["Time"]));
+    M.cohorts.forEach(function (row, ci) {
+      grid.appendChild(el("div", { class: "rot-colhead", style: "grid-row:1;grid-column:" + (ci + 2) + ";" }, [
+        el("span", { class: "rl-name" }, [row.c.label.replace(/^Cohort\s+/i, "")]),
+        el("span", { class: "rl-kicker" }, [/^Cohort\s+/i.test(row.c.label) ? "Cohort" : ""]),
+      ]));
+    });
+    for (let t = M.start; t < M.end; t += M.tickStep) {
+      const i = (t - M.start) / M.slot;
+      const h = Math.min(M.tickStep, M.end - t) / M.slot;
+      grid.appendChild(el("div", { class: "rot-vtick mono", style: "grid-column:1;grid-row:" + (i + 2) + " / span " + h + ";" }, [clockLabel(t, t === M.start || t === 720)]));
+    }
+    M.cohorts.forEach(function (row, ci) {
+      row.items.forEach(function (it) {
+        const a = (it.s - M.start) / M.slot + 2, b = (it.e - M.start) / M.slot + 2;
+        const cls = it.gap ? "rot-cell rot-gap" : "rot-cell rot-c" + (it.st.color % 6);
+        grid.appendChild(el("div", { class: cls, style: "grid-column:" + (ci + 2) + ";grid-row:" + a + " / " + b + ";" }, rotationCellContent(it, true)));
+      });
+    });
+    if (hasDep) {
+      grid.appendChild(el("div", { class: "rot-vtick mono", style: "grid-column:1;grid-row:" + (M.n + 2) + ";" }, [clockLabel(tmin(rot.departure.time), true)]));
+      grid.appendChild(el("div", { class: "rot-dep rot-dep-row", style: "grid-column:2 / span " + nC + ";grid-row:" + (M.n + 2) + ";" }, [
+        el("span", { class: "rc-name" }, [rot.departure.label || "Departure"]),
+      ]));
+    }
+    return grid;
+  }
+
+  function rotationLegend(rot, M) {
+    return el("ul", { class: "rot-legend", "aria-label": "Activities and locations" }, (rot.stations || []).map(function (st) {
+      const s = M.stations[st.id];
+      return el("li", {}, [
+        el("span", { class: "rot-swatch rot-c" + (s.color % 6) }),
+        el("span", { class: "lg-name" }, [s.name]),
+        s.location ? el("span", { class: "lg-loc" }, [s.location]) : null,
+      ]);
+    }));
+  }
+
+  function rotationTextList(rot, M) {
+    const details = el("details", { class: "rot-list" }, [el("summary", {}, ["View the schedule as a list by cohort"])]);
+    const wrap = el("div", { class: "rot-list-grid" });
+    M.cohorts.forEach(function (row) {
+      wrap.appendChild(el("div", { class: "rot-list-col" }, [
+        el("h4", {}, [row.c.label + (cohortSizeText(rot, row.c) ? " · " + cohortSizeText(rot, row.c) : "")]),
+        el("ul", {}, row.items.filter(function (it) { return !it.gap; }).map(function (it) {
+          return el("li", {}, [el("span", { class: "mono" }, [rangeLabel(it.s, it.e)]), " ", it.st.name + (it.st.location ? " (" + it.st.location + ")" : "")]);
+        }).concat(rot.departure ? [el("li", {}, [el("span", { class: "mono" }, [clockLabel(tmin(rot.departure.time), true)]), " ", rot.departure.label || "Departure"])] : [])),
+      ]));
+    });
+    details.appendChild(wrap);
+    return details;
+  }
+
+  function rotationSchedule(rot) {
+    const M = rotationModel(rot);
+    return el("div", { class: "rot-wrap" }, [
+      el("div", { class: "rot-frame" }, [rotationDesktop(rot, M), rotationMobile(rot, M)]),
+      rotationLegend(rot, M),
+      rot.departure && rot.departure.note ? el("p", { class: "rot-note rot-note-strong" }, [rot.departure.note]) : null,
+      (rot.notes || []).length ? el("ul", { class: "rot-notes" }, rot.notes.map(function (n) { return el("li", {}, [n]); })) : null,
+      rotationTextList(rot, M),
+    ]);
+  }
+
+  // Activity detail cards below the matrix: what students experience and
+  // learn, with WHEN derived from the rotation data (never hand-typed, so
+  // it can't disagree with the matrix).
+  function stationCards(day) {
+    const cards = (day.blocks || []).map(function (b) {
+      return el("div", { class: "station-card" + (b.color !== undefined && b.color !== null ? " rot-edge-c" + (b.color % 6) : "") }, [
+        b.tag ? el("span", { class: "tag" }, [b.tag]) : null,
+        el("h4", {}, [b.title || ""]),
+        b.when ? el("div", { class: "sc-when mono" }, [b.when]) : (b.time ? el("div", { class: "sc-when mono" }, [b.time]) : null),
+        b.location ? el("div", { class: "sc-loc" }, [b.location]) : null,
+        el("p", { class: "desc" }, [b.description || ""]),
+      ]);
+    });
+    return el("div", { class: "station-grid" }, cards);
+  }
+
+  function outcomesBox(day) {
+    return (day.studentsWill || []).length ? el("div", { class: "outcomes-box standalone" }, [
+      el("span", { class: "eyebrow" }, ["STUDENTS WILL…"]),
+      el("ul", {}, day.studentsWill.map(function (line) { return el("li", {}, [line]); })),
+      day.outcomesNote ? el("div", { class: "outcomes-note" }, [day.outcomesNote]) : null,
+    ]) : null;
+  }
+
   function renderAdvancedProposal(data) {
     const PD = data.proposal || {};
     PD.meta = PD.meta || {};
@@ -599,6 +1344,9 @@
     // a multi-day program "Day by Day". The pipeline sets it; this fallback
     // covers older data.js files.
     const scheduleLabel = PD.scheduleLabel || (PD.days.length > 1 ? "Day by Day" : "Schedule");
+    // Step 6 is "Approve & Share" once the pipeline supplies a share block
+    // (2026-09-28); older data.js files keep "Next Steps".
+    const finalLabel = PD.share ? "Approve & Share" : "Next Steps";
 
     // ---- decorative hero art: layered SVG, used as a fallback for any
     // section that doesn't have real photography yet. ----
@@ -732,6 +1480,9 @@
        ------------------------------------------------------------------ */
     let ctaState = { status: "pending", payload: null }; // pending | ready | change_requested
     const ctaRenderers = [];
+    const share = PD.share || null;
+    let selectedNeeds = [];
+    let openChangeForm = null;  // set by the Next-step CTA module
 
     function fmtTimestamp(iso) {
       const d = new Date(iso);
@@ -748,6 +1499,10 @@
         respondedAt: new Date().toISOString(),
         response: type, // "ready_to_proceed" | "change_requested"
         message: message || null,
+        // Approve & Share (2026-09-28): what the coordinator said still has
+        // to happen before the group can confirm. Extra field; the Zap
+        // ignores it until it's mapped.
+        confirmationNeeds: selectedNeeds.slice(),
       };
       if (PD.cta.responseWebhookUrl) {
         // Implementation Plan item 5: point this at the new Zapier "Catch
@@ -792,11 +1547,14 @@
         btnReady.addEventListener("click", function () { confirmingReady = true; render(); });
         const btnChange = el("button", { class: "cta-secondary-link" }, [PD.cta.secondaryText || "Request a Change"]);
         btnChange.addEventListener("click", function () { formOpen = true; render(); });
+        // Three separate actions (2026-09-28): Request a Change, Share for
+        // Review, Approve. Sharing never counts as approval.
+        const btnShare = share ? el("button", { class: "cta-secondary-link", "data-goto": "sec-next", "data-anchor": "share-anchor" }, ["Share for Review"]) : null;
         return el("div", {}, [
           el("span", { class: "eyebrow on-dark" }, ["YOUR NEXT STEP"]),
           el("h3", {}, ["Review your proposal for " + placeholder(PD.group.orgName, "your group")]),
-          el("p", {}, ["When the schedule, group size, inclusions, and pricing look right, approve the proposal and REEF will prepare your contract. Approving doesn't sign anything or commit a payment. If something needs to change, send us a request instead."]),
-          el("div", { class: "cta-row" }, [btnReady, btnChange]),
+          el("p", {}, ["When the schedule, group size, inclusions, and pricing look right, approve the proposal and REEF will prepare your contract. Approving doesn't sign anything or commit a payment. If something needs to change, send us a request instead." + (share ? " Need others to weigh in first? Share focused versions with your team. Sharing doesn't approve anything." : "")]),
+          el("div", { class: "cta-row" }, [btnReady, btnChange, btnShare]),
         ]);
       }
 
@@ -881,6 +1639,7 @@
 
       render();
       ctaRenderers.push(render);
+      root._openChange = function () { if (ctaState.status === "pending") { formOpen = true; confirmingReady = false; render(); } };
       return root;
     }
 
@@ -1003,204 +1762,6 @@
           ]) : null,
         ])),
       ]);
-    }
-
-    // ================================================================
-    // ROTATION SCHEDULE (2026-09-28) -- reusable concurrent-cohort
-    // component, shown when PD.scheduleFormat === "rotation". Answers
-    // "who is where, and when": cohorts are rows, time runs left to
-    // right, each activity is a labeled cell spanning its real duration,
-    // and gaps between a cohort's activities show as transition time.
-    // On narrow screens the same grid is transposed (time runs down,
-    // cohorts across) so cohort-by-time relationships survive on a
-    // phone instead of collapsing into disconnected cards. Activity
-    // descriptions stay below the matrix. Data shape: see ROTATION
-    // SCHEMA in pipeline/generate_booking_package.py.
-    // ================================================================
-    function tmin(hhmm) { const p = String(hhmm).split(":"); return (+p[0]) * 60 + (+p[1]); }
-    function clockLabel(m, withSuffix) {
-      const h = Math.floor(m / 60), mm = m % 60;
-      const h12 = h % 12 || 12;
-      return h12 + ":" + String(mm).padStart(2, "0") + (withSuffix ? (h < 12 ? " AM" : " PM") : "");
-    }
-    function rangeLabel(s, e) {
-      const sa = s < 720 ? "AM" : "PM", ea = e < 720 ? "AM" : "PM";
-      return sa === ea ? clockLabel(s) + "–" + clockLabel(e, true) : clockLabel(s, true) + "–" + clockLabel(e, true);
-    }
-
-    function rotationModel(rot) {
-      const slot = rot.slotMinutes || 15;
-      const start = tmin(rot.startTime), end = tmin(rot.endTime);
-      const stations = {};
-      (rot.stations || []).forEach(function (st, i) {
-        stations[st.id] = Object.assign({ color: i % 6 }, st);
-      });
-      const cohorts = (rot.cohorts || []).map(function (c) {
-        const items = [];
-        (rot.assignments || []).forEach(function (a) {
-          if (a.cohort === c.id) items.push({ s: tmin(a.start), e: tmin(a.end), st: stations[a.station] });
-        });
-        (rot.shared || []).forEach(function (a) {
-          items.push({ s: tmin(a.start), e: tmin(a.end), st: stations[a.station], shared: true });
-        });
-        items.sort(function (x, y) { return x.s - y.s; });
-        // Fill gaps with transition time so the row always reads start-to-end.
-        const filled = [];
-        let cursor = start;
-        items.forEach(function (it) {
-          if (it.s > cursor) filled.push({ s: cursor, e: it.s, gap: true });
-          filled.push(it);
-          cursor = Math.max(cursor, it.e);
-        });
-        if (cursor < end) filled.push({ s: cursor, e: end, gap: true });
-        return { c: c, items: filled };
-      });
-      const span = end - start;
-      const tickStep = span > 360 ? 60 : 30;
-      return { slot: slot, start: start, end: end, n: span / slot, stations: stations, cohorts: cohorts, tickStep: tickStep };
-    }
-
-    function cohortSizeText(rot, c) {
-      if (c.size) return c.size + " students";
-      return rot.cohortSizeLabel || "";
-    }
-
-    function rotationCellContent(it, compact) {
-      if (it.gap) return [el("span", { class: "rc-gap-label" }, [(it.e - it.s) >= 30 ? "Transition" : ""])];
-      const name = compact ? (it.st.short || it.st.name) : ((it.e - it.s) >= 60 ? it.st.name : (it.st.short || it.st.name));
-      return [
-        el("span", { class: "rc-name" }, [name]),
-        el("span", { class: "rc-time mono" }, [rangeLabel(it.s, it.e)]),
-        (!compact && it.st.location && (it.e - it.s) >= 60) ? el("span", { class: "rc-loc" }, [it.st.location]) : null,
-      ];
-    }
-
-    function rotationDesktop(rot, M) {
-      const hasDep = !!rot.departure;
-      const cols = "var(--rot-label) repeat(" + M.n + ", minmax(0,1fr))" + (hasDep ? " var(--rot-dep)" : "");
-      const grid = el("div", { class: "rot-grid rot-desktop", style: "grid-template-columns:" + cols + ";", role: "img",
-        "aria-label": "Rotation schedule: " + M.cohorts.length + " cohorts from " + clockLabel(M.start, true) + " to " + clockLabel(M.end, true) + ". A text version follows." });
-      grid.appendChild(el("div", { class: "rot-corner", style: "grid-row:1;grid-column:1;" }, ["Cohort"]));
-      for (let t = M.start; t < M.end; t += M.tickStep) {
-        const i = (t - M.start) / M.slot;
-        const w = Math.min(M.tickStep, M.end - t) / M.slot;
-        grid.appendChild(el("div", { class: "rot-tick", style: "grid-row:1;grid-column:" + (i + 2) + " / span " + w + ";" },
-          [clockLabel(t, t === M.start || t === 720)]));
-      }
-      if (hasDep) grid.appendChild(el("div", { class: "rot-tick rot-tick-dep", style: "grid-row:1;grid-column:" + (M.n + 2) + ";" }, [clockLabel(tmin(rot.departure.time), true)]));
-      M.cohorts.forEach(function (row, r) {
-        const gr = r + 2;
-        grid.appendChild(el("div", { class: "rot-rowlabel", style: "grid-row:" + gr + ";grid-column:1;" }, [
-          el("span", { class: "rl-name" }, [row.c.label]),
-          cohortSizeText(rot, row.c) ? el("span", { class: "rl-size" }, [cohortSizeText(rot, row.c)]) : null,
-        ]));
-        row.items.forEach(function (it) {
-          const a = (it.s - M.start) / M.slot + 2, b = (it.e - M.start) / M.slot + 2;
-          const cls = (it.gap ? "rot-cell rot-gap" : "rot-cell rot-c" + (it.st.color % 6)) + ((it.e - it.s) <= 30 ? " is-narrow" : "");
-          grid.appendChild(el("div", { class: cls, style: "grid-row:" + gr + ";grid-column:" + a + " / " + b + ";" }, rotationCellContent(it, (it.e - it.s) <= 30)));
-        });
-      });
-      if (hasDep) {
-        grid.appendChild(el("div", { class: "rot-dep", style: "grid-row:2 / span " + M.cohorts.length + ";grid-column:" + (M.n + 2) + ";" }, [
-          el("span", { class: "rc-name" }, [rot.departure.label || "Departure"]),
-        ]));
-      }
-      return grid;
-    }
-
-    function rotationMobile(rot, M) {
-      const hasDep = !!rot.departure;
-      const nC = M.cohorts.length;
-      const rows = "auto repeat(" + M.n + ", var(--rot-slot-h))" + (hasDep ? " auto" : "");
-      const grid = el("div", { class: "rot-grid rot-mobile", style: "grid-template-columns:var(--rot-time) repeat(" + nC + ", minmax(0,1fr));grid-template-rows:" + rows + ";", role: "img",
-        "aria-label": "Rotation schedule, time runs down and cohorts run across. A text version follows." });
-      grid.appendChild(el("div", { class: "rot-corner", style: "grid-row:1;grid-column:1;" }, ["Time"]));
-      M.cohorts.forEach(function (row, ci) {
-        grid.appendChild(el("div", { class: "rot-colhead", style: "grid-row:1;grid-column:" + (ci + 2) + ";" }, [
-          el("span", { class: "rl-name" }, [row.c.label.replace(/^Cohort\s+/i, "")]),
-          el("span", { class: "rl-kicker" }, [/^Cohort\s+/i.test(row.c.label) ? "Cohort" : ""]),
-        ]));
-      });
-      for (let t = M.start; t < M.end; t += M.tickStep) {
-        const i = (t - M.start) / M.slot;
-        const h = Math.min(M.tickStep, M.end - t) / M.slot;
-        grid.appendChild(el("div", { class: "rot-vtick mono", style: "grid-column:1;grid-row:" + (i + 2) + " / span " + h + ";" }, [clockLabel(t, t === M.start || t === 720)]));
-      }
-      M.cohorts.forEach(function (row, ci) {
-        row.items.forEach(function (it) {
-          const a = (it.s - M.start) / M.slot + 2, b = (it.e - M.start) / M.slot + 2;
-          const cls = it.gap ? "rot-cell rot-gap" : "rot-cell rot-c" + (it.st.color % 6);
-          grid.appendChild(el("div", { class: cls, style: "grid-column:" + (ci + 2) + ";grid-row:" + a + " / " + b + ";" }, rotationCellContent(it, true)));
-        });
-      });
-      if (hasDep) {
-        grid.appendChild(el("div", { class: "rot-vtick mono", style: "grid-column:1;grid-row:" + (M.n + 2) + ";" }, [clockLabel(tmin(rot.departure.time), true)]));
-        grid.appendChild(el("div", { class: "rot-dep rot-dep-row", style: "grid-column:2 / span " + nC + ";grid-row:" + (M.n + 2) + ";" }, [
-          el("span", { class: "rc-name" }, [rot.departure.label || "Departure"]),
-        ]));
-      }
-      return grid;
-    }
-
-    function rotationLegend(rot, M) {
-      return el("ul", { class: "rot-legend", "aria-label": "Activities and locations" }, (rot.stations || []).map(function (st) {
-        const s = M.stations[st.id];
-        return el("li", {}, [
-          el("span", { class: "rot-swatch rot-c" + (s.color % 6) }),
-          el("span", { class: "lg-name" }, [s.name]),
-          s.location ? el("span", { class: "lg-loc" }, [s.location]) : null,
-        ]);
-      }));
-    }
-
-    function rotationTextList(rot, M) {
-      const details = el("details", { class: "rot-list" }, [el("summary", {}, ["View the schedule as a list by cohort"])]);
-      const wrap = el("div", { class: "rot-list-grid" });
-      M.cohorts.forEach(function (row) {
-        wrap.appendChild(el("div", { class: "rot-list-col" }, [
-          el("h4", {}, [row.c.label + (cohortSizeText(rot, row.c) ? " · " + cohortSizeText(rot, row.c) : "")]),
-          el("ul", {}, row.items.filter(function (it) { return !it.gap; }).map(function (it) {
-            return el("li", {}, [el("span", { class: "mono" }, [rangeLabel(it.s, it.e)]), " ", it.st.name + (it.st.location ? " (" + it.st.location + ")" : "")]);
-          }).concat(rot.departure ? [el("li", {}, [el("span", { class: "mono" }, [clockLabel(tmin(rot.departure.time), true)]), " ", rot.departure.label || "Departure"])] : [])),
-        ]));
-      });
-      details.appendChild(wrap);
-      return details;
-    }
-
-    function rotationSchedule(rot) {
-      const M = rotationModel(rot);
-      return el("div", { class: "rot-wrap" }, [
-        el("div", { class: "rot-frame" }, [rotationDesktop(rot, M), rotationMobile(rot, M)]),
-        rotationLegend(rot, M),
-        rot.departure && rot.departure.note ? el("p", { class: "rot-note rot-note-strong" }, [rot.departure.note]) : null,
-        (rot.notes || []).length ? el("ul", { class: "rot-notes" }, rot.notes.map(function (n) { return el("li", {}, [n]); })) : null,
-        rotationTextList(rot, M),
-      ]);
-    }
-
-    // Activity detail cards below the matrix: what students experience and
-    // learn, with WHEN derived from the rotation data (never hand-typed, so
-    // it can't disagree with the matrix).
-    function stationCards(day) {
-      const cards = (day.blocks || []).map(function (b) {
-        return el("div", { class: "station-card" + (b.color !== undefined && b.color !== null ? " rot-edge-c" + (b.color % 6) : "") }, [
-          b.tag ? el("span", { class: "tag" }, [b.tag]) : null,
-          el("h4", {}, [b.title || ""]),
-          b.when ? el("div", { class: "sc-when mono" }, [b.when]) : (b.time ? el("div", { class: "sc-when mono" }, [b.time]) : null),
-          b.location ? el("div", { class: "sc-loc" }, [b.location]) : null,
-          el("p", { class: "desc" }, [b.description || ""]),
-        ]);
-      });
-      return el("div", { class: "station-grid" }, cards);
-    }
-
-    function outcomesBox(day) {
-      return (day.studentsWill || []).length ? el("div", { class: "outcomes-box standalone" }, [
-        el("span", { class: "eyebrow" }, ["STUDENTS WILL…"]),
-        el("ul", {}, day.studentsWill.map(function (line) { return el("li", {}, [line]); })),
-        day.outcomesNote ? el("div", { class: "outcomes-note" }, [day.outcomesNote]) : null,
-      ]) : null;
     }
 
     function buildDays() {
@@ -1329,19 +1890,32 @@
           el("p", { class: "price-ratio-note", style: "margin-top:10px;" }, ["Any of these would come to you as a revised proposal before anything is final."]),
         ]));
       }
-      s.appendChild(el("div", { class: "container" }, [bottomNav("What's Included", "sec-included", "Next Steps", "sec-next")]));
+      s.appendChild(el("div", { class: "container" }, [bottomNav("What's Included", "sec-included", finalLabel, "sec-next")]));
       return s;
     }
 
     function buildNext() {
-      const s = el("section", { id: "sec-next", class: "page-section", "data-title": "Next Steps" });
+      const s = el("section", { id: "sec-next", class: "page-section", "data-title": finalLabel });
       s.appendChild(heroBlock("next", PD.photos.next, PD.photoCredits.next));
       s.querySelector(".hero").appendChild(el("div", { class: "hero-inner container" }, [
-        el("span", { class: "hero-eyebrow" }, ["NEXT STEPS"]),
-        el("h1", {}, ["Ready to bring your students to REEF?"]),
-        el("p", { class: "lede" }, ["Approve this proposal and REEF will prepare your contract, or tell us what you'd like to change."]),
+        el("span", { class: "hero-eyebrow" }, [finalLabel.toUpperCase()]),
+        el("h1", {}, [share ? "Approve & share your proposal" : "Ready to bring your students to REEF?"]),
+        el("p", { class: "lede" }, [share
+          ? "Get the approvals and input you need, share the right details with each audience, then approve when your group is ready."
+          : "Approve this proposal and REEF will prepare your contract, or tell us what you'd like to change."]),
       ]));
       s.appendChild(el("div", { class: "container block" }, [roadmap()]));
+      const nextCta = ctaModule();
+      if (share) {
+        s.appendChild(el("div", { class: "container block" }, [shareSection(share, {
+          bookingKey: PD.meta.bookingId,
+          onNeedsChange: function (keys) { selectedNeeds = keys; },
+          onRequestChange: function () {
+            nextCta._openChange();
+            nextCta.scrollIntoView({ behavior: "smooth", block: "center" });
+          },
+        })]));
+      }
       if ((PD.confirmSummary || []).length) {
         s.appendChild(el("div", { class: "container block" }, [
           el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["WHAT YOU'RE APPROVING"]), el("h2", {}, ["Your program, in one place"])]),
@@ -1355,8 +1929,9 @@
         ]));
       }
       const nextEmail = PD.cta.contactEmail || "explorers@REEF.org";
-      s.appendChild(el("div", { class: "container block" }, [
-        ctaModule(),
+      s.appendChild(el("div", { class: "container block", id: "approve-anchor" }, [
+        share ? el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["APPROVE OR REQUEST A CHANGE"]), el("h2", {}, ["When your group is ready"])]) : null,
+        nextCta,
         el("p", { class: "cta-fine", style: "margin-top:14px;" }, [
           "Prefer email? Reach us directly at ",
           el("a", { href: "mailto:" + nextEmail, style: "color:inherit;text-decoration:underline;" }, [nextEmail]),
@@ -1374,7 +1949,7 @@
       { id: "sec-days", label: scheduleLabel, build: buildDays },
       { id: "sec-included", label: "What's Included", build: buildIncluded },
       { id: "sec-pricing", label: "Pricing & Details", build: buildPricing },
-      { id: "sec-next", label: "Next Steps", build: buildNext },
+      { id: "sec-next", label: finalLabel, build: buildNext },
     ];
 
     const pageRoot = document.querySelector(".page") || document.body;
@@ -1460,7 +2035,12 @@
       const t = e.target.closest("[data-goto]");
       if (!t) return;
       e.preventDefault();
-      goTo(t.getAttribute("data-goto"));
+      const anchor = t.getAttribute("data-anchor");
+      goTo(t.getAttribute("data-goto"), !!anchor);
+      if (anchor) {
+        const a = document.getElementById(anchor);
+        if (a) setTimeout(function () { a.scrollIntoView({ behavior: "smooth", block: "start" }); }, 30);
+      }
     });
 
     window.addEventListener("hashchange", function () {
@@ -1505,6 +2085,12 @@
     // advanced six-section customer proposal experience) — it builds its
     // own shell and returns early rather than filling the mount points
     // below, which only the pre-trip/confirmed mode uses.
+    // Approve & Share (2026-09-28): audience views are a third mode.
+    if (data.docType === "audience") {
+      renderAudienceView(data);
+      return;
+    }
+    if (routeView(data)) return;
     if (data.docType === "proposal") {
       renderAdvancedProposal(data);
       return;
@@ -1521,6 +2107,7 @@
     renderWhatStudentsWillDo(data);
     renderGear(data);
     renderNextSteps(data);
+    renderShareViews(data);
     renderClosing(data);
   }
 

@@ -131,3 +131,27 @@ Bookings**, then re-run the workflow:
 A proposal approval never carries over to the pre-trip packet/contract, and a
 bumped Proposal Version needs a fresh approval. If the approval fields are
 missing entirely, every run is a preview, so the lock fails safe.
+
+
+## Approve & Share audience views (added 2026-09-28)
+
+Step 6 of every proposal is now **Approve & Share**. It asks what needs to
+happen before the group can confirm, then shows only the relevant audience
+materials. Each of the four views (Administrator Approval Summary, Educator
+Plan, Family & Chaperone Overview, Student Preview) is its own printable page
+at `bookings/<slug>/share/<view>/`, built by `pipeline/audience_views.py` from
+the same facts as the proposal. Every card has Preview, Copy link and Print or
+Save PDF buttons, plus the version, last-updated date and Draft/Confirmed status.
+Request a Change, Share for Review, and Approve are separate actions; sharing
+never counts as approval.
+
+- Content: facts come from Airtable and the itinerary; the audience-specific
+  extras come from the `audiences` block in `pipeline/itineraries/<record>.json`
+  (see that folder's README), plus the REEF-wide defaults in `pipeline/content/audience_defaults.json`.
+- Same Approved-to-Share lock: preview runs put all four views inside
+  `INTERNAL-PREVIEW.html` (open it with `?view=family`, etc.) and publish nothing.
+- The pre-trip page shows the same materials in their confirmed form, plus the
+  rotation matrix for rotating-cohort bookings.
+- `?view=<key>` on a booking URL redirects to that view's own page.
+- **Read `PRIVACY.md`** — GitHub Pages is public, and this is how the views
+  avoid sending prices to families.

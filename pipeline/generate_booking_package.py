@@ -79,6 +79,9 @@ from pathlib import Path
 import requests
 import docx
 
+sys.path.insert(0, str(Path(__file__).parent))
+import audience_views  # noqa: E402  (Approve & Share audience views, 2026-09-28)
+
 AIRTABLE_API_KEY = os.environ.get("AIRTABLE_API_KEY")
 API_ROOT = "https://api.airtable.com/v0"
 
@@ -618,7 +621,7 @@ def load_itinerary(record_id):
         raw = json.load(fh)
     if isinstance(raw, list):
         return {"days": raw, "rotation": None, "scheduleFormat": None,
-                "summary": None, "location": None}
+                "summary": None, "location": None, "audiences": None}
     rotation = raw.get("rotation")
     if rotation:
         validate_rotation(rotation, record_id)
@@ -628,6 +631,9 @@ def load_itinerary(record_id):
         "scheduleFormat": raw.get("scheduleFormat"),
         "summary": raw.get("summary"),
         "location": raw.get("location"),
+        # Approve & Share audience content (2026-09-28) -- see audience_views.py
+        # and the "audiences" section of itineraries/README.md.
+        "audiences": raw.get("audiences"),
     }
 
 
@@ -1320,7 +1326,7 @@ def _data_uri(path):
     return f"data:{mime};base64," + base64.b64encode(Path(path).read_bytes()).decode("ascii")
 
 
-def build_preview_html(page_data, booking_dir, title, reasons):
+def build_preview_html(page_data, booking_dir, title, reasons, views=None):
     """Packs a generated page into ONE self-contained HTML file for internal
     review: styles, render.js, page data, the REEF logo and hero photos are
     all inlined, so the file opens straight from an Asana attachment with no
@@ -1361,8 +1367,20 @@ def build_preview_html(page_data, booking_dir, title, reasons):
     )
     shell = shell.replace('<link rel="stylesheet" href="../../assets/styles.css">',
                           "<style>\n" + css + "\n</style>")
+    # Approve & Share (2026-09-28): the audience views ride along in the same
+    # file so a reviewer can open each one (render.js switches on ?view=...)
+    # without anything being published. Webhooks are stripped here too.
+    preview_views = {}
+    for key, vdata in (views or {}).items():
+        vd = copy.deepcopy(vdata)
+        vd.setdefault("hero", {})["logoUrl"] = logo_uri
+        if isinstance((vd.get("view") or {}).get("approval"), dict):
+            vd["view"]["approval"]["webhookUrl"] = None
+        preview_views[key] = vd
     shell = shell.replace('<script src="data.js"></script>',
-                          "<script>window.BOOKING_DATA = " + json.dumps(data) + ";</script>")
+                          "<script>window.BOOKING_DATA = " + json.dumps(data) + ";"
+                          + ("window.REEF_PREVIEW_VIEWS = " + json.dumps(preview_views) + ";" if preview_views else "")
+                          + "</script>")
     shell = shell.replace('<script src="../../assets/render.js"></script>',
                           "<script>\n" + js.replace("</script>", "<\\/script>") + "\n</script>")
     shell = shell.replace("<body>\n", "<body>\n" + banner, 1)
@@ -1437,7 +1455,9 @@ def create_review_task(b, page_url, contract_url, preview_reasons=None, attachme
             + "".join(f"- {r}\n" for r in preview_reasons)
             + "\nThe attached INTERNAL-PREVIEW.html is the full page (open it in a browser"
             + (", plus the attached contract .docx" if contract_url else "")
-            + "). Check dates, price, org/contact details, and the day-by-day content.\n\n"
+            + "). Check dates, price, org/contact details, and the day-by-day content.\n"
+            "Its last step, Approve & Share, has Preview buttons for the four audience views "
+            "(administrator, educator, family, student) -- check each one too.\n\n"
             "When it's ready to share, in REEF Bookings | PILOT set on this booking:\n"
             "- Approved to Share: checked\n"
             f"- Approved to Share — Stage: {stage}\n"
@@ -1526,6 +1546,7 @@ BOOKING_PAGE_SHELL_TEMPLATE = """<!doctype html>
     <div id="students-will-do"></div>
     <div id="gear"></div>
     <div id="next-steps"></div>
+    <div id="share-views"></div>
     <div id="closing-cta"></div>
     <div id="site-footer"></div>
   </div>
@@ -1543,6 +1564,65 @@ BOOKING_PAGE_SHELL_TEMPLATE = """<!doctype html>
 # 404'd on GitHub Pages until this was added (2026-09-03, after Martha's
 # first live test run). If the shared shell markup ever changes, update it
 # both here and in the sample page.
+
+
+SHARE_PAGE_SHELL_TEMPLATE = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&display=swap">
+<title>{title}</title>
+<link rel="stylesheet" href="../../../../assets/styles.css">
+</head>
+<body>
+  <div class="page"></div>
+  <script src="data.js"></script>
+  <script src="../../../../assets/render.js"></script>
+</body>
+</html>
+"""
+# ^ Approve & Share audience views (2026-09-28): bookings/<slug>/share/<view>/.
+# Each view has its OWN data.js holding only that view's fields (see
+# audience_views.py and PRIVACY.md) -- never the coordinator's full data.
+
+
+def build_share_views(b, page_data, is_proposal, page_url):
+    """Builds the share block + the four audience payloads from the same
+    canonical facts as the proposal. For a pre-trip booking the facts are
+    rebuilt with build_proposal_data() (no photos) so both stages project
+    from one function, not two copies of the booking's details."""
+    pd = page_data["proposal"] if is_proposal else build_proposal_data(b)["proposal"]
+    itin = load_itinerary(b["record_id"])
+    share, views = audience_views.build_views(
+        b, pd, itin, money, date_pretty, page_url,
+        generated_on=date_pretty(datetime.utcnow().strftime("%Y-%m-%d")))
+    if is_proposal:
+        page_data["proposal"]["share"] = share
+    else:
+        page_data["share"] = share
+        # The pre-trip page now draws the same rotation matrix (was a known
+        # gap: cohort times showed only as text in the activity list).
+        if pd.get("scheduleFormat") == "rotation" and pd.get("rotation"):
+            page_data["rotation"] = pd["rotation"]
+    sample = is_test_org(b["org_name"])
+    return {k: audience_views.view_page_data(v, sample) for k, v in views.items()}
+
+
+def write_share_views(booking_dir, view_data, org_name):
+    for key, data in view_data.items():
+        d = booking_dir / "share" / key
+        d.mkdir(parents=True, exist_ok=True)
+        with open(d / "data.js", "w") as f:
+            f.write("/* GENERATED by generate_booking_package.py -- do not hand-edit. "
+                    "Contains ONLY the fields this audience view shows. */\n")
+            f.write("window.BOOKING_DATA = " + json.dumps(data, indent=2) + ";\n")
+        with open(d / "index.html", "w") as f:
+            f.write(SHARE_PAGE_SHELL_TEMPLATE.format(
+                title=f"{org_name} — {data['view']['title']} — REEF"))
+        print(f"Wrote {d / 'data.js'}")
 
 
 def main():
@@ -1618,6 +1698,13 @@ def main():
     if is_test_org(b["org_name"]):
         page_data.setdefault("meta", {})["sampleFlag"] = True
 
+    # Approve & Share audience views (2026-09-28). Built from the same facts,
+    # written to share/<view>/ with per-view data files, and gated by the
+    # same Approved-to-Share lock (preview runs write them to the temp dir).
+    page_url = f"{PAGES_BASE_URL}/bookings/{slug}/"
+    view_data = build_share_views(b, page_data, is_proposal, page_url)
+    write_share_views(booking_dir, view_data, b["org_name"])
+
     with open(booking_dir / "data.js", "w") as f:
         f.write("/* GENERATED by generate_booking_package.py -- do not hand-edit. */\n")
         f.write("window.BOOKING_DATA = " + json.dumps(page_data, indent=2) + ";\n")
@@ -1650,9 +1737,9 @@ def main():
         contract_url = f"{PAGES_BASE_URL}/contracts/{slug}-contract.docx"
         print(f"Wrote {contract_path}")
 
-    page_url = f"{PAGES_BASE_URL}/bookings/{slug}/"
     if preview:
-        preview_html = build_preview_html(page_data, booking_dir, page_title, preview_reasons)
+        preview_html = build_preview_html(page_data, booking_dir, page_title, preview_reasons,
+                                          views=view_data)
         attachments = [preview_html] + ([contract_path] if contract_url else [])
         create_review_task(b, page_url, contract_url,
                            preview_reasons=preview_reasons, attachments=attachments)
