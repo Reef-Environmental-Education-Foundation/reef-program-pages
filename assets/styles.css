@@ -1271,3 +1271,15 @@ li{margin:0;}
   :root:not([data-theme="light"]) .proposal-shell .share-status:not(.is-confirmed){background:rgba(201,166,0,.22);color:#FFF1B8;}
   :root:not([data-theme="light"]) .audience-shell .a-status-ribbon.is-draft{background:#3A3200;color:#FFF1B8;}
 }
+
+/* Draft Program Schedule notice (2026-09-30) */
+.proposal-shell .draft-wrap{margin-top:20px;margin-bottom:0;}
+.proposal-shell .draft-banner{display:flex;gap:12px;align-items:flex-start;background:#FFF4D6;border:2px solid #D99A00;border-left-width:8px;color:#4A3500;border-radius:12px;padding:14px 16px;font-size:15px;line-height:1.5;}
+.proposal-shell .draft-banner .draft-badge{flex-shrink:0;background:#D99A00;color:#2B1D00;font-weight:800;font-size:12px;letter-spacing:.12em;text-transform:uppercase;border-radius:6px;padding:4px 9px;margin-top:1px;}
+.proposal-shell .draft-banner strong{font-weight:800;}
+.proposal-shell .draft-banner.is-compact{font-size:14px;padding:10px 14px;}
+.proposal-shell .rot-list-draft{font-size:13px;font-weight:600;color:#7A5600;margin:10px 0 0;}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .proposal-shell .draft-banner{background:rgba(255,200,60,.14);color:#FFE7A3;border-color:#E0A800;} :root:not([data-theme="light"]) .proposal-shell .rot-list-draft{color:#FFD766;} }
+:root[data-theme="dark"] .proposal-shell .draft-banner{background:rgba(255,200,60,.14);color:#FFE7A3;border-color:#E0A800;}
+:root[data-theme="dark"] .proposal-shell .rot-list-draft{color:#FFD766;}
+@media (max-width:520px){ .proposal-shell .draft-banner{flex-direction:column;gap:8px;} }

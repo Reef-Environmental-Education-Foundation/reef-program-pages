@@ -841,9 +841,13 @@
             })),
           ])]),
           el("p", { class: "a-fine" }, ["The Educator Plan has the full rotation matrix."]),
+          V.scheduleDraft ? draftScheduleLine() : null,
         ]));
       } else if (has(V.simpleSchedule)) {
-        add(sec("SCHEDULE OVERVIEW", "The day at a glance", [dl(V.simpleSchedule.map(function (s) { return { k: s.time, v: s.label }; }))]));
+        add(sec("SCHEDULE OVERVIEW", "The day at a glance", [
+          dl(V.simpleSchedule.map(function (s) { return { k: s.time, v: s.label }; })),
+          V.scheduleDraft ? draftScheduleLine() : null,
+        ]));
       }
       add(sec("LEARNING OUTCOMES", "What students will learn", [has(V.outcomes) ? list(V.outcomes, "dash") : null]));
       add(sec("RESPONSIBILITIES", "Safety, supervision, transportation and meals", [
@@ -887,7 +891,8 @@
       if (V.scheduleFormat === "rotation" && V.rotation) {
         add(sec("FULL SCHEDULE", isDraftLabel("Cohort rotation"), [
           V.rotation.intro ? el("p", { class: "rot-intro" }, [V.rotation.intro]) : null,
-          rotationSchedule(V.rotation),
+          V.scheduleDraft ? draftScheduleLine() : null,
+          rotationSchedule(V.rotation, { draft: V.scheduleDraft }),
         ], "a-rot"));
         (V.days || []).forEach(function (d) { add(sec("THE EXPERIENCES", "What happens at each stop", [stationCards(d)])); });
       } else if (V.scheduleFormat === "pending") {
@@ -897,6 +902,7 @@
         (V.days || []).forEach(function (d) {
           add(sec("DAY " + d.dayNumber + (d.totalDays > 1 ? " OF " + d.totalDays : ""), d.title, [
             dl((d.blocks || []).map(function (b) { return { k: b.time || "", v: (b.title || "") + (b.description ? " — " + b.description : "") }; })),
+            V.scheduleDraft ? draftScheduleLine() : null,
           ]));
         });
       }
@@ -939,6 +945,7 @@
         has(V.schedule) ? el("ol", { class: "a-timeline" }, V.schedule.map(function (s) {
           return el("li", {}, [el("span", { class: "mono" }, [s.time]), el("span", {}, [s.label])]);
         })) : null,
+        V.scheduleDraft && has(V.schedule) ? draftScheduleLine() : null,
       ]));
       add(sec("PACKING", "What to wear and bring", [
         has(V.clothing) ? list(V.clothing) : null,
@@ -1181,7 +1188,7 @@
   }
 
   function rotationCellContent(it, compact) {
-    if (it.gap) return [el("span", { class: "rc-gap-label" }, [(it.e - it.s) >= 30 ? "Transition" : ""])];
+    if (it.gap) return [el("span", { class: "rc-gap-label" }, [(it.e - it.s) >= 45 ? "Transition" : ""])];
     const name = compact ? (it.st.short || it.st.name) : ((it.e - it.s) >= 60 ? it.st.name : (it.st.short || it.st.name));
     return [
       el("span", { class: "rc-name" }, [name]),
@@ -1268,8 +1275,16 @@
     }));
   }
 
-  function rotationTextList(rot, M) {
+  // Shared line for every schedule a school may hand out while the booking
+  // is pre-contract (2026-09-30). Callers pass their own scheduleDraft flag:
+  // this helper is module-scope (proposal, pre-trip and audience views all
+  // use it), so it cannot read the proposal's PD directly.
+  const DRAFT_SCHEDULE_LINE = "Draft Program Schedule — times and locations may be refined before the program.";
+  function draftScheduleLine() { return el("p", { class: "rot-list-draft" }, [DRAFT_SCHEDULE_LINE]); }
+
+  function rotationTextList(rot, M, draft) {
     const details = el("details", { class: "rot-list" }, [el("summary", {}, ["View the schedule as a list by cohort"])]);
+    if (draft) details.appendChild(draftScheduleLine());
     const wrap = el("div", { class: "rot-list-grid" });
     M.cohorts.forEach(function (row) {
       wrap.appendChild(el("div", { class: "rot-list-col" }, [
@@ -1283,14 +1298,15 @@
     return details;
   }
 
-  function rotationSchedule(rot) {
+  function rotationSchedule(rot, opts) {
     const M = rotationModel(rot);
+    const draft = !!(opts && opts.draft);
     return el("div", { class: "rot-wrap" }, [
       el("div", { class: "rot-frame" }, [rotationDesktop(rot, M), rotationMobile(rot, M)]),
       rotationLegend(rot, M),
       rot.departure && rot.departure.note ? el("p", { class: "rot-note rot-note-strong" }, [rot.departure.note]) : null,
       (rot.notes || []).length ? el("ul", { class: "rot-notes" }, rot.notes.map(function (n) { return el("li", {}, [n]); })) : null,
-      rotationTextList(rot, M),
+      rotationTextList(rot, M, draft),
     ]);
   }
 
@@ -1662,6 +1678,7 @@
         ].map(function (pair) { return el("div", { class: "hero-chip" }, [el("div", { class: "k" }, [pair[0]]), el("div", { class: "v" }, [placeholder(pair[1])])]); })),
       ]));
       s.appendChild(el("div", { class: "container block" }, [roadmap()]));
+      if (PD.scheduleDraft) s.appendChild(el("div", { class: "container draft-wrap" }, [draftBanner(true)]));
       s.appendChild(el("div", { class: "container block" }, [ctaModule()]));
       s.appendChild(el("div", { class: "container block" }, [
         el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["WELCOME"]), el("h2", {}, ["A note from your REEF contact"])]),
@@ -1764,6 +1781,19 @@
       ]);
     }
 
+    // Draft Program Schedule notice (2026-09-30). PD.scheduleDraft is set by
+    // the pipeline from Bookings.Status: true before Contracted, false after.
+    function draftBanner(compact) {
+      if (!PD.scheduleDraft) return null;
+      return el("div", { class: "draft-banner" + (compact ? " is-compact" : ""), role: "note" }, [
+        el("span", { class: "draft-badge" }, ["Draft"]),
+        el("div", { class: "draft-text" }, [
+          el("strong", {}, ["Draft Program Schedule"]),
+          " — activity order, exact timing, and locations will be confirmed as program planning is finalized.",
+        ]),
+      ]);
+    }
+
     function buildDays() {
       const fmt = PD.scheduleFormat || "standard";
       const s = el("section", { id: "sec-days", class: "page-section", "data-title": scheduleLabel });
@@ -1784,10 +1814,11 @@
         el("h1", {}, [h1]),
         el("p", { class: "lede" }, [lede]),
       ]));
+      if (PD.scheduleDraft) s.appendChild(el("div", { class: "container draft-wrap" }, [draftBanner(false)]));
       if (fmt === "rotation" && PD.rotation) {
         s.appendChild(el("div", { class: "container block" }, [
           PD.rotation.intro ? el("p", { class: "rot-intro" }, [PD.rotation.intro]) : null,
-          rotationSchedule(PD.rotation),
+          rotationSchedule(PD.rotation, { draft: PD.scheduleDraft }),
         ]));
         PD.days.forEach(function (day) {
           s.appendChild(el("div", { class: "container block" }, [
