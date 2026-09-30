@@ -689,7 +689,10 @@
       "Copy a link and send it by email or through your usual school channels. REEF doesn't contact your staff or families directly.",
       isPreview() ? el("span", { class: "share-preview-note" }, [" (Internal preview: links go live only once REEF approves and publishes this proposal.)"]) : null,
     ]));
-    root.appendChild(rolesPanel(share));
+    // rolesPanel() returns null when the booking has no audiences.roles
+    // (e.g. Hanover); appendChild(null) threw and stopped the page rendering.
+    const roles = rolesPanel(share);
+    if (roles) root.appendChild(roles);
     root.appendChild(el("p", { class: "share-privacy" }, [share.privacyNote || ""]));
     update();
     return root;
