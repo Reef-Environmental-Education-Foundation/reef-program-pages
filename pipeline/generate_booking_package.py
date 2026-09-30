@@ -110,11 +110,6 @@ PROPOSAL_HERO_FIELDS = {
 # packet. Everything else (Contracted and beyond) gets the pre-trip page.
 PROPOSAL_STATUSES = {"Quoting", "Proposal Sent", "Verbal Yes"}
 
-# Bookings.Status values where the schedule is still a planning draft
-# (2026-09-30). While a booking is here, the proposal and the audience views
-# show a "Draft Program Schedule" notice; from Contracted on they do not.
-PRE_CONTRACT_STATUSES = {"", "Quoting", "Proposal Sent", "Verbal Yes"}
-
 # Bookings.Status -> which of the 5 roadmap steps the customer is on now.
 # render.js renders steps below currentStep as done and currentStep as
 # current, so "Quoting" sits ON step 2 (proposal being prepared).
@@ -989,7 +984,7 @@ def build_proposal_data(b, photos=None):
             "summary": summary,
             "scheduleFormat": schedule_format,
             "scheduleLabel": schedule_label,
-            "scheduleDraft": (b.get("status") or "") in PRE_CONTRACT_STATUSES,
+            "scheduleDraft": audience_views.is_schedule_draft(b.get("status"), b.get("agreement_contract_status")),
             "rotation": rot,
             "pendingNote": (f"Your detailed schedule is still being finalized. {reef_first} will share "
                             "exact times before your contract is prepared. The activities below are "
@@ -1171,7 +1166,8 @@ def build_confirmed_page_data(b):
             "schoolOrg": b["org_name"],
             "gradeLevel": b["contact_role"],
             "groupSize": f"{b['students']} Students / {b['chaperones']} Chaperones",
-            "location": "REEF Campus, Key Largo",
+            "location": itin.get("location") or CUSTOMER_LOCATION.get(b["location"], b["location"])
+                        or "REEF Campus, Key Largo",
             "dates": {
                 "label": "Confirmed" if b["status"] == "Confirmed" else "Proposed",
                 "range": f"{date_pretty(b['arrival_date'])} - {date_pretty(b['departure_date'])}",

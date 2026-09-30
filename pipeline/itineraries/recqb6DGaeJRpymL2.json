@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "scheduleFormat": "rotation",
-  "sourceNote": "Rotation first transcribed 2026-09-28 from Rose Kelly's 'Single day Sample Schedule, March 17' (Asana task 1214401891978636, attachment image.png, 2026-09-14). Revised 2026-09-30 per Martha: 9:00 AM-5:00 PM day, Fish ID and Lionfish as equal 1-hour blocks, equal 1-hour lunch for every cohort, glass-bottom boat times held fixed, and a 2:30-4:30 PM Marine Ecology / Endangered Species rotation (flexible REEF programming; location and any transportation NOT confirmed). Internal only; never rendered.",
-  "location": "John Pennekamp Coral Reef State Park, Key Largo (afternoon program locations to be confirmed)",
+  "sourceNote": "Rotation first transcribed 2026-09-28 from Rose Kelly's 'Single day Sample Schedule, March 17' (Asana task 1214401891978636, attachment image.png, 2026-09-14). Revised 2026-09-30 per Martha: 9:00 AM-5:00 PM day, Fish ID and Lionfish as equal 1-hour blocks, equal 1-hour lunch for every cohort, glass-bottom boat times held fixed, and a 2:30-4:30 PM Marine Ecology / Endangered Species rotation (flexible REEF programming; location and any transportation NOT confirmed). Internal only; never rendered. REVISION 2 (2026-09-30, Martha): glass-bottom boat is 2h30 for every cohort (A/B now 12:00-2:30); all programming at Pennekamp for now; school provides its own buses (drop-off 9:00 AM, pick-up 5:00 PM); REEF-arranged transportation between Pennekamp and campus is under exploration and NOT confirmed.",
+  "location": "John Pennekamp Coral Reef State Park, Key Largo",
   "summary": "A one-day marine science program for 115 students, organized into four cohorts rotating through hands-on experiences led by REEF educators, from 9:00 AM to 5:00 PM.",
   "rotation": {
     "heading": "Four Cohorts, One Coordinated Day",
@@ -70,7 +70,7 @@
         "id": "ecology",
         "name": "Marine Ecology",
         "short": "Ecology",
-        "location": "Location to be confirmed",
+        "location": "Pennekamp",
         "type": "experience",
         "color": 4
       },
@@ -78,7 +78,7 @@
         "id": "endangered",
         "name": "Endangered Species",
         "short": "Species",
-        "location": "Location to be confirmed",
+        "location": "Pennekamp",
         "type": "experience",
         "color": 5
       }
@@ -105,7 +105,7 @@
       {
         "cohort": "A",
         "station": "boat",
-        "start": "12:15",
+        "start": "12:00",
         "end": "14:30"
       },
       {
@@ -141,7 +141,7 @@
       {
         "cohort": "B",
         "station": "boat",
-        "start": "12:15",
+        "start": "12:00",
         "end": "14:30"
       },
       {
@@ -232,14 +232,13 @@
     "departure": {
       "time": "17:00",
       "label": "Departure",
-      "note": "The program day ends at 5:00 PM. The final half hour is flexible time for wrap-up and departure."
+      "note": "The program day ends at 5:00 PM, when buses return to pick up students. The final half hour is flexible time for wrap-up."
     },
     "notes": [
       "This is a planning schedule. Exact activity order, timing, and locations may be refined before the program, and REEF will confirm the final schedule with you.",
-      "Each activity is planned as a one-hour program; the time between activities allows for transitions.",
+      "The glass-bottom boat tour is planned as a 2.5-hour program for every cohort. Citizen science and fish identification, the lionfish lesson, marine ecology, and endangered species are each planned as one-hour programs, with time between activities for transitions.",
       "Every cohort has the same one-hour lunch. Lunch periods are staggered so the picnic area is not crowded.",
-      "The glass-bottom boat tour times are set by the boat schedule. The other programs are arranged around them.",
-      "Your group arrives on three buses, and the program begins at 9:00 AM."
+      "Your school provides bus transportation. Your group arrives on three buses for a 9:00 AM drop-off, and the buses return to pick students up at 5:00 PM."
     ]
   },
   "days": [
@@ -372,13 +371,13 @@
       }
     ],
     "logistics": {
-      "transportation": "Your school arranges transportation to and from the park. The group arrives on three buses, and park entrance fees for all three buses are included. Transportation between program locations is still being explored and is not part of this proposal.",
-      "familyTransportation": "Students travel to and from the park by school bus. Your school will share departure and return times.",
+      "transportation": "Your school provides bus transportation to and from John Pennekamp Coral Reef State Park. The group arrives on three buses for a 9:00 AM drop-off, and the buses return to pick up students at 5:00 PM. Park entrance fees for all three buses are included. Transportation between the park and other locations is still being explored and is not part of this proposal.",
+      "familyTransportation": "Students travel to and from the park by school bus, with drop-off at 9:00 AM and pick-up at 5:00 PM. Your school will share departure and return times.",
       "meals": "Lunch is not provided. Students and chaperones bring a packed lunch, and each cohort has a scheduled picnic lunch at the park. REEF staff can recommend delivery options.",
       "lunch": "Packed lunches from home. Each cohort eats at its own scheduled time in the park picnic area, between 11:00 AM and 12:30 PM.",
       "arrival": "Buses arrive at John Pennekamp Coral Reef State Park for a 9:00 AM start.",
       "transitions": "Short gaps between activities are transition time for moving between the marina, the picnic area and program areas. This is a planning schedule, so exact timing may be refined before the program.",
-      "departure": "The program day ends at 5:00 PM. The final half hour is flexible time for wrap-up and departure.",
+      "departure": "The program day ends at 5:00 PM, when buses return to pick up students.",
       "bring": [
         "A packed lunch"
       ]
@@ -388,15 +387,15 @@
       "Exact cohort sizes and which students are in each cohort",
       "Teacher and chaperone assignments for each cohort",
       "Final activity order and timing (this is a planning schedule)",
-      "Locations for the afternoon programs, and any transportation between locations (not yet confirmed)"
+      "Whether any programs can move to the REEF campus (this depends on transportation between the park and campus, which is still being explored and is not confirmed)"
     ],
     "family": {
-      "generalLocation": "John Pennekamp Coral Reef State Park, Key Largo (afternoon program locations to be confirmed)",
+      "generalLocation": "John Pennekamp Coral Reef State Park, Key Largo",
       "intro": "Students will spend a day with REEF educators, working in small groups that rotate through hands-on marine science experiences. This is a draft planning schedule; REEF will confirm final timing and locations."
     },
     "student": {
       "headline": "A day on the reef at John Pennekamp",
-      "intro": "You'll spend the day with REEF educators, rotating with your cohort through hands-on marine science experiences at John Pennekamp Coral Reef State Park and other locations to be confirmed.",
+      "intro": "You'll spend the day with REEF educators, rotating with your cohort through hands-on marine science experiences at John Pennekamp Coral Reef State Park.",
       "feel": [
         "You'll move through the day with your cohort, a small group of classmates.",
         "You'll spend time on the water, at a hands-on lab, and outdoors at the park."

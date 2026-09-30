@@ -47,6 +47,7 @@ CONTENT_DIR = Path(__file__).parent / "content"
 VIEW_KEYS = ("administrator", "educator", "family", "student")
 PUBLIC_VIEWS = ("family", "student")          # never carry pricing or terms
 CONFIRMED_STATUSES = {"Confirmed", "In Progress", "Completed"}
+CONTRACT_SIGNED = "Signed"
 ROLE_LABELS = {
     "coordinator": "Primary coordinator",
     "decisionMaker": "Authorized decision-maker",
@@ -73,8 +74,19 @@ def load_defaults():
         return json.load(fh)
 
 
-def share_status(booking_status):
-    confirmed = booking_status in CONFIRMED_STATUSES
+def is_schedule_draft(booking_status, contract_status):
+    """The one draft rule (2026-09-30), used by the proposal banner and by the
+    audience pages' confirmed/draft test. A schedule stops being a draft only
+    once the contract is received AND signed (Agreement/Contract Status ==
+    "Signed"), or the booking has reached Confirmed / In Progress / Completed.
+    Status "Contracted" alone is still a draft."""
+    if contract_status == CONTRACT_SIGNED:
+        return False
+    return (booking_status or "") not in CONFIRMED_STATUSES
+
+
+def share_status(booking_status, contract_status):
+    confirmed = not is_schedule_draft(booking_status, contract_status)
     return ("confirmed", "Confirmed") if confirmed else ("draft", "Draft")
 
 
@@ -217,7 +229,7 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on):
     defaults = load_defaults()
     aud = copy.deepcopy(itin.get("audiences") or {})
     record_id = b["record_id"]
-    status, status_label = share_status(b.get("status"))
+    status, status_label = share_status(b.get("status"), b.get("agreement_contract_status"))
     version = pd["meta"].get("proposalVersion") or "v1"
     roles = _validate_roles(aud.get("roles"), record_id)
     logistics = aud.get("logistics") or {}
