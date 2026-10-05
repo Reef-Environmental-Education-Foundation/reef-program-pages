@@ -80,7 +80,7 @@ window.BOOKING_DATA = {
     items: [
       "Review and sign your agreement in Zoho Sign (link above).",
       "Return your group's signed waivers and health/medical forms.",
-      "Confirm final headcount with your REEF educator at least 2 weeks before arrival.",
+      "Confirm final headcount with your REEF educator by [90 days before arrival, from booking data].",
       "Reach out any time with questions before your expedition.",
     ],
   },
