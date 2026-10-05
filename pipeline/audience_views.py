@@ -48,6 +48,7 @@ VIEW_KEYS = ("administrator", "educator", "family", "student")
 PUBLIC_VIEWS = ("family", "student")          # never carry pricing or terms
 CONFIRMED_STATUSES = {"Confirmed", "In Progress", "Completed"}
 CONTRACT_SIGNED = "Signed"
+DEPOSIT_RECEIVED = {"Deposit Received", "Paid in Full"}
 ROLE_LABELS = {
     "coordinator": "Primary coordinator",
     "decisionMaker": "Authorized decision-maker",
@@ -85,9 +86,29 @@ def is_schedule_draft(booking_status, contract_status):
     return (booking_status or "") not in CONFIRMED_STATUSES
 
 
-def share_status(booking_status, contract_status):
-    confirmed = not is_schedule_draft(booking_status, contract_status)
-    return ("confirmed", "Confirmed") if confirmed else ("draft", "Draft")
+def deposit_received(booking_status, deposit_status):
+    """Contracted = agreement signed. Confirmed ("Dates confirmed") = deposit
+    received. Dates count as confirmed when the deposit is received OR Status
+    has reached Confirmed / In Progress / Completed (plan D-2)."""
+    return (deposit_status in DEPOSIT_RECEIVED) or ((booking_status or "") in CONFIRMED_STATUSES)
+
+
+def share_status(booking_status, contract_status, deposit_status=None):
+    """Display state for the audience views: draft, signed, or confirmed.
+    Draft ends on the signed agreement (the 9/30 rule, unchanged), but the
+    word "confirmed" is only used once the deposit is received."""
+    if is_schedule_draft(booking_status, contract_status):
+        return ("draft", "Draft")
+    if deposit_received(booking_status, deposit_status):
+        return ("confirmed", "Dates confirmed")
+    return ("signed", "Agreement signed")
+
+
+def dates_label(booking_status, contract_status, deposit_status=None):
+    """Label for the Dates chip on the pre-trip page."""
+    state, _ = share_status(booking_status, contract_status, deposit_status)
+    return {"confirmed": "Dates confirmed",
+            "signed": "Agreement signed \u00b7 deposit pending"}.get(state, "Proposed")
 
 
 def _validate_roles(roles, record_id):
@@ -229,7 +250,8 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on):
     defaults = load_defaults()
     aud = copy.deepcopy(itin.get("audiences") or {})
     record_id = b["record_id"]
-    status, status_label = share_status(b.get("status"), b.get("agreement_contract_status"))
+    status, status_label = share_status(b.get("status"), b.get("agreement_contract_status"),
+                                        b.get("deposit_payment_status"))
     version = pd["meta"].get("proposalVersion") or "v1"
     roles = _validate_roles(aud.get("roles"), record_id)
     logistics = aud.get("logistics") or {}
@@ -241,6 +263,9 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on):
     common = {
         "status": status,
         "statusLabel": status_label,
+        # Boolean only: the raw Deposit/Payment Status (e.g. "Overdue") never
+        # goes into a public payload.
+        "depositReceived": deposit_received(b.get("status"), b.get("deposit_payment_status")),
         "version": version,
         "lastUpdated": generated_on,
         "orgName": pd["group"]["orgName"],

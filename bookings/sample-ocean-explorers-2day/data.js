@@ -1,5 +1,5 @@
 /* ============================================================
-   Sample booking data — Confirmed/Pre-Trip Packet
+   Sample booking data — Get Ready / Pre-Trip Packet
    ------------------------------------------------------------
    This is a WORKED EXAMPLE matching the sample packet Martha
    supplied (REEF_OceanExplorers_Sample_PreTrip_Packet), rebuilt
@@ -65,7 +65,7 @@ window.BOOKING_DATA = {
   actionNeeded: {
     show: true,
     headline: "Your agreement is ready to sign",
-    detail: "Review and sign your Ocean Explorers agreement in Zoho Sign to lock in your dates.",
+    detail: "Review and sign your Ocean Explorers agreement in Zoho Sign. Your program dates are confirmed once your deposit is received.",
     ctaText: "Review & Sign Agreement",
     ctaUrl: "https://sign.zoho.com/reef-sample-agreement-link",
   },

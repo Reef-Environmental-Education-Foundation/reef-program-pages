@@ -1188,6 +1188,7 @@ li{margin:0;}
 .proposal-shell .share-card-top{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
 .proposal-shell .share-status{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-radius:20px;padding:3px 9px;background:#FFF4C2;color:#4F4000;}
 .proposal-shell .share-status.is-confirmed{background:rgba(0,167,157,.14);color:var(--teal-text);}
+.proposal-shell .share-status.is-signed{background:#E4EEF9;color:#173F66;}
 .proposal-shell .share-flag{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--p-slate);border:1px solid var(--p-hairline-strong);border-radius:20px;padding:2px 8px;}
 .proposal-shell .share-aud{font-size:13px;font-weight:700;color:var(--teal-text);}
 .proposal-shell .share-desc{font-size:14px;color:var(--p-slate);line-height:1.5;}
@@ -1215,6 +1216,7 @@ li{margin:0;}
 .audience-shell .a-status-ribbon{text-align:center;font-size:12.5px;font-weight:700;letter-spacing:.02em;padding:7px 16px;}
 .audience-shell .a-status-ribbon.is-draft{background:#FFF4C2;color:#4F4000;}
 .audience-shell .a-status-ribbon.is-confirmed{background:#D5F1EE;color:#0B4F4A;}
+.audience-shell .a-status-ribbon.is-signed{background:#E4EEF9;color:#173F66;}
 .audience-shell .a-hero{padding:34px 0 28px;}
 .audience-shell .a-hero h1{font-size:clamp(26px,5.4vw,40px);}
 .audience-shell .a-main{padding-bottom:30px;}
@@ -1268,7 +1270,9 @@ li{margin:0;}
   @page{margin:12mm;}
 }
 @media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]) .proposal-shell .share-status:not(.is-confirmed){background:rgba(201,166,0,.22);color:#FFF1B8;}
+  :root:not([data-theme="light"]) .proposal-shell .share-status:not(.is-confirmed):not(.is-signed){background:rgba(201,166,0,.22);color:#FFF1B8;}
+  :root:not([data-theme="light"]) .proposal-shell .share-status.is-signed{background:rgba(120,170,230,.2);color:#CFE3FA;}
+  :root:not([data-theme="light"]) .audience-shell .a-status-ribbon.is-signed{background:#1E3550;color:#CFE3FA;}
   :root:not([data-theme="light"]) .audience-shell .a-status-ribbon.is-draft{background:#3A3200;color:#FFF1B8;}
 }
 

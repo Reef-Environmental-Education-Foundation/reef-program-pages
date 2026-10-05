@@ -28,7 +28,7 @@
      program: {
        name, track, groupName, schoolOrg, gradeLevel, groupSize,
        location,
-       dates: { label: "Draft"|"Confirmed", range: string }
+       dates: { label: "Proposed"|"Agreement signed · deposit pending"|"Dates confirmed", range: string }
      },
      contacts: {
        educatorName, educatorPhone (optional), educatorEmail (optional),
@@ -465,7 +465,7 @@
 
   function defaultNextSteps(status) {
     if (status === "Signed") {
-      return ["Your agreement is signed — no action needed here.", "Watch your email for final trip details as your date approaches."];
+      return ["Your agreement is signed. Your program dates are confirmed once your deposit is received.", "Watch your email for final trip details as your date approaches."];
     }
     if (status === "Sent") {
       return ["Review and sign your agreement (see above).", "Return your group's forms and any outstanding participant paperwork.", "Reach out any time with questions before your date."];
@@ -658,7 +658,7 @@
 
     if (opts.withNeeds !== false && (share.needs || []).length) {
       const fs = el("fieldset", { class: "needs-picker" }, [
-        el("legend", {}, ["What needs to happen before your group can confirm?"]),
+        el("legend", {}, ["What needs to happen before your group can approve this proposal?"]),
         el("p", { class: "needs-dek" }, ["Choose any that apply."]),
       ]);
       (share.needs || []).forEach(function (n) {
@@ -797,13 +797,17 @@
     if (data.meta && data.meta.sampleFlag) {
       pageRoot.appendChild(el("div", { class: "sample-flag" }, [el("strong", {}, ["SAMPLE — DESIGN REVIEW ONLY"]), "  ·  illustrative content, not a confirmed program"]));
     }
-    const isDraft = V.status !== "confirmed";
-    pageRoot.appendChild(el("div", { class: "a-status-ribbon is-" + (isDraft ? "draft" : "confirmed") }, [
-      isDraft ? "Proposed program · Draft schedule · Details may change until your contract is confirmed"
-              : "Confirmed program",
+    // Three display states: draft, signed (agreement signed, deposit not yet
+    // received) and confirmed (deposit received).
+    const isDraft = V.status === "draft";
+    const isSigned = V.status === "signed";
+    pageRoot.appendChild(el("div", { class: "a-status-ribbon is-" + (isDraft ? "draft" : isSigned ? "signed" : "confirmed") }, [
+      isDraft ? "Proposed program · Draft schedule · Details may change until your agreement is signed"
+              : isSigned ? "Agreement signed · Dates confirmed once your deposit is received"
+              : "Dates confirmed",
     ]));
     const chips = [
-      [isDraft ? "Proposed Date" : "Date", V.dateLine],
+      [isDraft ? "Proposed Date" : isSigned ? "Date" : "Confirmed date", V.dateLine],
       V.view === "family" || V.view === "student" ? ["Where", V.location] : null,
       V.hours ? ["Hours", V.hours] : null,
       ["Version", (V.version || "v1") + (V.lastUpdated ? " · Updated " + V.lastUpdated : "")],
@@ -1026,7 +1030,7 @@
       if (sent) {
         root.appendChild(el("div", {}, [
           el("span", { class: "eyebrow on-dark" }, [sent.response === "admin_approved" ? "✓ APPROVAL SENT" : "✓ FEEDBACK SENT"]),
-          el("h3", {}, [sent.response === "admin_approved" ? "Thank you. REEF will confirm by email." : "Thank you. REEF will follow up by email."]),
+          el("h3", {}, [sent.response === "admin_approved" ? "Thank you. REEF will follow up by email." : "Thank you. REEF will follow up by email."]),
           el("p", { class: "cta-fine" }, [A.webhookUrl ? "Recorded for " + sent.responderName + "." : "If your email app didn't open, email " + (A.emailTo || "explorers@REEF.org") + " directly."]),
         ]));
         return;
@@ -1035,7 +1039,7 @@
       const kids = [
         el("span", { class: "eyebrow on-dark" }, ["FOR THE APPROVING ADMINISTRATOR"]),
         el("h3", {}, [mode === "feedback" ? "Send feedback to REEF" : "Approve or send feedback"]),
-        el("p", {}, ["Approving tells REEF to prepare the contract. It isn't a signature and doesn't commit a payment. REEF confirms every approval by email."]),
+        el("p", {}, ["Approving tells REEF to prepare the contract. It isn't a signature and doesn't commit a payment. REEF will follow up by email."]),
         field("Your name", nameId, { autocomplete: "name" }),
         field("Your role or title", roleId, { autocomplete: "organization-title" }),
       ];
@@ -1785,7 +1789,8 @@
     }
 
     // Draft Program Schedule notice (2026-09-30). PD.scheduleDraft is set by
-    // the pipeline from Bookings.Status: true before Contracted, false after.
+    // the pipeline: true until the agreement is signed (or Status reaches
+    // Confirmed / In Progress / Completed), false after.
     function draftBanner(compact) {
       if (!PD.scheduleDraft) return null;
       return el("div", { class: "draft-banner" + (compact ? " is-compact" : ""), role: "note" }, [

@@ -30,8 +30,8 @@ editing `render.js` or `styles.css` per booking.
 The format follows the Itinerary Format & Component Spec Martha provided
 (`REEF_OceanExplorers_Itinerary_Format_Spec.docx`):
 
-- **`docType: "pretrip"`** — Confirmed/Pre-Trip Packet. Sent to a confirmed
-  group: welcome note, trip snapshot, daily schedule, what students will do,
+- **`docType: "pretrip"`** — Get Ready / Pre-Trip Packet. Sent once the
+  agreement is signed: welcome note, trip snapshot, daily schedule, what students will do,
   what to bring, forms & readiness, final reminders. This is the type
   illustrated in `bookings/sample-ocean-explorers-2day/`.
 - **`docType: "proposal"`** — Proposal/Sales Itinerary. Sent pre-booking to
@@ -150,7 +150,7 @@ never counts as approval.
   (see that folder's README), plus the REEF-wide defaults in `pipeline/content/audience_defaults.json`.
 - Same Approved-to-Share lock: preview runs put all four views inside
   `INTERNAL-PREVIEW.html` (open it with `?view=family`, etc.) and publish nothing.
-- The pre-trip page shows the same materials in their confirmed form, plus the
+- The pre-trip page shows the same materials in their post-signature form, plus the
   rotation matrix for rotating-cohort bookings.
 - `?view=<key>` on a booking URL redirects to that view's own page.
 - **Read `PRIVACY.md`** — GitHub Pages is public, and this is how the views

@@ -73,7 +73,7 @@ import os
 import re
 import sys
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import requests
@@ -462,6 +462,7 @@ def fetch_booking_data(record_id):
         "proposal_response": f.get("Proposal Response", ""),
         "agreement_contract_status": f.get("Agreement/Contract Status"),
         "deposit_payment_status": f.get("Deposit/Payment Status"),
+        "deposit_due_date": f.get("Deposit Due Date"),
         "payment_tier": f.get("Payment Tier", ""),
         "deposit_due_now": f.get("Deposit Due Now", 0),
         "payment2_amount": f.get("Payment 2 Amount", 0),
@@ -1086,6 +1087,27 @@ def build_proposal_data(b, photos=None):
 
 # ---------------------------------------------------------------- Confirmed page
 
+def pretrip_next_steps(b):
+    """Pre-trip "next steps" list. Contracted = agreement signed; dates are
+    confirmed only once the deposit is received (G1 vocabulary rule)."""
+    items = []
+    if b["agreement_contract_status"] != "Signed":
+        items.append("Review and sign your agreement once it's sent (see above).")
+    elif not audience_views.deposit_received(b["status"], b.get("deposit_payment_status")):
+        due = b.get("deposit_due_date")
+        items.append(f"Pay your deposit by {date_pretty(due)} to confirm your program dates." if due
+                     else "Pay your deposit to confirm your program dates.")
+    items.append("Return your group's signed waivers and health/medical forms.")
+    if b.get("arrival_date"):
+        headcount_due = datetime.strptime(b["arrival_date"][:10], "%Y-%m-%d") - timedelta(days=90)
+        items.append("Confirm final headcount with your REEF educator by "
+                     f"{headcount_due.strftime('%b %-d, %Y')}.")
+    else:
+        items.append("Confirm final headcount with your REEF educator 90 days before arrival.")
+    items.append("Reach out any time with questions before your Expedition.")
+    return items
+
+
 def build_confirmed_page_data(b):
     itin = load_itinerary(b["record_id"])
     days_raw = copy.deepcopy(itin["days"])
@@ -1120,7 +1142,7 @@ def build_confirmed_page_data(b):
         action_needed = {
             "show": True,
             "headline": "Your agreement is ready to sign",
-            "detail": "Review and sign your Ocean Explorers agreement to lock in your dates.",
+            "detail": "Review and sign your Ocean Explorers agreement. Your program dates are confirmed once your deposit is received.",
             "ctaText": "Review & Sign Agreement",
             # Zoho Sign integration is out of scope for this build (Martha, 2026-09-03).
             "ctaUrl": None,
@@ -1169,7 +1191,8 @@ def build_confirmed_page_data(b):
             "location": itin.get("location") or CUSTOMER_LOCATION.get(b["location"], b["location"])
                         or "REEF Campus, Key Largo",
             "dates": {
-                "label": "Confirmed" if b["status"] == "Confirmed" else "Proposed",
+                "label": audience_views.dates_label(b["status"], b["agreement_contract_status"],
+                                                    b.get("deposit_payment_status")),
                 "range": f"{date_pretty(b['arrival_date'])} - {date_pretty(b['departure_date'])}",
             },
         },
@@ -1192,14 +1215,7 @@ def build_confirmed_page_data(b):
         "actionNeeded": action_needed,
         "agreement": agreement,
         "paymentSchedule": payment_schedule,
-        "nextSteps": {
-            "items": [
-                "Review and sign your agreement once it's sent (see above).",
-                "Return your group's signed waivers and health/medical forms.",
-                "Confirm final headcount with your REEF educator at least 2 weeks before arrival.",
-                "Reach out any time with questions before your Expedition.",
-            ],
-        },
+        "nextSteps": {"items": pretrip_next_steps(b)},
         "welcome": {
             "body": [
                 "We're glad your group is joining us. This packet lays out what to expect from your "
