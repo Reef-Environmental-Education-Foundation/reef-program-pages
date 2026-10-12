@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 2,
+  "scheduleFormat": "standard",
+  "sourceNote": "DRAFT 2026-10-12 for Rose's review. The Benjamin School, Apr 15–16, 2027, 90 middle school students in 3 groups of 30 rotating. No housing, no meals (Martha, 10/10). Evening program excluded: not priced or decided. Rotation order, boat times and evening program are not finalized; times are placeholders. The generator's rotation block covers a single schedule window and cannot express a rotating day 1 plus a whole-group day 2, so day 1 uses three rotation blocks in standard format. Concurrent Cohort Rotation and # Cohorts must be set in Airtable before the workflow runs. Internal only; never rendered.",
+  "location": "Key Largo, Florida",
+  "summary": "A two-day marine science program for 90 middle school students in Key Largo, with groups of 30 rotating through reef snorkeling and fish surveys, mangrove kayaking, and a lionfish dissection before a day of coral ecology and citizen science.",
+  "days": [
+    {
+      "dayNumber": 1,
+      "totalDays": 2,
+      "title": "Welcome to the Reef",
+      "theme": "Three groups of 30 rotate through reef snorkeling, mangrove kayaking, and a lionfish lesson.",
+      "blocks": [
+        {
+          "time": "9:00 AM–10:00 AM",
+          "tag": "Arrival",
+          "title": "Arrival & Welcome",
+          "description": "Your group arrives in Key Largo. REEF educators welcome the group, preview the day, and introduce the three groups of 30 students."
+        },
+        {
+          "time": "10:00 AM–12:00 PM",
+          "tag": "Rotation",
+          "title": "Rotation 1: Reef, Mangroves & Lionfish",
+          "description": "Each group of 30 students takes part in one of three stations: reef snorkel and fish surveys, mangrove kayaking, or a lionfish lesson and dissection. Over three rotations, every group visits all three stations. Station order is confirmed once boat times are set."
+        },
+        {
+          "time": "12:00 PM–1:00 PM",
+          "tag": "Break",
+          "title": "Lunch (on your own)",
+          "description": "Lunch is not included in this proposal. Your group can bring lunch or pick up food nearby."
+        },
+        {
+          "time": "1:00 PM–3:00 PM",
+          "tag": "Rotation",
+          "title": "Rotation 2: Reef, Mangroves & Lionfish",
+          "description": "Each group of 30 students takes part in one of three stations: reef snorkel and fish surveys, mangrove kayaking, or a lionfish lesson and dissection. Over three rotations, every group visits all three stations. Station order is confirmed once boat times are set."
+        },
+        {
+          "time": "3:15 PM–5:00 PM",
+          "tag": "Rotation",
+          "title": "Rotation 3: Reef, Mangroves & Lionfish",
+          "description": "Each group of 30 students takes part in one of three stations: reef snorkel and fish surveys, mangrove kayaking, or a lionfish lesson and dissection. Over three rotations, every group visits all three stations. Station order is confirmed once boat times are set."
+        }
+      ],
+      "studentsWill": [
+        "Snorkel a Key Largo coral reef and record the fish they find.",
+        "Explore a mangrove ecosystem by kayak.",
+        "Investigate invasive lionfish through a guided dissection."
+      ],
+      "outcomesNote": null
+    },
+    {
+      "dayNumber": 2,
+      "totalDays": 2,
+      "title": "Coral, Fish & Citizen Science",
+      "theme": "Study how a coral reef works, sharpen your fish ID skills, and learn how citizen scientists contribute real data.",
+      "blocks": [
+        {
+          "time": "9:00 AM–10:30 AM",
+          "tag": "Marine Ecology",
+          "title": "Coral Reef Ecology",
+          "description": "A Florida Keys coral lesson on how reefs are built, how the organisms on them depend on each other, and how coral restoration helps reefs recover."
+        },
+        {
+          "time": "10:45 AM–12:00 PM",
+          "tag": "Fish ID",
+          "title": "Fish ID & Seine Netting",
+          "description": "Students build fish identification skills and use seine netting to sample and identify fish up close."
+        },
+        {
+          "time": "12:00 PM–1:00 PM",
+          "tag": "Break",
+          "title": "Lunch (on your own)",
+          "description": "Lunch is not included in this proposal. Your group can bring lunch or pick up food nearby."
+        },
+        {
+          "time": "1:00 PM–2:30 PM",
+          "tag": "Citizen Science",
+          "title": "Citizen Science & the Volunteer Fish Survey Project",
+          "description": "Students learn how REEF's volunteer divers and snorkelers record the fish they see, and why that data matters to scientists and reef managers. They practice the survey method they will use on the reef."
+        },
+        {
+          "time": "2:30 PM",
+          "tag": "Departure",
+          "title": "Departure",
+          "description": "Your group departs. Lunch is not included in this proposal."
+        }
+      ],
+      "studentsWill": [
+        "Explain how coral reefs function as connected ecosystems.",
+        "Practice fish identification and sample fish with seine nets.",
+        "Understand how REEF fish survey data is collected and used."
+      ],
+      "outcomesNote": null
+    }
+  ]
+}
