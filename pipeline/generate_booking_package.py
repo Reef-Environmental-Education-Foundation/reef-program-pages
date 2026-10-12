@@ -63,6 +63,12 @@ the customer response buttons disabled, and attached to an internal Asana
 review task for Rose. Nothing is written under bookings/ or contracts/, so
 the workflow's commit step finds no changes and nothing is pushed or deployed.
 Once approved and re-run, the page is published and the review task says so.
+
+Estimate stage (2026-10-10): resolve_stage() picks the page from Status AND the
+stage field: Status "Quoting" with "Approved to Share - Stage" = "Estimate"
+builds the pre-proposal Estimate page (docType "estimate", see estimate_view.py).
+The same lock applies (it needs the stage "Estimate" plus the other approval
+fields); estimate runs write no contract and no Approve & Share views.
 """
 
 import base64
@@ -81,6 +87,7 @@ import docx
 
 sys.path.insert(0, str(Path(__file__).parent))
 import audience_views  # noqa: E402  (Approve & Share audience views, 2026-09-28)
+import estimate_view  # noqa: E402  (Estimate stage, 2026-10-10)
 
 AIRTABLE_API_KEY = os.environ.get("AIRTABLE_API_KEY")
 API_ROOT = "https://api.airtable.com/v0"
@@ -146,6 +153,18 @@ PAGES_BASE_URL = "https://reef-environmental-education-foundation.github.io/reef
 # options exactly (em dash in the field name, matching Airtable).
 SHARE_STAGE_PROPOSAL = "Proposal"
 SHARE_STAGE_PRETRIP = "Pre-trip Packet + Contract"
+# Estimate stage (2026-10-10). The option must exist in Airtable's single
+# select; until Martha adds it the API never returns it, so resolve_stage()
+# never picks "estimate" and nothing changes (fails safe).
+SHARE_STAGE_ESTIMATE = "Estimate"
+STAGE_ESTIMATE, STAGE_PROPOSAL, STAGE_PRETRIP = "estimate", "proposal", "pretrip"
+NEEDED_STAGE = {
+    STAGE_ESTIMATE: SHARE_STAGE_ESTIMATE,
+    STAGE_PROPOSAL: SHARE_STAGE_PROPOSAL,
+    STAGE_PRETRIP: SHARE_STAGE_PRETRIP,
+}
+# Bookings whose status is Completed predate the 1-per-10 rule and keep 1 per 9.
+LEGACY_FREE_CHAP_DIVISOR = 9
 ASSETS_DIR = REPO_ROOT.parent / "assets"
 
 
@@ -386,8 +405,14 @@ def chaperone_policy(b):
         total = s + c
         earned = total // t
         cap = max_complimentary_chaperones(s, t)
-        lines.append(f"One chaperone space is complimentary for every {t} people in your group, counting "
-                     f"students and chaperones together. Your group of {s} students and {c} chaperones "
+        if b.get("status") == "Completed":
+            # Legacy bookings keep their original (1 per 9) wording untouched.
+            rule = (f"One chaperone space is complimentary for every {t} people in your group, counting "
+                    "students and chaperones together.")
+        else:
+            rule = (f"REEF includes one free chaperone space for every {t} participants "
+                    "(students and chaperones combined).")
+        lines.append(f"{rule} Your group of {s} students and {c} chaperones "
                      f"({total} people) earns {earned} complimentary space{'s' if earned != 1 else ''}.")
         if cap >= c:
             lines.append(f"With {s} students, you can bring up to {cap} chaperones before any chaperone is billed.")
@@ -479,13 +504,18 @@ def fetch_booking_data(record_id):
         "proposal_version": f.get("Proposal Version"),
         "proposal_sent_date": f.get("Proposal Sent Date"),
         "free_chaperones": f.get("# Free Chaperones", 0),
-        # The ratio behind "# Free Chaperones" (defaults to 9 when no
+        "billable_chaperones": f.get("# Billable Chaperones"),
+        "activity_ids": f.get("Activities Requested") or [],
+        # The ratio behind "# Free Chaperones" (defaults to the config divisor,
+        # 10, for non-legacy bookings; 9 for Completed ones; when no
         # override is set on this booking -- see the field's own formula:
         # MIN(chaperones, ROUNDDOWN((students+chaperones)/threshold, 0))).
         # Pulled through so the proposal can state the actual rule in
         # plain language instead of only showing the resulting number
         # (QA walkthrough, 2026-09-09 -- pricing clarity finding).
-        "free_chap_threshold": f.get("Free Chap Threshold Override") or 9,
+        "free_chap_threshold": f.get("Free Chap Threshold Override") or (
+            LEGACY_FREE_CHAP_DIVISOR if f.get("Status") == "Completed"
+            else estimate_view.free_chaperone_divisor()),
         "free_chap_override": f.get("Free Chap Threshold Override"),
         "pricing_model": f.get("Pricing Model (auto)", ""),
         "org_type": f.get("Organization Type", ""),
@@ -534,6 +564,21 @@ def fetch_linked_names(base_id, table_name, record_ids, name_field):
             if item and item not in names:
                 names.append(item)
     return names
+
+
+def fetch_activity_narrative_status(record_ids):
+    """{Activity Name: Proposal Narrative Status} for the booking's linked
+    activities ("" when the status is blank). Used only by the Estimate stage
+    to withhold text for activities Martha has not approved yet."""
+    out = {}
+    for rid in record_ids or []:
+        if not isinstance(rid, str) or not rid.startswith("rec"):
+            continue
+        f = airtable_get(BOOKINGS_BASE, ACTIVITIES_TABLE, rid)["fields"]
+        status = f.get("Proposal Narrative Status")
+        status = status.get("name") if isinstance(status, dict) else status
+        out[f.get("Activity Name", rid)] = status or ""
+    return out
 
 
 def split_items(text):
@@ -1302,11 +1347,28 @@ def build_contract(b, out_path):
 
 # ---------------------------------------------------------------- Approved-to-Share lock
 
-def check_share_approval(b, is_proposal):
+def resolve_stage(b):
+    """Which page this run builds, used by BOTH the builder choice and the lock:
+
+      Quoting + stage field "Estimate"     -> "estimate"
+      Quoting / Proposal Sent / Verbal Yes -> "proposal"
+      anything else                        -> "pretrip"
+
+    An "Estimate" stage on a booking that has moved past Quoting is NOT an
+    estimate: it builds the proposal/pretrip page and the lock then reports a
+    stage mismatch, so the run is a preview (fails safe)."""
+    if b["status"] == "Quoting" and b["approved_stage"] == SHARE_STAGE_ESTIMATE:
+        return STAGE_ESTIMATE
+    if b["status"] in PROPOSAL_STATUSES:
+        return STAGE_PROPOSAL
+    return STAGE_PRETRIP
+
+
+def check_share_approval(b, stage):
     """Returns a list of reasons this booking is NOT approved to be published
-    for the page this run would build. An empty list means approved.
-    See the module docstring for the rules (Martha, 2026-09-25)."""
-    needed_stage = SHARE_STAGE_PROPOSAL if is_proposal else SHARE_STAGE_PRETRIP
+    for the page this run would build (`stage` from resolve_stage()). An empty
+    list means approved. See the module docstring (Martha, 2026-09-25)."""
+    needed_stage = NEEDED_STAGE[stage]
     problems = []
     if not b["approved_to_share"]:
         problems.append("'Approved to Share' is not checked")
@@ -1328,7 +1390,8 @@ def _data_uri(path):
     return f"data:{mime};base64," + base64.b64encode(Path(path).read_bytes()).decode("ascii")
 
 
-def build_preview_html(page_data, booking_dir, title, reasons, views=None):
+def build_preview_html(page_data, booking_dir, title, reasons, views=None,
+                       shell_template=None, robots=None):
     """Packs a generated page into ONE self-contained HTML file for internal
     review: styles, render.js, page data, the REEF logo and hero photos are
     all inlined, so the file opens straight from an Asana attachment with no
@@ -1359,8 +1422,9 @@ def build_preview_html(page_data, booking_dir, title, reasons, views=None):
     # it at the inlined copy instead (harmless no-op if that line changes).
     js = js.replace('return "../".repeat(depth) + "assets/reef-logo-white.png";',
                     "return " + json.dumps(logo_uri) + ";")
-    shell = BOOKING_PAGE_SHELL_TEMPLATE.format(title="INTERNAL PREVIEW — " + title,
-                                               robots=TEST_PAGE_ROBOTS_META)
+    shell = (shell_template or BOOKING_PAGE_SHELL_TEMPLATE).format(
+        title="INTERNAL PREVIEW — " + title,
+        robots=robots if robots is not None else TEST_PAGE_ROBOTS_META)
     banner = (
         '<div style="background:#b3261e;color:#fff;padding:14px 18px;font:600 15px/1.4 '
         'system-ui,sans-serif;text-align:center;position:sticky;top:0;z-index:9999;">'
@@ -1417,7 +1481,8 @@ def asana_project_for_booking(booking_type):
     return ASANA_OXP_PROJECT_GID
 
 
-def create_review_task(b, page_url, contract_url, preview_reasons=None, attachments=()):
+def create_review_task(b, page_url, contract_url, preview_reasons=None, attachments=(),
+                       stage_key=None):
     """Creates an Asana task gating human review before the generated
     proposal/contract is sent to the customer (Martha, 2026-09-04): the
     page and contract still auto-deploy exactly as before, but staff must
@@ -1448,8 +1513,11 @@ def create_review_task(b, page_url, contract_url, preview_reasons=None, attachme
     if preview_reasons is not None:
         # PREVIEW run: nothing was published. The generated page is attached
         # to this task as a self-contained file for internal review.
-        stage = SHARE_STAGE_PROPOSAL if contract_url is None else SHARE_STAGE_PRETRIP
+        stage = NEEDED_STAGE[stage_key] if stage_key else (
+            SHARE_STAGE_PROPOSAL if contract_url is None else SHARE_STAGE_PRETRIP)
         name = f"PREVIEW (not published) — review before sharing — {b['org_name']}"
+        if stage_key == STAGE_ESTIMATE:
+            name = f"PREVIEW (not published) - Estimate - {b['org_name']}"
         notes = (
             f"Auto-generated by generate_booking_package.py for booking {b['record_id']}.\n\n"
             "NOTHING HAS BEEN PUBLISHED OR SENT. This booking is not yet approved to share, "
@@ -1457,10 +1525,13 @@ def create_review_task(b, page_url, contract_url, preview_reasons=None, attachme
             + "".join(f"- {r}\n" for r in preview_reasons)
             + "\nThe attached INTERNAL-PREVIEW.html is the full page (open it in a browser"
             + (", plus the attached contract .docx" if contract_url else "")
-            + "). Check dates, price, org/contact details, and the day-by-day content.\n"
-            "Its last step, Approve & Share, has Preview buttons for the four audience views "
-            "(administrator, educator, family, student) -- check each one too.\n\n"
-            "When it's ready to share, in REEF Bookings | PILOT set on this booking:\n"
+            + ("). Check the price range, the per-student range, the chaperone policy, and that the "
+               "itinerary is labelled as a sample. An Estimate has no Approve button, no contract, "
+               "and no audience views.\n\n" if stage_key == STAGE_ESTIMATE else
+               "). Check dates, price, org/contact details, and the day-by-day content.\n"
+               "Its last step, Approve & Share, has Preview buttons for the four audience views "
+               "(administrator, educator, family, student) -- check each one too.\n\n")
+            + "When it's ready to share, in REEF Bookings | PILOT set on this booking:\n"
             "- Approved to Share: checked\n"
             f"- Approved to Share — Stage: {stage}\n"
             f"- Approved for Proposal Version: {b['proposal_version'] if b['proposal_version'] is not None else '(leave blank -- no Proposal Version set)'}\n"
@@ -1474,8 +1545,9 @@ def create_review_task(b, page_url, contract_url, preview_reasons=None, attachme
         notes = (
             f"Auto-generated by generate_booking_package.py for booking {b['record_id']}.\n\n"
             "Review before this goes to the customer:\n"
-            f"- Proposal/pre-trip page: {page_url}\n"
-            "  (may take a couple of minutes to go live after this task is created)\n"
+            + (f"- Estimate page: {page_url}\n" if stage_key == STAGE_ESTIMATE
+               else f"- Proposal/pre-trip page: {page_url}\n")
+            + "  (may take a couple of minutes to go live after this task is created)\n"
             + (f"- Contract: {contract_url}\n\n" if contract_url else
                "- Contract: not generated yet -- this booking is still pre-commitment "
                "(Quoting / Proposal Sent / Verbal Yes). The contract is produced once "
@@ -1568,6 +1640,31 @@ BOOKING_PAGE_SHELL_TEMPLATE = """<!doctype html>
 # both here and in the sample page.
 
 
+ESTIMATE_PAGE_ROBOTS_META = '<meta name="robots" content="noindex">\n'
+
+ESTIMATE_PAGE_SHELL_TEMPLATE = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{robots}<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&display=swap">
+<title>{title}</title>
+<link rel="stylesheet" href="../../assets/styles.css">
+</head>
+<body>
+  <div class="page"></div>
+
+  <script src="data.js"></script>
+  <script src="../../assets/render.js"></script>
+</body>
+</html>
+"""
+# ^ Estimate stage (2026-10-10): render.js builds the whole page into .page.
+# noindex is on every estimate page, real or sample (not only ZZZ records),
+# since an estimate carries a school's name and a price on a public site.
+
+
 SHARE_PAGE_SHELL_TEMPLATE = """<!doctype html>
 <html lang="en">
 <head>
@@ -1649,13 +1746,15 @@ def main():
         )
 
     slug = slugify(b["org_name"])
-    is_proposal = b["status"] in PROPOSAL_STATUSES
+    stage = resolve_stage(b)
+    is_estimate = stage == STAGE_ESTIMATE
+    is_proposal = stage == STAGE_PROPOSAL
 
     # Approved-to-Share lock (Martha, 2026-09-25): decided BEFORE anything is
     # written. Unapproved runs write only to a temp folder outside the repo,
     # so the workflow's `git add bookings/ contracts/` sees nothing to commit
     # and nothing is pushed or deployed to the public site.
-    preview_reasons = check_share_approval(b, is_proposal)
+    preview_reasons = check_share_approval(b, stage)
     preview = bool(preview_reasons)
     if preview:
         out_root = Path(tempfile.mkdtemp(prefix="reef-preview-"))
@@ -1677,7 +1776,15 @@ def main():
     # is deliberately the same either way, so a booking's URL does not change
     # when it moves from proposal to confirmed -- the page the customer
     # already has a link to just becomes the pre-trip packet.
-    if is_proposal:
+    if is_estimate:
+        # Estimate stage (2026-10-10): sample itinerary + price range. No hero
+        # photos, no audience views, no contract, no Approve & Share.
+        b["activity_narrative_status"] = fetch_activity_narrative_status(b.get("activity_ids"))
+        page_data = estimate_view.build_estimate_data(
+            b, estimate_view.load_estimate_itinerary(record_id),
+            is_sample=is_test_org(b["org_name"]))
+        print(f"Status {b['status']!r} + stage {b['approved_stage']!r} -> estimate page")
+    elif is_proposal:
         page_data = build_proposal_data(b, photos=download_hero_photos(b, booking_dir))
         print(f"Status {b['status']!r} -> proposal page")
     else:
@@ -1704,23 +1811,31 @@ def main():
     # written to share/<view>/ with per-view data files, and gated by the
     # same Approved-to-Share lock (preview runs write them to the temp dir).
     page_url = f"{PAGES_BASE_URL}/bookings/{slug}/"
-    view_data = build_share_views(b, page_data, is_proposal, page_url)
-    write_share_views(booking_dir, view_data, b["org_name"])
+    if is_estimate:
+        view_data = {}   # an Estimate has no Approve & Share views
+    else:
+        view_data = build_share_views(b, page_data, is_proposal, page_url)
+        write_share_views(booking_dir, view_data, b["org_name"])
 
     with open(booking_dir / "data.js", "w") as f:
         f.write("/* GENERATED by generate_booking_package.py -- do not hand-edit. */\n")
         f.write("window.BOOKING_DATA = " + json.dumps(page_data, indent=2) + ";\n")
     print(f"Wrote {booking_dir / 'data.js'}")
 
-    page_title = (f"{b['org_name']} — REEF Proposal" if is_proposal
+    page_title = (f"{b['org_name']} — REEF Estimate" if is_estimate
+                  else f"{b['org_name']} — REEF Proposal" if is_proposal
                   else f"{b['org_name']} — Expedition Packet")
     with open(booking_dir / "index.html", "w") as f:
-        f.write(BOOKING_PAGE_SHELL_TEMPLATE.format(
-            title=page_title,
-            # Real bookings get no robots meta at all (unchanged behavior);
-            # only test/QA records are excluded from search.
-            robots=TEST_PAGE_ROBOTS_META if is_test_org(b["org_name"]) else "",
-        ))
+        if is_estimate:
+            f.write(ESTIMATE_PAGE_SHELL_TEMPLATE.format(
+                title=page_title, robots=ESTIMATE_PAGE_ROBOTS_META))
+        else:
+            f.write(BOOKING_PAGE_SHELL_TEMPLATE.format(
+                title=page_title,
+                # Real bookings get no robots meta at all (unchanged behavior);
+                # only test/QA records are excluded from search.
+                robots=TEST_PAGE_ROBOTS_META if is_test_org(b["org_name"]) else "",
+            ))
     print(f"Wrote {booking_dir / 'index.html'}")
 
     # Contracts are gated on commitment, not just on which page was built.
@@ -1730,7 +1845,10 @@ def main():
     # point invites a customer to sign terms nobody has negotiated. The
     # contract appears once the booking reaches Contracted.
     contract_path = contracts_out / f"{slug}-contract.docx"
-    if is_proposal:
+    if is_estimate:
+        contract_url = None
+        print("Skipping contract generation: an Estimate carries no contract language.")
+    elif is_proposal:
         contract_url = None
         print(f"Skipping contract generation: status {b['status']!r} is pre-commitment "
               f"(no signable contract is published before 'Contracted').")
@@ -1740,15 +1858,18 @@ def main():
         print(f"Wrote {contract_path}")
 
     if preview:
-        preview_html = build_preview_html(page_data, booking_dir, page_title, preview_reasons,
-                                          views=view_data)
+        preview_html = build_preview_html(
+            page_data, booking_dir, page_title, preview_reasons, views=view_data,
+            shell_template=ESTIMATE_PAGE_SHELL_TEMPLATE if is_estimate else None,
+            robots=ESTIMATE_PAGE_ROBOTS_META if is_estimate else None)
         attachments = [preview_html] + ([contract_path] if contract_url else [])
         create_review_task(b, page_url, contract_url,
-                           preview_reasons=preview_reasons, attachments=attachments)
+                           preview_reasons=preview_reasons, attachments=attachments,
+                           stage_key=stage)
         print(f"PREVIEW ONLY -- wrote {preview_html} (attached to the Asana review task). "
               "Nothing under bookings/ or contracts/ was changed, so nothing will be published.")
     else:
-        create_review_task(b, page_url, contract_url)
+        create_review_task(b, page_url, contract_url, stage_key=stage)
 
 
 if __name__ == "__main__":

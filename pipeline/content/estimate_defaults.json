@@ -1,0 +1,24 @@
+{
+  "_comment": "Staff-editable copy and settings for the Estimate page. Goes in pipeline/content/estimate_defaults.json. Nothing here may contain margin, staff labor, campus cost, net income, or the 5% uplift label.",
+  "highMultiplier": "1.10",
+  "roundUpTo": 50,
+  "freeChaperoneDivisor": 10,
+  "card": { "surchargePct": 3 },
+  "contact": {
+    "email": "explorers@REEF.org",
+    "emailStatus": "PENDING_MARTHA_CONFIRMATION",
+    "mailtoSubject": "Request a proposal"
+  },
+  "ribbon": "Estimate, not a quote",
+  "sampleItineraryNote": "Sample itinerary. We build your actual schedule with you.",
+  "chaperonePolicyTemplate": "REEF includes one free chaperone space for every {divisor} participants (students and chaperones combined). Chaperones beyond that join at the standard per-person rate.",
+  "whatWouldChangeYourTotal": [
+    "Group size, including how many chaperones join",
+    "Which activities you choose (boat snorkel, kayaking, campus programs, Pennekamp entry)",
+    "Number of days and your travel dates",
+    "Meals, lodging, or transportation, if you want us to arrange them",
+    "Paying by card adds 3%"
+  ],
+  "notIncluded": ["Meals", "Lodging", "Transportation"],
+  "robots": "noindex"
+}

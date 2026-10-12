@@ -14,6 +14,8 @@
 
    DATA SCHEMA (fields marked optional can be omitted):
 
+   docType: "estimate" is another separate mode (pre-proposal Estimate page,
+   2026-10-10); see renderEstimate() and pipeline/estimate_view.py for its shape.
    docType: "proposal" is a completely separate rendering mode — the
    advanced six-section customer proposal experience (ported from the
    Dropbox review build). It reads only `data.proposal` (plus the
@@ -2107,6 +2109,120 @@
     ]));
   }
 
+  // ================================================================
+  // ESTIMATE MODE (docType "estimate", 2026-10-10) -- the pre-proposal page.
+  // Self-contained: reads only data.estimate / org / group / itinerary / cta
+  // and builds the whole page into .page. No Approve button, no contract
+  // language, no hidden fields: pipeline/estimate_view.py decides at build
+  // time what this payload contains. Text is set with textContent only.
+  // ================================================================
+  function renderEstimate(data) {
+    const E = data.estimate || {};
+    const org = (data.org && data.org.displayName) || "";
+    const group = data.group || {};
+    const itin = data.itinerary || {};
+    const cta = data.cta || {};
+    const days = itin.days || [];
+
+    function list(items, cls) {
+      return el("ul", { class: cls || "est-list" }, (items || []).map(function (t) {
+        return el("li", {}, [t]);
+      }));
+    }
+    function section(id, title, kids) {
+      return el("section", { class: "est-sec", id: id, "aria-labelledby": id + "-h" }, [
+        el("h2", { id: id + "-h" }, [title]),
+      ].concat(kids));
+    }
+    function ctaButton() {
+      return cta.mailto ? el("a", { class: "est-cta", href: cta.mailto }, [cta.label || "Request a proposal"]) : null;
+    }
+
+    const root = document.querySelector(".page") || document.body;
+    root.innerHTML = "";
+    root.classList.add("est-shell");
+
+    root.appendChild(el("div", { class: "est-ribbon", role: "note" }, [E.ribbon || "Estimate, not a quote"]));
+    if (data.meta && data.meta.sampleFlag) {
+      root.appendChild(el("div", { class: "sample-flag" }, [
+        el("strong", {}, ["SAMPLE"]),
+        "  ·  " + (data.meta.sampleFlagText || "Illustrative content, not a confirmed itinerary or price."),
+      ]));
+    }
+
+    const hero = data.hero || {};
+    root.appendChild(el("header", { class: "est-hero" }, [
+      el("img", { class: "est-logo", src: hero.logoUrl || defaultLogoPath(), alt: "REEF Environmental Education Foundation" }),
+      el("p", { class: "est-kicker" }, ["Ocean Explorers Expedition"]),
+      el("h1", {}, [org ? "Estimate for " + org : "Your estimate"]),
+      el("p", { class: "est-group" }, [
+        group.students + " students + " + group.chaperones + " chaperones",
+      ]),
+    ]));
+
+    const main = el("main", { class: "est-main", id: "main" }, []);
+
+    main.appendChild(el("section", { class: "est-sec est-price", id: "est-price", "aria-labelledby": "est-price-h" }, [
+      el("h2", { id: "est-price-h" }, ["Estimated price"]),
+      el("div", { class: "est-tiles" }, [
+        el("div", { class: "est-tile" }, [
+          el("div", { class: "est-tile-label" }, ["Estimated total"]),
+          el("div", { class: "est-tile-num" }, [E.lowLabel + " – " + E.highLabel]),
+          el("div", { class: "est-tile-unit" }, ["for your whole group"]),
+        ]),
+        el("div", { class: "est-tile" }, [
+          el("div", { class: "est-tile-label" }, ["Per paid student"]),
+          el("div", { class: "est-tile-num" }, [E.perPaidStudentLowLabel + " – " + E.perPaidStudentHighLabel]),
+          el("div", { class: "est-tile-unit" }, ["across " + E.paidSpaces + " paid spaces"]),
+        ]),
+      ]),
+      el("p", { class: "est-note" }, [
+        "This is a range to help you plan, not a quote. We confirm your actual price in a proposal built around your group.",
+      ]),
+    ]));
+
+    if (E.chaperonePolicy) {
+      main.appendChild(section("est-chaperones", "Chaperones", [el("p", {}, [E.chaperonePolicy])]));
+    }
+
+    if (days.length) {
+      const dayNodes = days.map(function (d) {
+        return el("article", { class: "est-day" }, [
+          el("h3", {}, [(d.dayNumber ? "Day " + d.dayNumber : "") + (d.title ? " · " + d.title : "")]),
+          d.theme ? el("p", { class: "est-theme" }, [d.theme]) : null,
+          el("ul", { class: "est-blocks" }, (d.blocks || []).map(function (blk) {
+            return el("li", {}, [
+              blk.time ? el("span", { class: "est-time" }, [blk.time]) : null,
+              el("strong", {}, [blk.title || ""]),
+              blk.description ? el("span", { class: "est-desc" }, [blk.description]) : null,
+            ]);
+          })),
+        ]);
+      });
+      main.appendChild(section("est-itinerary", "Sample itinerary",
+        [itin.note ? el("p", { class: "est-note" }, [itin.note]) : null].concat(dayNodes)));
+    }
+
+    if ((E.changes || []).length) {
+      main.appendChild(section("est-changes", "What would change your total", [list(E.changes)]));
+    }
+    if ((E.notIncluded || []).length) {
+      main.appendChild(section("est-excluded", "Not included", [list(E.notIncluded)]));
+    }
+
+    main.appendChild(el("section", { class: "est-sec est-next", id: "est-next", "aria-labelledby": "est-next-h" }, [
+      el("h2", { id: "est-next-h" }, ["Ready for a real plan?"]),
+      el("p", {}, ["Tell us about your group and dates and we will send a proposal."]),
+      ctaButton(),
+    ]));
+    root.appendChild(main);
+
+    root.appendChild(el("footer", { class: "est-footer" }, [
+      "Reef Environmental Education Foundation · Key Largo, FL · ",
+      el("a", { href: "https://www.reef.org" }, ["www.REEF.org"]),
+    ]));
+  }
+
   // ---------------- INIT ----------------
   function init() {
     const data = window.BOOKING_DATA;
@@ -2122,6 +2238,11 @@
     // Approve & Share (2026-09-28): audience views are a third mode.
     if (data.docType === "audience") {
       renderAudienceView(data);
+      return;
+    }
+    // Estimate stage (2026-10-10): a fourth, self-contained mode.
+    if (data.docType === "estimate") {
+      renderEstimate(data);
       return;
     }
     if (routeView(data)) return;
