@@ -474,20 +474,28 @@ def chaperone_policy(b):
     s, c, free = b["students"] or 0, b["chaperones"] or 0, b["free_chaperones"] or 0
     discovery = "Discovery" in (b.get("pricing_model") or "") and not b.get("free_chap_override")
     lines = []
+    billable_stated = False
     if discovery:
         cap = s // 15
         lines.append(f"One chaperone space is complimentary for every 15 students. With {s} students, "
                      f"your group can bring up to {cap} chaperone{'s' if cap != 1 else ''} at no charge.")
     else:
-        t = b["free_chap_threshold"]
-        total = s + c
-        earned = total // t
-        cap = max_complimentary_chaperones(s, t)
-        lines.append(f"One chaperone space is complimentary for every {t} people in your group, counting "
-                     f"students and chaperones together. Your group of {s} students and {c} chaperones "
-                     f"({total} people) earns {earned} complimentary space{'s' if earned != 1 else ''}.")
+        # Policy (Martha, 2026-10-30): one complimentary chaperone for every 9
+        # PAID participants (9 paid + 1 free = 1 per 10 total). Airtable's
+        # "# Free Chaperones" = MIN(chaperones, FLOOR((students + chaperones) / 10))
+        # is the source of truth: every count on the page comes from that field
+        # and "# Billable Chaperones", never from total people / 9.
+        billable = b["billable_chaperones"] if b.get("billable_chaperones") is not None else max(c - free, 0)
+        cap = max_complimentary_chaperones(s, b["free_chap_threshold"])
+        lines.append(f"One chaperone space is complimentary for every 9 paid participants. Your group of "
+                     f"{s} students and {c} chaperones includes {free} complimentary chaperone "
+                     f"space{'s' if free != 1 else ''}.")
         if cap >= c:
             lines.append(f"With {s} students, you can bring up to {cap} chaperones before any chaperone is billed.")
+        elif billable:
+            lines.append(f"The other {billable} chaperone{'s' if billable != 1 else ''} "
+                         f"pay{'' if billable != 1 else 's'} the full per-participant package price, the same as a student.")
+            billable_stated = True
     if c and free >= c:
         headline = f"All {c} chaperone{'s' if c != 1 else ''} are complimentary."
     elif c:
@@ -495,8 +503,9 @@ def chaperone_policy(b):
     else:
         headline = "No chaperones are listed yet."
     # Policy (Martha, 2026-09-28): anyone beyond the complimentary ratio pays the full per-participant package, same as a student.
-    lines.append("Each additional chaperone beyond the complimentary spaces pays the full "
-                 "per-participant package price, the same as a student.")
+    if not billable_stated:
+        lines.append("Each additional chaperone beyond the complimentary spaces pays the full "
+                     "per-participant package price, the same as a student.")
     return headline, lines
 
 
@@ -579,13 +588,14 @@ def fetch_booking_data(record_id):
         "proposal_version": f.get("Proposal Version"),
         "proposal_sent_date": f.get("Proposal Sent Date"),
         "free_chaperones": f.get("# Free Chaperones", 0),
-        # The ratio behind "# Free Chaperones" (defaults to 9 when no
+        # The ratio behind "# Free Chaperones" (defaults to 10 total people when no
         # override is set on this booking -- see the field's own formula:
         # MIN(chaperones, ROUNDDOWN((students+chaperones)/threshold, 0))).
         # Pulled through so the proposal can state the actual rule in
         # plain language instead of only showing the resulting number
         # (QA walkthrough, 2026-09-09 -- pricing clarity finding).
-        "free_chap_threshold": f.get("Free Chap Threshold Override") or 9,
+        "billable_chaperones": f.get("# Billable Chaperones"),
+        "free_chap_threshold": f.get("Free Chap Threshold Override") or 10,
         "free_chap_override": f.get("Free Chap Threshold Override"),
         "pricing_model": f.get("Pricing Model (auto)", ""),
         "org_type": f.get("Organization Type", ""),
