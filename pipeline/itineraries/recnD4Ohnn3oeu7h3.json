@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "scheduleFormat": "standard",
-  "sourceNote": "DRAFT 2026-10-12 for Rose's review. Palmetto Bay Academy, Dec 9, 2026, 35 students + 8 chaperones. Source: Rose's Palmetto Bay Expedition Guide. No meals or housing. Times are from the guide; transportation between the REEF campus and the state park is not described in the source. Internal only; never rendered.",
+  "sourceNote": "DRAFT 2026-10-12 for Rose's review. Palmetto Bay Academy, Dec 9, 2026, 35 students + 8 chaperones. Source: Rose's Palmetto Bay Expedition Guide. No meals or housing. Times are from the guide, except lunch, which Martha set to 12:00-2:00 PM on 2026-10-30 (the 1:00-2:00 PM gap is lunch); transportation between the REEF campus and the state park is not described in the source. Internal only; never rendered.",
   "location": "Key Largo, Florida",
   "summary": "A one-day marine science expedition for 35 students and 8 chaperones in Key Largo, combining REEF classroom learning, a lionfish dissection, and a kayak tour through the mangroves of a Florida state park.",
   "days": [
@@ -24,10 +24,10 @@
           "description": "Students investigate invasive lionfish through a guided dissection, looking at anatomy and adaptations and learning why lionfish are a conservation challenge for Florida Keys reefs."
         },
         {
-          "time": "12:00 PM–1:00 PM",
+          "time": "12:00 PM–2:00 PM",
           "tag": "Break",
-          "title": "Lunch (on your own)",
-          "description": "Lunch is not included in this proposal. Your group can bring lunch or pick up food nearby."
+          "title": "Lunch (bring your own)",
+          "description": "Students and chaperones bring their own lunch. Lunch is not included in the price."
         },
         {
           "time": "2:00 PM–4:00 PM",
