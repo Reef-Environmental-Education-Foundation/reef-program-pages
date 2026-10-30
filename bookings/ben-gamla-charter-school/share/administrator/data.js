@@ -8,16 +8,16 @@ window.BOOKING_DATA = {
   "view": {
     "status": "draft",
     "statusLabel": "Draft",
-    "version": "v1",
-    "lastUpdated": "Oct 1, 2026",
+    "version": "v2",
+    "lastUpdated": "Oct 30, 2026",
     "orgName": "Ben Gamla Charter School",
     "dateLine": "March 17, 2027",
-    "hours": "9:00 AM\u20135:00 PM",
+    "hours": "9:00 AM \u2013 5:00 PM",
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A one-day marine science program for 115 students, organized into four cohorts rotating through hands-on experiences led by REEF educators, from 9:00 AM to 5:00 PM.",
+    "summary": "A one-day marine science Expedition for 66 students, organized into four cohorts rotating through five hands-on experiences at John Pennekamp Coral Reef State Park, Key Largo.",
     "scheduleDraft": true,
     "view": "administrator",
-    "purpose": "A one-day marine science program for 115 students, organized into four cohorts rotating through hands-on experiences led by REEF educators, from 9:00 AM to 5:00 PM.",
+    "purpose": "A one-day marine science Expedition for 66 students, organized into four cohorts rotating through five hands-on experiences at John Pennekamp Coral Reef State Park, Key Largo.",
     "value": [
       {
         "title": "Real citizen science, not a demo",
@@ -35,11 +35,11 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Group Size",
-        "v": "115 students + 10 chaperones"
+        "v": "66 students + 10 chaperones"
       },
       {
         "k": "Program Hours",
-        "v": "9:00 AM\u20135:00 PM"
+        "v": "9:00 AM \u2013 5:00 PM"
       },
       {
         "k": "Location",
@@ -52,7 +52,7 @@ window.BOOKING_DATA = {
       }
     ],
     "counts": {
-      "students": 115,
+      "students": 66,
       "chaperones": 10
     },
     "scheduleFormat": "rotation",
@@ -214,13 +214,13 @@ window.BOOKING_DATA = {
       }
     ],
     "pricing": {
-      "total": "$19,920.60",
-      "perStudent": "$173.22",
-      "chaperones": "All 10 chaperones are complimentary.",
+      "total": "$12,411.00",
+      "perStudent": "$179.87",
+      "chaperones": "7 of your 10 chaperones are complimentary.",
       "note": "Estimated total. REEF sends a revised proposal if anything that affects price changes."
     },
     "included": [
-      "Glass-bottom boat tour admission for all 115 students and 10 chaperones, including the boat gratuity",
+      "Glass-bottom boat tour admission for all 66 students and 10 chaperones, including the boat gratuity",
       "REEF-led programming: citizen science and fish identification training, and the lionfish lesson and dissection",
       "REEF-led afternoon programs on marine ecology and endangered species",
       "Instructional materials and REEF survey supplies for every student",
@@ -235,8 +235,8 @@ window.BOOKING_DATA = {
     "optional": [],
     "paymentTerms": [
       "A $500.00 deposit holds your group's date.",
-      "Payment 2 of $9,710.30 is due Oct 1, 2026.",
-      "The final payment of $9,710.30 is due Dec 17, 2026.",
+      "Payment 2 of $5,955.50 is due Oct 30, 2026.",
+      "The final payment of $5,955.50 is due Dec 17, 2026.",
       "A 10% late fee applies to payments more than 14 days past due."
     ],
     "cancellationTerms": [

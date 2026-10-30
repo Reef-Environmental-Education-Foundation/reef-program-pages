@@ -8,13 +8,13 @@ window.BOOKING_DATA = {
   "view": {
     "status": "draft",
     "statusLabel": "Draft",
-    "version": "v1",
-    "lastUpdated": "Oct 1, 2026",
+    "version": "v2",
+    "lastUpdated": "Oct 30, 2026",
     "orgName": "Ben Gamla Charter School",
     "dateLine": "March 17, 2027",
-    "hours": "9:00 AM\u20135:00 PM",
+    "hours": "9:00 AM \u2013 5:00 PM",
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A one-day marine science program for 115 students, organized into four cohorts rotating through hands-on experiences led by REEF educators, from 9:00 AM to 5:00 PM.",
+    "summary": "A one-day marine science Expedition for 66 students, organized into four cohorts rotating through five hands-on experiences at John Pennekamp Coral Reef State Park, Key Largo.",
     "scheduleDraft": true,
     "view": "educator",
     "objectives": [
@@ -27,11 +27,11 @@ window.BOOKING_DATA = {
     "scheduleFormat": "rotation",
     "rotation": {
       "heading": "Four Cohorts, One Coordinated Day",
-      "intro": "Students will be divided into four cohorts of approximately 28\u201329 students. Cohorts rotate among the glass-bottom boat tour, citizen science and fish identification, the lionfish lesson, a scheduled lunch, and two afternoon programs on marine ecology and endangered species. Activities run concurrently, so the schedule below shows where each cohort will be throughout the day.",
+      "intro": "Students will be divided into four cohorts of about 16\u201317 students. Cohorts rotate among Citizen Science & Fish Identification, Lionfish Lesson & Dissection, Glass-Bottom Boat Tour, a scheduled lunch, Marine Ecology, and Endangered Species. Activities run concurrently, so the schedule below shows where each cohort will be throughout the day.",
       "startTime": "09:00",
       "endTime": "17:00",
       "slotMinutes": 15,
-      "cohortSizeLabel": "About 28\u201329 students",
+      "cohortSizeLabel": "About 16\u201317 students",
       "cohorts": [
         {
           "id": "A",
@@ -56,26 +56,26 @@ window.BOOKING_DATA = {
       ],
       "stations": [
         {
-          "id": "boat",
-          "name": "Glass-Bottom Boat Tour",
-          "short": "Boat Tour",
-          "location": "Park marina",
-          "type": "experience",
-          "color": 0
-        },
-        {
-          "id": "fishid",
+          "id": "fish-id",
           "name": "Citizen Science & Fish Identification",
           "short": "Fish ID",
           "location": "Pennekamp",
           "type": "experience",
-          "color": 1
+          "color": 0
         },
         {
           "id": "lionfish",
           "name": "Lionfish Lesson & Dissection",
           "short": "Lionfish",
           "location": "Pennekamp",
+          "type": "experience",
+          "color": 1
+        },
+        {
+          "id": "boat-tour",
+          "name": "Glass-Bottom Boat Tour",
+          "short": "Boat Tour",
+          "location": "Park marina",
           "type": "experience",
           "color": 2
         },
@@ -96,7 +96,7 @@ window.BOOKING_DATA = {
           "color": 4
         },
         {
-          "id": "endangered",
+          "id": "species",
           "name": "Endangered Species",
           "short": "Species",
           "location": "Pennekamp",
@@ -107,13 +107,37 @@ window.BOOKING_DATA = {
       "assignments": [
         {
           "cohort": "A",
-          "station": "fishid",
+          "station": "fish-id",
           "start": "09:00",
           "end": "10:00"
         },
         {
+          "cohort": "B",
+          "station": "lionfish",
+          "start": "09:00",
+          "end": "10:00"
+        },
+        {
+          "cohort": "C",
+          "station": "boat-tour",
+          "start": "09:00",
+          "end": "11:30"
+        },
+        {
+          "cohort": "D",
+          "station": "boat-tour",
+          "start": "09:00",
+          "end": "11:30"
+        },
+        {
           "cohort": "A",
           "station": "lionfish",
+          "start": "10:00",
+          "end": "11:00"
+        },
+        {
+          "cohort": "B",
+          "station": "fish-id",
           "start": "10:00",
           "end": "11:00"
         },
@@ -124,124 +148,100 @@ window.BOOKING_DATA = {
           "end": "12:00"
         },
         {
-          "cohort": "A",
-          "station": "boat",
-          "start": "12:00",
-          "end": "14:30"
-        },
-        {
-          "cohort": "A",
-          "station": "ecology",
-          "start": "14:30",
-          "end": "15:30"
-        },
-        {
-          "cohort": "A",
-          "station": "endangered",
-          "start": "15:30",
-          "end": "16:30"
-        },
-        {
-          "cohort": "B",
-          "station": "lionfish",
-          "start": "09:00",
-          "end": "10:00"
-        },
-        {
-          "cohort": "B",
-          "station": "fishid",
-          "start": "10:00",
-          "end": "11:00"
-        },
-        {
           "cohort": "B",
           "station": "lunch",
           "start": "11:00",
           "end": "12:00"
         },
         {
-          "cohort": "B",
-          "station": "boat",
+          "cohort": "C",
+          "station": "lunch",
+          "start": "11:30",
+          "end": "12:30"
+        },
+        {
+          "cohort": "D",
+          "station": "lunch",
+          "start": "11:30",
+          "end": "12:30"
+        },
+        {
+          "cohort": "A",
+          "station": "boat-tour",
           "start": "12:00",
           "end": "14:30"
         },
         {
           "cohort": "B",
+          "station": "boat-tour",
+          "start": "12:00",
+          "end": "14:30"
+        },
+        {
+          "cohort": "C",
+          "station": "fish-id",
+          "start": "12:30",
+          "end": "13:30"
+        },
+        {
+          "cohort": "D",
+          "station": "lionfish",
+          "start": "12:30",
+          "end": "13:30"
+        },
+        {
+          "cohort": "C",
+          "station": "lionfish",
+          "start": "13:30",
+          "end": "14:30"
+        },
+        {
+          "cohort": "D",
+          "station": "fish-id",
+          "start": "13:30",
+          "end": "14:30"
+        },
+        {
+          "cohort": "A",
           "station": "ecology",
           "start": "14:30",
           "end": "15:30"
         },
         {
           "cohort": "B",
-          "station": "endangered",
+          "station": "ecology",
+          "start": "14:30",
+          "end": "15:30"
+        },
+        {
+          "cohort": "C",
+          "station": "species",
+          "start": "14:30",
+          "end": "15:30"
+        },
+        {
+          "cohort": "D",
+          "station": "species",
+          "start": "14:30",
+          "end": "15:30"
+        },
+        {
+          "cohort": "A",
+          "station": "species",
           "start": "15:30",
           "end": "16:30"
         },
         {
-          "cohort": "C",
-          "station": "boat",
-          "start": "09:00",
-          "end": "11:30"
-        },
-        {
-          "cohort": "C",
-          "station": "lunch",
-          "start": "11:30",
-          "end": "12:30"
-        },
-        {
-          "cohort": "C",
-          "station": "fishid",
-          "start": "12:30",
-          "end": "13:30"
-        },
-        {
-          "cohort": "C",
-          "station": "lionfish",
-          "start": "13:30",
-          "end": "14:30"
-        },
-        {
-          "cohort": "C",
-          "station": "endangered",
-          "start": "14:30",
-          "end": "15:30"
+          "cohort": "B",
+          "station": "species",
+          "start": "15:30",
+          "end": "16:30"
         },
         {
           "cohort": "C",
           "station": "ecology",
           "start": "15:30",
           "end": "16:30"
-        },
-        {
-          "cohort": "D",
-          "station": "boat",
-          "start": "09:00",
-          "end": "11:30"
-        },
-        {
-          "cohort": "D",
-          "station": "lunch",
-          "start": "11:30",
-          "end": "12:30"
-        },
-        {
-          "cohort": "D",
-          "station": "lionfish",
-          "start": "12:30",
-          "end": "13:30"
-        },
-        {
-          "cohort": "D",
-          "station": "fishid",
-          "start": "13:30",
-          "end": "14:30"
-        },
-        {
-          "cohort": "D",
-          "station": "endangered",
-          "start": "14:30",
-          "end": "15:30"
         },
         {
           "cohort": "D",
@@ -250,17 +250,17 @@ window.BOOKING_DATA = {
           "end": "16:30"
         }
       ],
+      "notes": [
+        "This is a planning schedule. Exact activity order, timing, and locations may be refined before the program, and REEF will confirm the final schedule with you.",
+        "Planned activity lengths: Citizen Science & Fish Identification 1 hour; Lionfish Lesson & Dissection 1 hour; Glass-Bottom Boat Tour 2.5 hours; Marine Ecology 1 hour; Endangered Species 1 hour, with time between activities for transitions.",
+        "Every cohort has the same one-hour lunch. Lunch periods are staggered so the picnic area is not crowded.",
+        "Your school provides bus transportation. Your group arrives on three buses for a 9:00 AM drop-off, and the buses return to pick students up at 5:00 PM."
+      ],
       "departure": {
         "time": "17:00",
         "label": "Departure",
         "note": "The program day ends at 5:00 PM, when buses return to pick up students. The final half hour is flexible time for wrap-up."
       },
-      "notes": [
-        "This is a planning schedule. Exact activity order, timing, and locations may be refined before the program, and REEF will confirm the final schedule with you.",
-        "The glass-bottom boat tour is planned as a 2.5-hour program for every cohort. Citizen science and fish identification, the lionfish lesson, marine ecology, and endangered species are each planned as one-hour programs, with time between activities for transitions.",
-        "Every cohort has the same one-hour lunch. Lunch periods are staggered so the picnic area is not crowded.",
-        "Your school provides bus transportation. Your group arrives on three buses for a 9:00 AM drop-off, and the buses return to pick students up at 5:00 PM."
-      ],
       "startLabel": "9:00 AM",
       "endLabel": "5:00 PM"
     },
@@ -269,24 +269,15 @@ window.BOOKING_DATA = {
         "dayNumber": 1,
         "totalDays": 1,
         "title": "One Day on the Reef",
-        "theme": "Four cohorts rotate through five hands-on experiences led by REEF educators, from 9:00 AM to 5:00 PM.",
+        "theme": "Students rotate in four cohorts through five hands-on experiences led by REEF educators, from 9:00 AM to 5:00 PM.",
         "blocks": [
           {
-            "station": "boat",
-            "tag": "Field Experience",
-            "title": "Glass-Bottom Boat Tour",
-            "description": "Students view living coral reef habitat and the fish that depend on it from a glass-bottom boat, with a REEF educator helping them connect what they see to how healthy reefs work.",
-            "when": "Cohorts C & D: 9:00\u201311:30 AM \u00b7 Cohorts A & B: 12:00\u20132:30 PM",
-            "color": 0,
-            "location": "Park marina"
-          },
-          {
-            "station": "fishid",
+            "station": "fish-id",
             "tag": "Citizen Science",
             "title": "Citizen Science & Fish Identification",
             "description": "Students learn how REEF's volunteer divers and snorkelers identify fish and record what they see, then practice the same identification and survey skills used in REEF's Volunteer Fish Survey Project.",
             "when": "Cohort A: 9:00\u201310:00 AM \u00b7 Cohort B: 10:00\u201311:00 AM \u00b7 Cohort C: 12:30\u20131:30 PM \u00b7 Cohort D: 1:30\u20132:30 PM",
-            "color": 1,
+            "color": 0,
             "location": "Pennekamp"
           },
           {
@@ -295,8 +286,17 @@ window.BOOKING_DATA = {
             "title": "Lionfish Lesson & Dissection",
             "description": "Students investigate invasive lionfish through a guided dissection, looking at anatomy and adaptations and learning why lionfish are a conservation challenge for Florida Keys reefs.",
             "when": "Cohort B: 9:00\u201310:00 AM \u00b7 Cohort A: 10:00\u201311:00 AM \u00b7 Cohort D: 12:30\u20131:30 PM \u00b7 Cohort C: 1:30\u20132:30 PM",
-            "color": 2,
+            "color": 1,
             "location": "Pennekamp"
+          },
+          {
+            "station": "boat-tour",
+            "tag": "Field Experience",
+            "title": "Glass-Bottom Boat Tour",
+            "description": "Students view living coral reef habitat and the fish that depend on it from a glass-bottom boat, with a REEF educator helping them connect what they see to how healthy reefs work.",
+            "when": "Cohorts C & D: 9:00\u201311:30 AM \u00b7 Cohorts A & B: 12:00\u20132:30 PM",
+            "color": 2,
+            "location": "Park marina"
           },
           {
             "station": "lunch",
@@ -317,7 +317,7 @@ window.BOOKING_DATA = {
             "location": "Pennekamp"
           },
           {
-            "station": "endangered",
+            "station": "species",
             "tag": "Education",
             "title": "Endangered Species",
             "description": "A REEF educator-led program on threatened and endangered species of the Florida Keys, why they are at risk, and what people can do to help protect them. Two cohorts join each one-hour session.",
@@ -375,7 +375,7 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Lunch",
-        "v": "Packed lunches from home. Each cohort eats at its own scheduled time in the park picnic area, between 11:00 AM and 12:30 PM."
+        "v": "Packed lunches from home. Each cohort eats at its own scheduled time in the park picnic area."
       },
       {
         "k": "Departure",
@@ -391,7 +391,7 @@ window.BOOKING_DATA = {
       "An adult chaperone must accompany student groups with participants under 18."
     ],
     "counts": {
-      "students": 115,
+      "students": 66,
       "chaperones": 10
     },
     "resources": [
