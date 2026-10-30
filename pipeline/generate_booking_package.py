@@ -343,6 +343,19 @@ def fetch_schedule_rows(record_id):
     return base
 
 
+# Bookings that share an organization with another booking get an explicit
+# page slug so their public URLs differ (Martha, 2026-10-30: Hanover's 2-day
+# and 4-day options). Everything else keeps slugify(Organization Name).
+SLUG_OVERRIDES = {
+    "recP88dd2wk5XdHU3": "hanover-high-school-2-day",
+    "reciijikzFlFdq3Qr": "hanover-high-school-4-day",
+}
+
+
+def booking_slug(record_id, org_name):
+    return SLUG_OVERRIDES.get(record_id) or slugify(org_name)
+
+
 def slugify(text):
     return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", text.lower())).strip("-")
 
@@ -1803,7 +1816,7 @@ def main():
             "Decide the intended behavior first, then teach this script that rule explicitly."
         )
 
-    slug = slugify(b["org_name"])
+    slug = booking_slug(record_id, b["org_name"])
     is_proposal = b["status"] in PROPOSAL_STATUSES
 
     # Approved-to-Share lock (Martha, 2026-09-25): decided BEFORE anything is
