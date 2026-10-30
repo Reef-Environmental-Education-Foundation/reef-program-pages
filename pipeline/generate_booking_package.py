@@ -946,6 +946,19 @@ def lower_first(text):
     return text
 
 
+def summary_count_is_stale(summary, students):
+    """True when a captured itinerary's summary states a student count that is
+    not the booking's current "# Student Participants" (e.g. the Ben Gamla
+    summary still said "115 students" after the school's count dropped to 66).
+    The caller then falls back to the summary built from the live numbers."""
+    stated = {int(n.replace(",", "")) for n in re.findall(r"(\d[\d,]*)\s+students", summary or "")}
+    stale = bool(stated) and stated != {students}
+    if stale:
+        print(f"WARNING: itinerary summary says {sorted(stated)} students but the booking has "
+              f"{students}; using the generated summary instead.", file=sys.stderr)
+    return stale
+
+
 def build_proposal_data(b, photos=None):
     """Builds the docType "proposal" shape -- the advanced six-section
     customer proposal experience in assets/render.js. Parallel to
@@ -1005,7 +1018,7 @@ def build_proposal_data(b, photos=None):
         experiences = b.get("activity_names") or []
         format_line = "Full group together" if n_days == 1 else f"{n_days}-day itinerary"
 
-    if itin.get("summary"):
+    if itin.get("summary") and not summary_count_is_stale(itin["summary"], students):
         summary = itin["summary"]
     elif not is_group_program:
         summary = f"A {word} at {location}, prepared for {b['org_name'] or 'your group'}."
