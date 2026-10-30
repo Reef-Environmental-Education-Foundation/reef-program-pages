@@ -51,6 +51,60 @@ Nothing is published in that case.
 
 Example: `recqb6DGaeJRpymL2.json` (Ben Gamla Charter School, 4 cohorts, March 17, 2027).
 
+## Schedule from Airtable (added 2026-10-01)
+
+A booking whose **Schedule Items (count)** is greater than 0 reads its whole
+schedule from Airtable (tables *Schedule Items* and *Itinerary Activities*,
+base "REEF Bookings | PILOT") at publish time. Staff change a time, activity
+or cohort in Airtable; the next Publish run regenerates the matrix, by-cohort
+list, activity cards and every audience page. Code: `pipeline/schedule_airtable.py`.
+
+* Count **> 0**: Airtable wins. This file's `rotation` and `days[].blocks` are
+  ignored (a WARNING is logged if they are still present). Delete them, as
+  `recqb6DGaeJRpymL2.json` now has.
+* Count **0 / blank**: this file is used exactly as before (Hanover and every
+  other legacy booking).
+
+What this file still holds for an Airtable-sourced booking: `schemaVersion`,
+`scheduleFormat`, `location`, `summary`, per-day `title` / `theme` /
+`studentsWill` / `outcomesNote` (matched by `dayNumber`; auto-built when
+absent) and the whole `audiences` block.
+
+### Tokens
+
+Free text in this file (summary, day themes, `audiences.*`) and in Airtable
+(Schedule Notes, Schedule Intro, block descriptions, the Departure note) can
+use tokens so it never goes stale when a time changes. They are rendered from
+the Airtable schedule; an unknown token or label **stops the run**, and a
+literal `{{...}}` is never published (this guard also covers JSON-only bookings).
+
+| Token | Renders |
+|---|---|
+| `{{arrival_time}}` / `{{departure_time}}` | `9:00 AM` / `5:00 PM` |
+| `{{program_hours}}` | `9:00 AM – 5:00 PM` |
+| `{{cohort_count}}` / `{{cohort_count_word}}` | `4` / `four` |
+| `{{experience_count}}` / `{{experience_count_word}}` | number of Activity stations / `five` |
+| `{{duration:Label}}` | `1 hour`, `2.5 hours`, `45 minutes`; differing cohorts: `2-2.5 hours` |
+| `{{duration_adj:Label}}` | `one-hour`, `2.5-hour`, `45-minute` |
+| `{{durations}}` | `Glass-Bottom Boat Tour 2.5 hours; Citizen Science & Fish Identification 1 hour; ...` |
+
+`Label` is the Itinerary Activity's **Station Label** (case-sensitive).
+Wall-clock Key Largo time throughout; there is no time-zone conversion.
+
+### Checks added (all fail the run; nothing publishes)
+
+Row Check other than "OK" on any Schedule Item / Itinerary Activity;
+rotation = Yes with fewer than 2 cohorts; `# Cohorts` mismatch; a cohort
+letter outside the first `# Cohorts` letters; one station with two Block Types;
+cohort rows on more than one day (rotations are single-day). The existing
+overlap / off-grid / unknown-id checks run on the loaded schedule unchanged.
+A non-empty **Schedule Changed After Approval** downgrades the run to
+PREVIEW (nothing is published); the reason is listed on the Asana review task.
+
+Tests: `cd pipeline && python3 -m unittest test_schedule_airtable`.
+`fixtures/pre_airtable/` holds Ben Gamla's pre-migration JSON for the
+before/after regression test.
+
 ## `audiences` — Approve & Share content (added 2026-09-28)
 
 Optional. Feeds the four audience views built by `pipeline/audience_views.py`

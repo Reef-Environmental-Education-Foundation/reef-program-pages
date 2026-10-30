@@ -54,7 +54,10 @@ script checks the booking's approval fields (see check_share_approval()):
     auto-approves the later pre-trip packet or contract,
   - "Approved for Proposal Version" equals the booking's current "Proposal
     Version" (when one is set), so a revised proposal needs a fresh approval,
-  - "Approved to Share By" names the person who approved it.
+  - "Approved to Share By" names the person who approved it,
+  - "Schedule Changed After Approval" is empty (2026-10-01): the Airtable
+    schedule was edited after approval, so the approved version no longer
+    matches what would publish.
 
 If any check fails, the run is PREVIEW ONLY: the page (and contract, when the
 stage calls for one) is generated into a temp folder outside the repo, packed
@@ -81,6 +84,7 @@ import docx
 
 sys.path.insert(0, str(Path(__file__).parent))
 import audience_views  # noqa: E402  (Approve & Share audience views, 2026-09-28)
+import schedule_airtable  # noqa: E402  (itinerary read from Airtable, 2026-10-01)
 
 AIRTABLE_API_KEY = os.environ.get("AIRTABLE_API_KEY")
 API_ROOT = "https://api.airtable.com/v0"
@@ -270,6 +274,75 @@ def airtable_get(base_id, table_name, record_id):
     return resp.json()  # {"id": ..., "createdTime": ..., "fields": {...}}
 
 
+def airtable_list_by_ids(base_id, table_id, record_ids, field_ids):
+    """Fetches records by ID (100 per request) with fields keyed by FIELD ID,
+    so a rename in Airtable cannot break the pipeline. Uses POST /listRecords
+    so a long OR(RECORD_ID()=...) formula never hits URL length limits."""
+    if not AIRTABLE_API_KEY:
+        raise RuntimeError("AIRTABLE_API_KEY environment variable is not set.")
+    out = {}
+    ids = [r for r in record_ids if isinstance(r, str) and r.startswith("rec")]
+    for i in range(0, len(ids), 100):
+        chunk = ids[i:i + 100]
+        formula = "OR(" + ",".join(f"RECORD_ID()='{r}'" for r in chunk) + ")"
+        body = {"filterByFormula": formula, "returnFieldsByFieldId": True,
+                "fields": list(field_ids), "pageSize": 100}
+        while True:
+            resp = requests.post(f"{API_ROOT}/{base_id}/{table_id}/listRecords", json=body,
+                                 headers={"Authorization": f"Bearer {AIRTABLE_API_KEY}"}, timeout=30)
+            resp.raise_for_status()
+            data = resp.json()
+            for rec in data.get("records", []):
+                out[rec["id"]] = rec
+            if not data.get("offset"):
+                break
+            body["offset"] = data["offset"]
+    missing = [r for r in ids if r not in out]
+    if missing:
+        raise RuntimeError(f"Airtable returned no record for {len(missing)} linked id(s) in {table_id}: "
+                           f"{', '.join(missing[:5])}")
+    return out
+
+
+def fetch_schedule_rows(record_id):
+    """Pulls the Airtable-side schedule for one booking: the Bookings schedule
+    fields, every linked Schedule Item and Itinerary Activity, and each
+    activity's catalog Category (for the tag map). Returns a dict that
+    fetch_booking_data() merges into the booking, or None when the booking has
+    no Schedule Items (legacy JSON path)."""
+    sa = schedule_airtable
+    bk = airtable_list_by_ids(BOOKINGS_BASE, "tbl9Jb9UVSYLQ1Puc", [record_id],
+                              sa.BOOKING_FIELDS.values())[record_id]["fields"]
+    g = lambda k: bk.get(sa.BOOKING_FIELDS[k])  # noqa: E731
+    base = {
+        "schedule_count": g("count") or 0,
+        "schedule_cohort_size_label": g("cohort_size_label") or "",
+        "schedule_notes": g("notes") or "",
+        "schedule_intro": g("intro") or "",
+        "schedule_program_hours": g("program_hours") or "",
+        "schedule_row_checks": sa._text(g("row_checks")),
+        "schedule_changed_after_approval": g("changed_after_approval") or "",
+        "schedule_rows": None,
+    }
+    if not base["schedule_count"]:
+        return base
+    items = airtable_list_by_ids(BOOKINGS_BASE, "tbljjmfCplSFbUfGe", g("item_ids") or [],
+                                 sa.ITEM_FIELDS.values())
+    acts = airtable_list_by_ids(BOOKINGS_BASE, "tblL0oUvD4CG24E4j", g("activity_ids") or [],
+                                sa.STATION_FIELDS.values())
+    catalog_ids = {c for a in acts.values() for c in (a["fields"].get(sa.STATION_FIELDS["catalog"]) or [])}
+    catalog_ids |= {c for i in items.values() for c in (i["fields"].get(sa.ITEM_FIELDS["catalog"]) or [])}
+    cats = airtable_list_by_ids(BOOKINGS_BASE, "tblb3FriVJzQcCBXu", sorted(catalog_ids),
+                                [sa.CATALOG_CATEGORY_FIELD]) if catalog_ids else {}
+    stations = []
+    for a in acts.values():
+        cid = (a["fields"].get(sa.STATION_FIELDS["catalog"]) or [None])[0]
+        category = sa._text(cats[cid]["fields"].get(sa.CATALOG_CATEGORY_FIELD)) if cid else None
+        stations.append(sa.normalize_station(a, category or None))
+    base["schedule_rows"] = {"items": list(items.values()), "stations": stations}
+    return base
+
+
 def slugify(text):
     return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", text.lower())).strip("-")
 
@@ -443,7 +516,10 @@ def fetch_booking_data(record_id):
             "welcome_line": p.get("Proposal Welcome Line", ""),
         }
 
+    schedule = fetch_schedule_rows(record_id)
+
     return {
+        **schedule,
         "record_id": record_id,
         "org_name": f.get("Organization Name", ""),
         "contact_name": f.get("Primary Contact Name", ""),
@@ -596,21 +672,16 @@ def download_hero_photos(b, booking_dir):
     return photos
 
 
-def load_itinerary(record_id):
-    """Returns the booking's captured itinerary, normalized to a dict:
+_ITINERARY_CACHE = {}
 
-        {"days": [...], "rotation": dict|None, "scheduleFormat": str|None,
-         "summary": str|None, "location": str|None}
 
-    Two file shapes are accepted, so every itinerary captured before
-    2026-09-28 keeps working unchanged:
-      - legacy: a bare JSON list of day objects (standard day-by-day format)
-      - schemaVersion 2: an object with "days" plus an optional "rotation"
-        block (concurrent-cohort rotation schedule), "scheduleFormat",
-        "summary" and customer-facing "location". See ROTATION SCHEMA below.
-    """
+def _read_itinerary_json(record_id, required=True):
+    """The raw captured-itinerary file, normalized to the load_itinerary()
+    shape (rotation validated). With required=False a missing file is None."""
     path = ITINERARIES_DIR / f"{record_id}.json"
     if not path.exists():
+        if not required:
+            return None
         raise NoItineraryCaptured(
             f"No captured itinerary for booking {record_id} at {path}. "
             "This script deliberately does not fabricate a day-by-day schedule -- "
@@ -635,6 +706,38 @@ def load_itinerary(record_id):
         # and the "audiences" section of itineraries/README.md.
         "audiences": raw.get("audiences"),
     }
+
+
+def load_itinerary(record_id, booking=None):
+    """Returns the booking's captured itinerary, normalized to a dict:
+
+        {"days": [...], "rotation": dict|None, "scheduleFormat": str|None,
+         "summary": str|None, "location": str|None, "audiences": dict|None}
+
+    Source of the SCHEDULE (2026-10-01):
+      - Airtable, when the booking has Schedule Items (booking["schedule_count"] > 0):
+        rotation and days[].blocks are generated from the Schedule Items /
+        Itinerary Activities tables; the JSON file (if any) only supplies day
+        titles, audiences, summary and location, and its own rotation/blocks
+        are ignored with a warning. See schedule_airtable.py.
+      - otherwise the JSON file, unchanged. Two shapes are accepted, so every
+        itinerary captured before 2026-09-28 keeps working:
+          - legacy: a bare JSON list of day objects (standard day-by-day format)
+          - schemaVersion 2: an object with "days" plus an optional "rotation"
+            block, "scheduleFormat", "summary" and customer-facing "location".
+    The result is cached per record so the several callers in one run agree.
+    """
+    if booking is not None and booking.get("schedule_count"):
+        key = (record_id, "airtable")
+        if key not in _ITINERARY_CACHE:
+            json_itin = _read_itinerary_json(record_id, required=False)
+            itin = schedule_airtable.schedule_from_rows(
+                booking, booking["schedule_rows"], json_itin)
+            if itin["rotation"]:
+                validate_rotation(itin["rotation"], record_id)
+            _ITINERARY_CACHE[key] = itin
+        return copy.deepcopy(_ITINERARY_CACHE[key])
+    return _read_itinerary_json(record_id)
 
 
 # ---------------------------------------------------------------- Rotation schedule
@@ -838,7 +941,7 @@ def build_proposal_data(b, photos=None):
     label, word = PROGRAM_WORDS_BY_BOOKING_TYPE.get(b["booking_type"], DEFAULT_PROGRAM_WORDS)
     is_group_program = b["booking_type"] != "Facility Rental"
 
-    itin = load_itinerary(b["record_id"])
+    itin = load_itinerary(b["record_id"], b)
     days = copy.deepcopy(itin["days"])
     schedule_format = resolve_schedule_format(b, itin)
     rot = copy.deepcopy(itin["rotation"]) if schedule_format == "rotation" else None
@@ -857,7 +960,7 @@ def build_proposal_data(b, photos=None):
     hours = None
     experiences = []
     if rot:
-        hours = clock_range(rot["startTime"], rot["endTime"])
+        hours = itin.get("programHours") or clock_range(rot["startTime"], rot["endTime"])
         times = station_times(rot)
         experiences = [s["name"] for s in rot["stations"] if s.get("type", "experience") == "experience"]
         n_cohorts = len(rot["cohorts"])
@@ -1087,7 +1190,7 @@ def build_proposal_data(b, photos=None):
 # ---------------------------------------------------------------- Confirmed page
 
 def build_confirmed_page_data(b):
-    itin = load_itinerary(b["record_id"])
+    itin = load_itinerary(b["record_id"], b)
     days_raw = copy.deepcopy(itin["days"])
     if itin["rotation"]:
         # The pre-trip page has no rotation matrix yet; give each activity its
@@ -1320,6 +1423,11 @@ def check_share_approval(b, is_proposal):
             f"'Proposal Version' is {b['proposal_version']!r} -- a revised proposal needs a fresh approval")
     if not b["approved_by"]:
         problems.append("'Approved to Share By' is blank")
+    if b.get("schedule_changed_after_approval"):
+        problems.append(
+            f"The schedule changed after approval ('Schedule Changed After Approval' = "
+            f"{b['schedule_changed_after_approval']!r}); the approved version no longer matches "
+            "the Airtable schedule -- re-review it and re-approve")
     return problems
 
 
@@ -1597,7 +1705,7 @@ def build_share_views(b, page_data, is_proposal, page_url):
     rebuilt with build_proposal_data() (no photos) so both stages project
     from one function, not two copies of the booking's details."""
     pd = page_data["proposal"] if is_proposal else build_proposal_data(b)["proposal"]
-    itin = load_itinerary(b["record_id"])
+    itin = load_itinerary(b["record_id"], b)
     share, views = audience_views.build_views(
         b, pd, itin, money, date_pretty, page_url,
         generated_on=date_pretty(datetime.utcnow().strftime("%Y-%m-%d")))
@@ -1705,6 +1813,9 @@ def main():
     # same Approved-to-Share lock (preview runs write them to the temp dir).
     page_url = f"{PAGES_BASE_URL}/bookings/{slug}/"
     view_data = build_share_views(b, page_data, is_proposal, page_url)
+    # Never publish a literal {{token}}, on the Airtable path or the JSON path.
+    schedule_airtable.assert_no_tokens(page_data, "booking page")
+    schedule_airtable.assert_no_tokens(view_data, "audience views")
     write_share_views(booking_dir, view_data, b["org_name"])
 
     with open(booking_dir / "data.js", "w") as f:
