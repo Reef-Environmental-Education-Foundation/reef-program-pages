@@ -347,6 +347,30 @@ def slugify(text):
     return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", text.lower())).strip("-")
 
 
+class SlugCollision(Exception):
+    """Raised when a publish run would overwrite another booking's public page."""
+
+
+def published_booking_id(slug, bookings_dir=None):
+    """The Airtable record ID of the page already published at bookings/<slug>/,
+    or None when nothing is published there (or its data.js has no bookingId)."""
+    data_js = (bookings_dir or BOOKINGS_OUT_DIR) / slug / "data.js"
+    if not data_js.exists():
+        return None
+    match = re.search(r'"bookingId":\s*"(rec[A-Za-z0-9]+)"', data_js.read_text())
+    return match.group(1) if match else None
+
+
+def check_slug_available(slug, record_id, bookings_dir=None):
+    """The slug is slugify(Organization Name), so two bookings for one
+    organization (e.g. Hanover's 2-day and 4-day options) share a URL. Without
+    this check the second publish silently replaces the first's public page.
+    Returns the record ID that already holds the slug when it is a different
+    booking, else None."""
+    existing = published_booking_id(slug, bookings_dir)
+    return existing if existing and existing != record_id else None
+
+
 def reef_email(addr):
     """Capitalize the REEF domain in a REEF staff address ("rose@reef.org" ->
     "rose@REEF.org"). REEF is an acronym and is capitalized everywhere else in
@@ -1777,6 +1801,17 @@ def main():
 
     bookings_out.mkdir(parents=True, exist_ok=True)
     contracts_out.mkdir(parents=True, exist_ok=True)
+
+    # A publish must never replace a different booking's public page; a
+    # preview writes only to the temp folder, so it just warns.
+    holder = check_slug_available(slug, record_id)
+    if holder:
+        msg = (f"bookings/{slug}/ is already published for booking {holder}, "
+               f"and {record_id} has the same organization name, so it would get the same URL.")
+        if not preview:
+            raise SlugCollision(msg + " Decide how the second booking's URL should differ "
+                                "before publishing; nothing was written.")
+        print(f"WARNING: {msg} It cannot be published as-is.")
 
     booking_dir = bookings_out / slug
     booking_dir.mkdir(exist_ok=True)
