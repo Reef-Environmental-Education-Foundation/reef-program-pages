@@ -85,6 +85,7 @@ import docx
 sys.path.insert(0, str(Path(__file__).parent))
 import audience_views  # noqa: E402  (Approve & Share audience views, 2026-09-28)
 import schedule_airtable  # noqa: E402  (itinerary read from Airtable, 2026-10-01)
+import publish_support  # noqa: E402  (build validation + run result, 2026-10-31)
 
 AIRTABLE_API_KEY = os.environ.get("AIRTABLE_API_KEY")
 API_ROOT = "https://api.airtable.com/v0"
@@ -358,6 +359,26 @@ def booking_slug(record_id, org_name):
 
 def slugify(text):
     return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", text.lower())).strip("-")
+
+
+class BuildValidationError(Exception):
+    """Raised when a freshly built page fails validation; main stays untouched."""
+
+
+RESULT_FILE = os.environ.get("RESULT_FILE", "")
+
+
+def promote_build(booking_dir, slug, contract_path=None):
+    """Copy a validated build from its temp folder into bookings/ (and the
+    contract into contracts/). Overlay copy: files already published that this
+    build did not regenerate (for example photos) are kept."""
+    import shutil
+    BOOKINGS_OUT_DIR.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(booking_dir, BOOKINGS_OUT_DIR / slug, dirs_exist_ok=True)
+    if contract_path and Path(contract_path).exists():
+        CONTRACTS_OUT_DIR.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(contract_path, CONTRACTS_OUT_DIR / Path(contract_path).name)
+    print(f"Promoted the validated build to {BOOKINGS_OUT_DIR / slug}")
 
 
 class SlugCollision(Exception):
@@ -1477,7 +1498,7 @@ def check_share_approval(b, is_proposal):
         problems.append(
             f"'Approved to Share — Stage' is {b['approved_stage'] or 'blank'!r}, "
             f"but this run would build the {needed_stage!r} stage")
-    if b["proposal_version"] is not None and b["approved_version"] != b["proposal_version"]:
+    if b["approved_version"] != b["proposal_version"]:
         problems.append(
             f"'Approved for Proposal Version' is {b['approved_version']!r} but the current "
             f"'Proposal Version' is {b['proposal_version']!r} -- a revised proposal needs a fresh approval")
@@ -1585,6 +1606,50 @@ def asana_project_for_booking(booking_type):
     return ASANA_OXP_PROJECT_GID
 
 
+def review_task_marker(b):
+    version = b.get("proposal_version")
+    return f"[{b['record_id']} v{version if version is not None else '-'}]"
+
+
+def find_open_review_task(b, marker):
+    """GID of an open (not completed) review task whose name carries `marker`,
+    or None. Searches the booking's tracking task's subtasks, else the routing
+    project. A search failure returns None (a duplicate beats a lost task)."""
+    parent_gid = b.get("asana_task_id")
+    if parent_gid:
+        url = f"{ASANA_API_ROOT}/tasks/{parent_gid}/subtasks"
+        params = {"opt_fields": "name,completed", "limit": 100}
+    else:
+        url = f"{ASANA_API_ROOT}/projects/{asana_project_for_booking(b['booking_type'])}/tasks"
+        params = {"opt_fields": "name,completed", "completed_since": "now", "limit": 100}
+    try:
+        while True:
+            resp = requests.get(url, headers={"Authorization": f"Bearer {ASANA_API_KEY}"},
+                                params=params, timeout=30)
+            resp.raise_for_status()
+            body = resp.json()
+            for task in body.get("data", []):
+                if marker in (task.get("name") or "") and not task.get("completed"):
+                    return task["gid"]
+            offset = (body.get("next_page") or {}).get("offset")
+            if not offset:
+                return None
+            params = dict(params, offset=offset)
+    except requests.RequestException as exc:
+        print(f"WARNING: could not search Asana for an open review task: {exc}", file=sys.stderr)
+        return None
+
+
+def add_asana_comment(task_gid, text):
+    try:
+        resp = requests.post(f"{ASANA_API_ROOT}/tasks/{task_gid}/stories",
+                             headers={"Authorization": f"Bearer {ASANA_API_KEY}"},
+                             json={"data": {"text": text}}, timeout=30)
+        resp.raise_for_status()
+    except requests.RequestException as exc:
+        print(f"WARNING: could not comment on Asana task {task_gid}: {exc}", file=sys.stderr)
+
+
 def create_review_task(b, page_url, contract_url, preview_reasons=None, attachments=()):
     """Creates an Asana task gating human review before the generated
     proposal/contract is sent to the customer (Martha, 2026-09-04): the
@@ -1656,6 +1721,22 @@ def create_review_task(b, page_url, contract_url, preview_reasons=None, attachme
             f"\n\nApproved to share by {b['approved_by']} on {b['approved_date'] or '(no date set)'} "
             f"(stage: {b['approved_stage']}, proposal version: {b['approved_version']})."
         )
+
+    # At most one open review task per booking and Proposal Version: the name
+    # carries a marker, and a re-run (for example a publish after a preview)
+    # adds a comment to the open task instead of creating a second one.
+    marker = review_task_marker(b)
+    name = f"{name} {marker}"
+    existing = find_open_review_task(b, marker)
+    if existing:
+        note = ("Re-run of the publish pipeline: "
+                + ("preview only, still not published. " + "; ".join(preview_reasons) if preview_reasons is not None
+                   else f"published. Page: {page_url}"))
+        add_asana_comment(existing, note)
+        print(f"Open Asana review task {existing} already exists for {marker}; added a comment instead of a new task.")
+        for path in attachments:
+            attach_to_asana(existing, path)
+        return existing
 
     payload = {"data": {"name": name, "notes": notes, "assignee": ASANA_REVIEWER_GID}}
     parent_gid = b.get("asana_task_id")
@@ -1832,7 +1913,11 @@ def main():
         for r in preview_reasons:
             print(f"  - {r}")
     else:
-        bookings_out, contracts_out = BOOKINGS_OUT_DIR, CONTRACTS_OUT_DIR
+        # Built in a temp folder and validated first; only a clean build is
+        # copied into bookings/ (see promote_build below), so a failed build
+        # can never replace the page that is live.
+        out_root = Path(tempfile.mkdtemp(prefix="reef-build-"))
+        bookings_out, contracts_out = out_root / "bookings", out_root / "contracts"
         print(f"Approved to share by {b['approved_by']} ({b['approved_stage']}) -- publishing.")
 
     bookings_out.mkdir(parents=True, exist_ok=True)
@@ -1929,9 +2014,33 @@ def main():
                            preview_reasons=preview_reasons, attachments=attachments)
         print(f"PREVIEW ONLY -- wrote {preview_html} (attached to the Asana review task). "
               "Nothing under bookings/ or contracts/ was changed, so nothing will be published.")
+        publish_support.write_result(
+            RESULT_FILE, status="blocked", record_id=record_id, proposal_version=b["proposal_version"],
+            page_url=page_url,
+            message="Not published, the previous version (if any) is still live: " + "; ".join(preview_reasons))
+        sys.exit(3)
     else:
+        problems = publish_support.validate_build(booking_dir, is_proposal)
+        if problems:
+            raise BuildValidationError(
+                "The build failed validation, so nothing was published: " + "; ".join(problems))
+        promote_build(booking_dir, slug, contract_path if contract_url else None)
         create_review_task(b, page_url, contract_url)
+        publish_support.write_result(
+            RESULT_FILE, status="published", record_id=record_id, proposal_version=b["proposal_version"],
+            page_url=page_url, message="")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as exc:
+        # The workflow's last step reads this to write the failure onto the
+        # Bookings record; the previous page stays live because nothing was
+        # copied into bookings/.
+        publish_support.write_result(
+            RESULT_FILE, status="failed", record_id=sys.argv[1] if len(sys.argv) > 1 else "",
+            message=f"{type(exc).__name__}: {exc}"[:3500])
+        raise
