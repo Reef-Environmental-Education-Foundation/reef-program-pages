@@ -39,6 +39,26 @@ async function run(browser, base, label, versionJson, expectStale) {
   return ok;
 }
 
+async function runAudience(browser, base, view, versionJson, expectStale) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(String(e)));
+  await page.route("**/version.json", (r) => r.fulfill({ status: 200, contentType: "application/json", body: versionJson }));
+  await page.goto(`${base}/${slug}/share/${view}/index.html`);
+  await page.waitForSelector(".a-main");
+  await page.waitForTimeout(500);
+  const banner = await page.locator(".stale-banner").count();
+  const priceVisible = await page.evaluate(() => [...document.querySelectorAll(".a-sec")].some((s) => {
+    const e = s.querySelector(".eyebrow");
+    return e && /^(PRICE|TERMS)$/.test(e.textContent.trim()) && s.offsetParent !== null; }));
+  const approveVisible = await page.evaluate(() => [...document.querySelectorAll(".a-approve")].some((n) => n.offsetParent !== null));
+  const ok = expectStale ? banner === 1 && !priceVisible && !approveVisible && errors.length === 0
+                         : banner === 0 && errors.length === 0;
+  console.log(`${ok ? "PASS" : "FAIL"}  ${view} view, ${expectStale ? "stale" : "current"}: banner=${banner} priceVisible=${priceVisible} approveVisible=${approveVisible} errors=${errors.length}`);
+  await page.close();
+  return ok;
+}
+
 (async () => {
   await new Promise((r) => server.listen(0, r));
   const base = `http://localhost:${server.address().port}`;
@@ -48,6 +68,10 @@ async function run(browser, base, label, versionJson, expectStale) {
     await run(browser, base, "same version", '{"currentVersion": 1}', false),
     await run(browser, base, "no version.json (404)", null, false),
     await run(browser, base, "malformed version.json", "not json", false),
+    await run(browser, base, 'version written as a string ("v5")', '{"currentVersion": "v5"}', true),
+    await runAudience(browser, base, "administrator", '{"currentVersion": 5}', true),
+    await runAudience(browser, base, "administrator", '{"currentVersion": 1}', false),
+    await runAudience(browser, base, "family", '{"currentVersion": 5}', true),
   ];
   await browser.close();
   server.close();

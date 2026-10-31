@@ -556,6 +556,11 @@
   }
 
   function isPreview() { return !!window.REEF_PREVIEW_VIEWS; }
+  // Proposal versions arrive as "v2" (page data) or 2 (version.json): compare digits only.
+  function versionNumber(v) {
+    const n = parseInt(String(v == null ? "" : v).replace(/\D/g, ""), 10);
+    return isNaN(n) ? 0 : n;
+  }
 
   function viewHref(v, print) {
     if (isPreview()) return "?view=" + v.key + (print ? "&print=1" : "");
@@ -982,6 +987,31 @@
       el("a", { href: "https://www.reef.org" }, ["www.REEF.org"]),
       el("span", { class: "tag" }, [(V.title || "") + " · " + (V.statusLabel || "Draft") + " " + (V.version || "") + (V.lastUpdated ? " · Updated " + V.lastUpdated : "")]),
     ]));
+
+    // Same stale-version rule as the main proposal page (see
+    // checkProposalVersion): the audience pages live at
+    // bookings/<slug>/share/<view>/, so version.json is two folders up.
+    // Pricing, payment terms and the approval box are hidden; the other
+    // content stays (it is not what changed in a way that can mislead on money).
+    if (!isPreview() && window.fetch) {
+      fetch("../../version.json", { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (v) {
+          const current = v && versionNumber(v.currentVersion);
+          if (!current || current <= (versionNumber(V.version) || 1)) return;
+          pageRoot.insertBefore(el("div", { class: "stale-banner", role: "status" }, [
+            el("strong", {}, ["This page is being updated."]),
+            " REEF has made changes to this proposal since this version was prepared. Pricing and approval are hidden until the revised version is ready."
+          ]), main);
+          pageRoot.querySelectorAll(".a-sec").forEach(function (s) {
+            const eyebrow = s.querySelector(".eyebrow");
+            if (eyebrow && /^(PRICE|TERMS)$/.test(eyebrow.textContent.trim())) s.classList.add("stale-hide");
+          });
+          pageRoot.querySelectorAll(".a-approve").forEach(function (n) { n.classList.add("stale-hide"); });
+          pageRoot.classList.add("proposal-stale");
+        })
+        .catch(function () { /* quiet */ });
+    }
 
     let wantsPrint = false;
     try { wantsPrint = new URLSearchParams(location.search).get("print") === "1"; } catch (err) { wantsPrint = false; }
@@ -2041,11 +2071,11 @@
     // no version.json, a bad file, or an offline preview shows the page as is.
     function checkProposalVersion() {
       if (isPreview() || !window.fetch) return;
-      const pageVersion = parseInt(String(PD.meta.proposalVersion || "v1").replace(/\D/g, ""), 10) || 1;
+      const pageVersion = versionNumber(PD.meta.proposalVersion) || 1;
       fetch("version.json", { cache: "no-store" })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (v) {
-          const current = v && parseInt(v.currentVersion, 10);
+          const current = v && versionNumber(v.currentVersion);
           if (!current || current <= pageVersion) return;
           const rc = PD.reefContact || {};
           const contact = rc.email ? [" Questions? Contact ", rc.name || "REEF", " at ",
