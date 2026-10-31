@@ -2032,6 +2032,36 @@
       el("span", { class: "tag" }, ["Explore. Discover. Make a Difference."]),
     ]));
 
+    // Stale-version banner (sprint Task 4, 2026-10-31). version.json sits next
+    // to this page and is rewritten whenever Airtable's Proposal Version
+    // changes (pipeline/write_version_marker.py) and on every publish. If it
+    // names a version newer than the one this page was built from, hide the
+    // pricing and approval buttons and say the proposal is being updated,
+    // instead of showing numbers that may no longer be right. Fails quiet:
+    // no version.json, a bad file, or an offline preview shows the page as is.
+    function checkProposalVersion() {
+      if (isPreview() || !window.fetch) return;
+      const pageVersion = parseInt(String(PD.meta.proposalVersion || "v1").replace(/\D/g, ""), 10) || 1;
+      fetch("version.json", { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (v) {
+          const current = v && parseInt(v.currentVersion, 10);
+          if (!current || current <= pageVersion) return;
+          const rc = PD.reefContact || {};
+          const contact = rc.email ? [" Questions? Contact ", rc.name || "REEF", " at ",
+            el("a", { href: "mailto:" + rc.email }, [rc.email]), "."] : [];
+          pageRoot.insertBefore(el("div", { class: "stale-banner", role: "status" }, [
+            el("strong", {}, ["This proposal is being updated."]),
+            " REEF has made changes since this version was prepared, so pricing and the approval buttons are hidden until the revised proposal is ready."
+          ].concat(contact)), main);
+          pageRoot.querySelectorAll("#sec-pricing, .cta-module, .confirm-summary, [data-goto='sec-pricing']")
+            .forEach(function (node) { node.classList.add("stale-hide"); });
+          pageRoot.classList.add("proposal-stale");
+        })
+        .catch(function () { /* quiet: the page simply renders as built */ });
+    }
+    checkProposalVersion();
+
     function activateSection(id) {
       SECTIONS.forEach(function (s) {
         document.getElementById(s.id).classList.toggle("is-active", s.id === id);

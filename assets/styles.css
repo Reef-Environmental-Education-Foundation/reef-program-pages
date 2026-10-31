@@ -1283,3 +1283,8 @@ li{margin:0;}
 :root[data-theme="dark"] .proposal-shell .draft-banner{background:rgba(255,200,60,.14);color:#FFE7A3;border-color:#E0A800;}
 :root[data-theme="dark"] .proposal-shell .rot-list-draft{color:#FFD766;}
 @media (max-width:520px){ .proposal-shell .draft-banner{flex-direction:column;gap:8px;} }
+
+/* Stale-version banner (render.js checkProposalVersion) */
+.stale-banner{background:#e8f4f6;color:#0b2a4a;border-bottom:1px solid #b8dde3;padding:14px 20px;font-size:15px;line-height:1.5;text-align:center;}
+.stale-banner a{color:inherit;text-decoration:underline;}
+.stale-hide{display:none !important;}
