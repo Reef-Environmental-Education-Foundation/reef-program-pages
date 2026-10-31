@@ -41,10 +41,12 @@ jobs:
       # Passed through the environment (never interpolated into shell text) and
       # validated below, so a crafted payload cannot inject commands.
       RECORD_ID: ${{ github.event.inputs.booking_record_id || github.event.client_payload.record_id }}
-      RESULT_FILE: ${{ runner.temp }}/publish-result.json
     steps:
       - name: Validate record ID
         run: |
+          # The runner context is not available in job-level env, so the result
+          # file path is exported here for every later step.
+          echo "RESULT_FILE=$RUNNER_TEMP/publish-result.json" >> "$GITHUB_ENV"
           if [[ ! "$RECORD_ID" =~ ^rec[A-Za-z0-9]{14}$ ]]; then
             echo "::error::'$RECORD_ID' is not an Airtable record ID (expected rec + 14 characters)."
             exit 1

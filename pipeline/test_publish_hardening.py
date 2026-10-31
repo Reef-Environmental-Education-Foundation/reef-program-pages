@@ -234,6 +234,15 @@ class WorkflowTest(unittest.TestCase):
         self.assertIn("if: always()", text)
         self.assertNotIn("${{ github.event.inputs.booking_record_id }}\"", text)  # never inline into shell
 
+    def test_no_runner_context_in_job_level_env(self):
+        # `runner` is not available in jobs.<id>.env: GitHub rejects the whole
+        # workflow file ("Unrecognized named-value: 'runner'"). Regression
+        # from the first version of this workflow.
+        text = (REPO / ".github" / "workflows" / "publish-booking.yml").read_text()
+        job_level = text.split("    steps:")[0]
+        self.assertNotIn("runner.", job_level)
+        self.assertIn("RESULT_FILE=$RUNNER_TEMP", text)
+
 
 if __name__ == "__main__":
     unittest.main()
