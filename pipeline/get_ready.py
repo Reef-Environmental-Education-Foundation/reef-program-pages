@@ -9,15 +9,18 @@ Dates come from Airtable wherever Airtable has them (Guarantee Lock Date,
 Final Roster Due, the agreement deposit and payment dates). Items marked
 "Template (confirm)" are generic and need Rose's review before any school sees
 them. Completion state is read from b["checklist_state"] ({item key: {"done": bool,
-"doneOn": "YYYY-MM-DD"}}); there is no store for it yet, so everything shows as
-outstanding. Proposed minimal Airtable table (for Cowork): "Checklist Items" with
-Booking (link), Item Key (text), Done (checkbox), Done On (date), Done By (collaborator).
+"doneOn": "YYYY-MM-DD"}}), loaded from the Airtable "Checklist Items" table by
+fetch_completion_state(). A missing row means outstanding.
 
 Family and student pages never show pricing or contract terms: the checklist
 carries no dollar amounts for those groups (enforced by a test).
 """
 import html
 from datetime import date, datetime, timedelta
+
+import os
+
+import requests
 
 GROUPS = ["REEF", "School administrator", "Teacher to families", "Students and families"]
 PRETRIP_WINDOW_DAYS = 120
@@ -32,6 +35,76 @@ def _d(value):
 def _item(key, group, title, due=None, source="Template (confirm)", detail="", money=None, provisional=False):
     return {"key": key, "group": group, "title": title, "due": due, "source": source,
             "detail": detail, "money": money, "provisional": provisional}
+
+
+
+# ---- Completion state: Airtable "Checklist Items" (tbl6BmRXNhnxxfabD) -------------
+# One row per (booking, item). "Item Key" must be one of ITEM_KEYS below; "Done" is
+# the checkbox; "Done On" and "Done By" are optional. A missing row means outstanding.
+BOOKINGS_BASE = "app3FIECuG8iQr7kY"
+CHECKLIST_TABLE = "tbl6BmRXNhnxxfabD"
+F_ITEM_KEY = "fldvPaPRRFhDtFRCW"
+F_DONE = "fldyIZDGmyfULPD8x"
+F_DONE_ON = "flddmf1qgpHfyB48Z"
+F_DONE_BY = "fldZFvEtmrZ5cZghT"
+F_BOOKING = "fldl9U7R5wd51QTCQ"
+ITEM_KEYS = ["sign_agreement", "deposit", "payment2", "guarantee", "final_payment", "chaperones",
+             "share_family_page", "collect_forms", "final_roster", "return_forms", "bring_lunch",
+             "confirm_boat_times", "confirm_transport", "confirm_rates", "send_agreement"]
+
+
+def state_from_rows(rows, record_id):
+    """{item key: {"done", "doneOn", "doneBy"}} for one booking from Checklist Items rows
+    (REST shape, fields keyed by field ID). Rows for other bookings, with no Item Key, or
+    with no Booking link are ignored. If a key appears twice, done wins."""
+    state = {}
+    for row in rows:
+        f = row.get("fields", {})
+        key = (f.get(F_ITEM_KEY) or "").strip()
+        if not key or record_id not in (f.get(F_BOOKING) or []):
+            continue
+        done = bool(f.get(F_DONE))
+        prev = state.get(key)
+        if prev and prev["done"] and not done:
+            continue
+        state[key] = {"done": done, "doneOn": f.get(F_DONE_ON) or None, "doneBy": f.get(F_DONE_BY) or None}
+    return state
+
+
+def unknown_keys(state):
+    """Item Keys in Airtable that no checklist item uses (typos), so Cowork can fix them."""
+    return sorted(set(state) - set(ITEM_KEYS))
+
+
+def fetch_completion_state(record_id, api_key=None, http=requests):
+    """Read this booking's completion state from the Checklist Items table. Read only.
+    Any failure returns {} (everything outstanding) and says so; it never raises."""
+    api_key = api_key or os.environ.get("AIRTABLE_API_KEY")
+    if not api_key:
+        print("WARNING: no AIRTABLE_API_KEY; checklist shows everything outstanding.")
+        return {}
+    rows, offset = [], None
+    try:
+        while True:
+            params = [("returnFieldsByFieldId", "true")] + [("fields[]", f) for f in
+                      (F_ITEM_KEY, F_DONE, F_DONE_ON, F_DONE_BY, F_BOOKING)]
+            if offset:
+                params.append(("offset", offset))
+            resp = http.get(f"https://api.airtable.com/v0/{BOOKINGS_BASE}/{CHECKLIST_TABLE}", params=params,
+                            headers={"Authorization": f"Bearer {api_key}"}, timeout=30)
+            resp.raise_for_status()
+            body = resp.json()
+            rows.extend(body.get("records", []))
+            offset = body.get("offset")
+            if not offset:
+                break
+    except Exception as exc:  # noqa: BLE001 - a read problem must never break a build
+        print(f"WARNING: could not read Checklist Items ({type(exc).__name__}); showing everything outstanding.")
+        return {}
+    state = state_from_rows(rows, record_id)
+    for k in unknown_keys(state):
+        print(f"WARNING: Checklist Items has an Item Key {k!r} that no checklist item uses.")
+    return state
 
 
 def build_checklist(b, today=None, state=None):
@@ -87,6 +160,7 @@ def build_checklist(b, today=None, state=None):
         s = state.get(it["key"]) or {}
         it["done"] = bool(s.get("done"))
         it["doneOn"] = s.get("doneOn")
+        it["doneBy"] = s.get("doneBy")
         it["daysToDue"] = (it["due"] - today).days if it["due"] else None
         it["overdue"] = bool(it["due"] and not it["done"] and it["due"] < today)
     return items
@@ -123,7 +197,7 @@ def build_preview_html(b, today=None, items=None):
     for g in GROUPS:
         rows.append(f"<h3>{e(g)}</h3><table><tr><th>Task</th><th>Due</th><th>Status</th><th>Source</th></tr>")
         for it in [i for i in items if i["group"] == g]:
-            status = ('<span class="done">Complete</span>' if it["done"]
+            status = (f'<span class="done">Complete{(" " + e(it["doneOn"])) if it.get("doneOn") else ""}</span>' if it["done"]
                       else '<span class="over">Overdue</span>' if it["overdue"] else '<span class="todo">Outstanding</span>')
             due = _fmt(it["due"]) + (' <span class="prov">provisional</span>' if it["provisional"] and it["due"] else "")
             title = e(it["title"]) + (f' <span class="src">{e(it["money"])}</span>' if it["money"] and g == "School administrator" else "")
@@ -154,5 +228,5 @@ def build_preview_html(b, today=None, items=None):
 <h2>Get Ready checklist preview</h2>
 <p>{s['complete']} of {s['total']} complete, {s['outstanding']} outstanding, {s['overdue']} overdue. Items marked "Template (confirm)" are generic and need Rose's review.</p>
 {''.join(rows)}
-<p class="src">Completion state is not stored anywhere yet, so every item shows as outstanding. Proposed: an Airtable "Checklist Items" table (Booking link, Item Key, Done, Done On, Done By).</p>
+<p class="src">Completion comes from the Airtable "Checklist Items" table (one row per item, matched by Item Key). An item with no row shows as outstanding.</p>
 </div></body></html>"""

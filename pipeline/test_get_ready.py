@@ -1,5 +1,6 @@
 """python -m unittest pipeline.test_get_ready"""
 import unittest
+import unittest.mock
 from datetime import date
 
 from pipeline import get_ready as gr
@@ -87,6 +88,85 @@ class PreviewHtmlTest(unittest.TestCase):
             start = out.index(f"<h3>{group}</h3>")
             end = out.index("</table>", start)
             self.assertNotIn("$", out[start:end])
+
+
+REC = "recAAAAAAAAAAAAAA"
+
+
+def row(key, booking=REC, done=False, done_on=None, done_by=None):
+    f = {gr.F_ITEM_KEY: key, gr.F_BOOKING: [booking] if booking else [], gr.F_DONE: done}
+    if done_on:
+        f[gr.F_DONE_ON] = done_on
+    if done_by:
+        f[gr.F_DONE_BY] = done_by
+    return {"id": "recRow", "fields": f}
+
+
+class CompletionStateTest(unittest.TestCase):
+    def test_state_from_rows_filters_to_the_booking(self):
+        rows = [row("deposit", done=True, done_on="2026-11-02", done_by="Rose"),
+                row("payment2", booking="recBBBBBBBBBBBBBB", done=True),
+                row("guarantee", booking=None, done=True),
+                row("", done=True)]
+        state = gr.state_from_rows(rows, REC)
+        self.assertEqual(state, {"deposit": {"done": True, "doneOn": "2026-11-02", "doneBy": "Rose"}})
+
+    def test_done_wins_over_a_duplicate_open_row(self):
+        state = gr.state_from_rows([row("deposit", done=True), row("deposit", done=False)], REC)
+        self.assertTrue(state["deposit"]["done"])
+        state = gr.state_from_rows([row("deposit", done=False), row("deposit", done=True)], REC)
+        self.assertTrue(state["deposit"]["done"])
+
+    def test_unchecked_row_is_outstanding(self):
+        self.assertFalse(gr.state_from_rows([row("deposit", done=False)], REC)["deposit"]["done"])
+
+    def test_state_drives_the_checklist(self):
+        state = gr.state_from_rows([row("deposit", done=True, done_on="2026-11-02", done_by="Rose")], REC)
+        items = by_key(gr.build_checklist(booking(), TODAY, state))
+        self.assertTrue(items["deposit"]["done"])
+        self.assertEqual(items["deposit"]["doneBy"], "Rose")
+        self.assertFalse(items["payment2"]["done"])
+        self.assertIn("Complete 2026-11-02", gr.build_preview_html(booking(checklist_state=state), TODAY))
+
+    def test_item_keys_cover_every_checklist_item(self):
+        keys = {i["key"] for i in gr.build_checklist(booking(), TODAY)}
+        self.assertEqual(keys, set(gr.ITEM_KEYS))
+
+    def test_unknown_keys_are_reported(self):
+        state = gr.state_from_rows([row("deposti", done=True), row("deposit")], REC)
+        self.assertEqual(gr.unknown_keys(state), ["deposti"])
+
+    def test_fetch_paginates_and_reads_only(self):
+        pages = [{"records": [row("deposit", done=True)], "offset": "o1"}, {"records": [row("payment2", done=True)]}]
+        calls = []
+
+        class Resp:
+            def __init__(self, body): self.body = body
+            def raise_for_status(self): pass
+            def json(self): return self.body
+
+        class Http:
+            def get(self, url, params=None, headers=None, timeout=None):
+                calls.append(dict(params))
+                return Resp(pages[len(calls) - 1])
+
+        state = gr.fetch_completion_state(REC, api_key="k", http=Http())
+        self.assertEqual(set(state), {"deposit", "payment2"})
+        self.assertNotIn("offset", calls[0])
+        self.assertEqual(calls[1]["offset"], "o1")
+        self.assertTrue(any(k == "returnFieldsByFieldId" for k in calls[0]) or "returnFieldsByFieldId" in calls[0])
+
+    def test_fetch_failure_returns_empty_and_never_raises(self):
+        class Http:
+            def get(self, *a, **k): raise requests_error()
+        import requests
+        requests_error = requests.ConnectionError
+        self.assertEqual(gr.fetch_completion_state(REC, api_key="k", http=Http()), {})
+
+    def test_no_key_returns_empty(self):
+        import os
+        with unittest.mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(gr.fetch_completion_state(REC), {})
 
 
 if __name__ == "__main__":
