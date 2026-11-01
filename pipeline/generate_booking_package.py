@@ -85,6 +85,7 @@ import docx
 sys.path.insert(0, str(Path(__file__).parent))
 import audience_views  # noqa: E402  (Approve & Share audience views, 2026-09-28)
 import schedule_airtable  # noqa: E402  (itinerary read from Airtable, 2026-10-01)
+import get_ready  # noqa: E402  (Get Ready stage checklist)
 import publish_support  # noqa: E402  (build validation + run result, 2026-10-31)
 
 AIRTABLE_API_KEY = os.environ.get("AIRTABLE_API_KEY")
@@ -2039,6 +2040,11 @@ def main():
     # written to share/<view>/ with per-view data files, and gated by the
     # same Approved-to-Share lock (preview runs write them to the temp dir).
     page_url = f"{PAGES_BASE_URL}/bookings/{slug}/"
+    if derive_stage(b) == STAGE_GET_READY:
+        # strict: an unreadable Checklist Items table fails the build (old page stays live)
+        # instead of publishing a page that shows everything outstanding.
+        b["checklist_state"] = get_ready.fetch_completion_state(record_id, strict=True)
+        b["get_ready"] = get_ready.views_payload(b)
     view_data = build_share_views(b, page_data, is_proposal, page_url)
     # Never publish a literal {{token}}, on the Airtable path or the JSON path.
     schedule_airtable.assert_no_tokens(page_data, "booking page")

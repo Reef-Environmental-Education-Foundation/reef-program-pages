@@ -829,6 +829,46 @@
     const main = el("main", { id: "main", class: "a-main" });
     const add = function (node) { if (node) main.appendChild(node); };
 
+    // ---------------- GET READY (stage "Get Ready" only) ----------------
+    // Overdue/days-left are computed in the browser from the ISO due date, so they stay
+    // correct between publishes; completion is as of the publish date (G.asOf).
+    function getReadySection(G) {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      function parse(iso) { const p = String(iso).split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+      function fmt(iso) { return iso ? parse(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Date to be set"; }
+      const kids = [];
+      if (G.provisional && V.view === "administrator") {
+        kids.push(el("p", { class: "a-fine gr-prov" }, ["Payment dates and amounts are provisional until the agreement date is entered."]));
+      }
+      if (has(G.deadlines)) {
+        kids.push(dl(G.deadlines.map(function (d) {
+          return { k: d.label, v: fmt(d.date) + (d.provisional ? " (provisional)" : "") };
+        })));
+      }
+      (G.groups || []).forEach(function (grp) {
+        kids.push(el("h3", { class: "gr-group" }, [grp.group]));
+        kids.push(el("ul", { class: "gr-list" }, grp.items.map(function (it) {
+          const overdue = !it.done && it.due && parse(it.due) < today;
+          const state = it.done ? "complete" : (overdue ? "overdue" : "outstanding");
+          const label = it.done ? "Complete" + (it.doneOn ? " " + fmt(it.doneOn) : "") : (overdue ? "Overdue" : "Outstanding");
+          return el("li", { class: "gr-item is-" + state }, [
+            el("span", { class: "gr-state" }, [label]),
+            el("div", { class: "gr-body" }, [
+              el("strong", {}, [it.title]),
+              it.money ? el("span", { class: "gr-money" }, [" " + it.money + (it.provisional ? " (provisional)" : "")]) : null,
+              it.paymentReceived ? el("span", { class: "gr-tag" }, ["Payment received"]) : null,
+              it.template ? el("span", { class: "gr-tag" }, ["Template (confirm)"]) : null,
+              it.due ? el("div", { class: "a-fine" }, ["Due " + fmt(it.due) + (it.provisional ? " (provisional)" : "")]) : null,
+              it.detail ? el("div", { class: "a-fine" }, [it.detail]) : null,
+            ]),
+          ]);
+        })));
+      });
+      kids.push(el("p", { class: "a-fine" }, ["Checklist status as of " + fmt(G.asOf) + "."]));
+      return sec("GET READY", "Your checklist before the trip", kids, "a-getready");
+    }
+    if (V.getReady) add(getReadySection(V.getReady));
+
     // ---------------- ADMINISTRATOR ----------------
     if (V.view === "administrator") {
       add(sec("PURPOSE", "Program purpose and educational value", [

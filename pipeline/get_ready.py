@@ -76,11 +76,14 @@ def unknown_keys(state):
     return sorted(set(state) - set(ITEM_KEYS))
 
 
-def fetch_completion_state(record_id, api_key=None, http=requests):
+def fetch_completion_state(record_id, api_key=None, http=requests, strict=False):
     """Read this booking's completion state from the Checklist Items table. Read only.
-    Any failure returns {} (everything outstanding) and says so; it never raises."""
+    Any failure returns {} (everything outstanding) and says so; it never raises, unless
+    strict=True (a publish), where a read failure raises so the previous page stays live."""
     api_key = api_key or os.environ.get("AIRTABLE_API_KEY")
     if not api_key:
+        if strict:
+            raise RuntimeError("no AIRTABLE_API_KEY; cannot read Checklist Items")
         print("WARNING: no AIRTABLE_API_KEY; checklist shows everything outstanding.")
         return {}
     rows, offset = [], None
@@ -98,7 +101,9 @@ def fetch_completion_state(record_id, api_key=None, http=requests):
             offset = body.get("offset")
             if not offset:
                 break
-    except Exception as exc:  # noqa: BLE001 - a read problem must never break a build
+    except Exception as exc:  # noqa: BLE001 - a read problem must never break a preview
+        if strict:
+            raise
         print(f"WARNING: could not read Checklist Items ({type(exc).__name__}); showing everything outstanding.")
         return {}
     state = state_from_rows(rows, record_id)
@@ -164,6 +169,87 @@ def build_checklist(b, today=None, state=None):
         it["daysToDue"] = (it["due"] - today).days if it["due"] else None
         it["overdue"] = bool(it["due"] and not it["done"] and it["due"] < today)
     return items
+
+
+# ---- Audience payloads (Get Ready stage, published on the four share views) ----------
+class GetReadyContentError(Exception):
+    """A Get Ready payload would leak money or admin content to a non-admin view."""
+
+
+ALL_VIEWS = ("administrator", "educator", "family", "student")
+# Which views show each item. Empty = internal only (never on a school page).
+ITEM_VIEWS = {
+    "sign_agreement": ("administrator",), "deposit": ("administrator",), "payment2": ("administrator",),
+    "guarantee": ("administrator",), "final_payment": ("administrator",), "chaperones": ("administrator",),
+    "share_family_page": ("administrator", "educator"), "collect_forms": ("administrator", "educator"),
+    "final_roster": ("administrator", "educator"),
+    "return_forms": ALL_VIEWS, "bring_lunch": ALL_VIEWS,
+    "confirm_boat_times": ("administrator", "educator"), "send_agreement": ("administrator",),
+    "confirm_transport": (), "confirm_rates": (),
+}
+# School-safe wording for REEF's own items (the internal titles carry staff notes).
+PUBLIC_TITLE = {"confirm_boat_times": "REEF confirms the boat departure times",
+                "send_agreement": "REEF sends the agreement"}
+PAYMENT_VERIFIED = {"Deposit Received", "Paid in Full"}
+_MONEY_RE = __import__("re").compile(r"\$\s?\d")
+
+
+def _iso(d):
+    return d.isoformat() if d else None
+
+
+def _deadlines(b, view):
+    arrival, lock, roster = _d(b.get("arrival_date")), _d(b.get("guarantee_lock_date")), _d(b.get("final_roster_due"))
+    prov = not b.get("agreement_date")
+    rows = []
+    if view == "administrator":
+        rows += [("Guarantee lock", lock, False), ("Final roster due", roster, False),
+                 ("Deposit due", _d(b.get("deposit_due_agreement")), prov),
+                 ("Second payment due", _d(b.get("payment2_due_agreement")), prov),
+                 ("Final payment due", _d(b.get("final_due_date")), prov)]
+    elif view == "educator":
+        rows += [("Final roster due", roster, False)]
+    else:
+        rows += [("Return signed forms by", roster, False)]
+    rows.append(("Program date", arrival, False))
+    return [{"label": l, "date": _iso(d), "provisional": p} for l, d, p in rows if d]
+
+
+def views_payload(b, today=None, state=None):
+    """{view: {"asOf", "provisional", "deadlines", "groups"}} for the Get Ready stage.
+    Money only in the administrator view; any "$" amount in another view raises."""
+    today = today or datetime.utcnow().date()
+    items = build_checklist(b, today, state)
+    status = b.get("deposit_payment_status") or ""
+    out = {}
+    for view in ALL_VIEWS:
+        groups = []
+        for g in GROUPS:
+            rows = []
+            for it in items:
+                if it["group"] != g or view not in ITEM_VIEWS.get(it["key"], ()):
+                    continue
+                row = {"key": it["key"], "title": PUBLIC_TITLE.get(it["key"], it["title"]),
+                       "due": _iso(it["due"]), "done": it["done"], "doneOn": it["doneOn"],
+                       "template": it["source"] == "Template (confirm)",
+                       "provisional": bool(it["provisional"] and it["due"])}
+                if it["detail"] and it["key"] not in PUBLIC_TITLE:
+                    row["detail"] = it["detail"]
+                if view == "administrator":
+                    if it["money"]:
+                        row["money"] = it["money"]
+                    if (it["key"] == "deposit" and status in PAYMENT_VERIFIED) or \
+                            (it["key"] in ("payment2", "final_payment") and status == "Paid in Full"):
+                        row["paymentReceived"] = True
+                rows.append(row)
+            if rows:
+                groups.append({"group": g, "items": rows})
+        payload = {"asOf": _iso(today), "provisional": not b.get("agreement_date"),
+                   "deadlines": _deadlines(b, view), "groups": groups}
+        if view != "administrator" and _MONEY_RE.search(str(payload)):
+            raise GetReadyContentError(f"The {view} Get Ready view would show a dollar amount.")
+        out[view] = payload
+    return out
 
 
 def summarize(items):
