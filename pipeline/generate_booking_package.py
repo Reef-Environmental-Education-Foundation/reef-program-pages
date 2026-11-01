@@ -686,6 +686,19 @@ def fetch_booking_data(record_id):
         "asana_task_id": f.get("Asana Task ID", ""),
         # Approved-to-Share lock (2026-09-25). Collaborator fields come back
         # from the REST API as {"id", "email", "name"} objects.
+        # Agreement-model fields (Airtable, added 10/2026). Read only; the page
+        # does not show them yet (see get_ready.py). Dates are provisional while
+        # Agreement Date is blank.
+        "agreement_date": f.get("Agreement Date"),
+        "guarantee_lock_date": f.get("Guarantee Lock Date"),
+        "final_roster_due": f.get("Final Roster Due"),
+        "deposit_amount_agreement": f.get("Deposit Amount (Agreement)"),
+        "deposit_due_agreement": f.get("Deposit Due (Agreement)"),
+        "payment2_amount_agreement": f.get("Payment 2 Amount (Agreement)"),
+        "payment2_due_agreement": f.get("Payment 2 Due (Agreement)"),
+        "min_guaranteed_spaces": f.get("Minimum Guaranteed Paid Spaces"),
+        "guaranteed_cost_agreement": f.get("Guaranteed Program Cost (Agreement)"),
+        "contract_tier": f.get("Contract Tier"),
         "approved_to_share": bool(f.get("Approved to Share")),
         "approved_stage": f.get("Approved to Share — Stage") or "",
         "approved_version": f.get("Approved for Proposal Version"),
