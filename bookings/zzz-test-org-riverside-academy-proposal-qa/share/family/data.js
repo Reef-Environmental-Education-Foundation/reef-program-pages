@@ -8,17 +8,17 @@ window.BOOKING_DATA = {
   "view": {
     "status": "draft",
     "statusLabel": "Draft",
-    "version": "v1",
+    "version": "v2",
     "lastUpdated": "Nov 1, 2026",
     "orgName": "ZZZ TEST ORG \u2014 Riverside Academy (Proposal QA)",
     "dateLine": "April 13\u201314, 2027",
     "hours": null,
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A two-day marine science Expedition for 32 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "summary": "A two-day marine science Expedition for 33 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
     "scheduleDraft": true,
     "view": "family",
     "location": "REEF Ocean Exploration Center, Key Largo",
-    "intro": "A two-day marine science Expedition for 32 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "intro": "A two-day marine science Expedition for 33 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
     "experiences": [
       {
         "title": "Welcome Program (arrival)",

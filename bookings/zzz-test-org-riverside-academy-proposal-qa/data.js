@@ -11,12 +11,12 @@ window.BOOKING_DATA = {
   "proposal": {
     "meta": {
       "bookingId": "rec4YP9ruVPOD90US",
-      "proposalVersion": "v1",
+      "proposalVersion": "v2",
       "proposalDate": "Aug 28, 2026",
       "programTypeLabel": "Expedition",
       "programWord": "Expedition"
     },
-    "summary": "A two-day marine science Expedition for 32 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "summary": "A two-day marine science Expedition for 33 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
     "scheduleFormat": "standard",
     "scheduleLabel": "Day by Day",
     "scheduleDraft": true,
@@ -28,7 +28,7 @@ window.BOOKING_DATA = {
       "contactLabel": "Group Contact",
       "contactLine": "Jordan Reyes, 7th Grade Team Lead",
       "gradeLevel": "7th Grade Team Lead",
-      "students": 32,
+      "students": 33,
       "chaperones": 5
     },
     "dates": {
@@ -66,7 +66,7 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Group",
-        "v": "32 students and 5 chaperones (3 complimentary)"
+        "v": "33 students and 5 chaperones (3 complimentary)"
       },
       {
         "k": "Activities",
@@ -78,7 +78,7 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Estimated total",
-        "v": "$10,978.80"
+        "v": "$11,194.05"
       },
       {
         "k": "Not included",
@@ -111,7 +111,7 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Group Size",
-        "v": "32 students + 5 chaperones"
+        "v": "33 students + 5 chaperones"
       },
       {
         "k": "Length",
@@ -266,12 +266,12 @@ window.BOOKING_DATA = {
     "pricing": {
       "tileTotal": {
         "label": "Estimated Total",
-        "num": "$10,978.80",
-        "unit": "for 32 students and 5 chaperones"
+        "num": "$11,194.05",
+        "unit": "for 33 students and 5 chaperones"
       },
       "tileRate": {
         "label": "Per Student",
-        "num": "$322.91",
+        "num": "$319.83",
         "unit": "per student for the full Expedition"
       },
       "tileChaperones": {
@@ -282,12 +282,12 @@ window.BOOKING_DATA = {
       "chaperonePolicy": {
         "headline": "3 of your 5 chaperones are complimentary.",
         "lines": [
-          "One chaperone space is complimentary for every 9 paid participants. Your group of 32 students and 5 chaperones includes 3 complimentary chaperone spaces.",
+          "One chaperone space is complimentary for every 9 paid participants. Your group of 33 students and 5 chaperones includes 3 complimentary chaperone spaces.",
           "The other 2 chaperones pay the full per-participant package price, the same as a student."
         ]
       },
-      "estimatedTotal": "$10,978.80",
-      "estimatedTotalNote": "<strong>$10,978.80</strong> is your estimated total, based on the details below. It includes REEF's program fees and every item listed under What's Included. If anything below changes, REEF will send a revised proposal with an updated total.",
+      "estimatedTotal": "$11,194.05",
+      "estimatedTotalNote": "<strong>$11,194.05</strong> is your estimated total, based on the details below. It includes REEF's program fees and every item listed under What's Included. If anything below changes, REEF will send a revised proposal with an updated total.",
       "assumptions": [
         "Based on a group of 32 students and 5 chaperones across both proposed program days.",
         "Rate assumes both days run as outlined",
@@ -303,7 +303,7 @@ window.BOOKING_DATA = {
     "share": {
       "status": "draft",
       "statusLabel": "Draft",
-      "version": "v1",
+      "version": "v2",
       "lastUpdated": "Nov 1, 2026",
       "needs": [
         {
