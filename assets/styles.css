@@ -1288,3 +1288,15 @@ li{margin:0;}
 .stale-banner{background:#e8f4f6;color:#0b2a4a;border-bottom:1px solid #b8dde3;padding:14px 20px;font-size:15px;line-height:1.5;text-align:center;}
 .stale-banner a{color:inherit;text-decoration:underline;}
 .stale-hide{display:none !important;}
+
+/* Get Ready checklist (audience views) */
+.audience-shell .gr-group{font-size:15px;margin:18px 0 6px;color:var(--p-ink);}
+.audience-shell .gr-list{list-style:none;margin:0;padding:0;}
+.audience-shell .gr-item{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid rgba(11,42,74,.12);font-size:14.5px;line-height:1.45;}
+.audience-shell .gr-state{flex:0 0 96px;font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;}
+.audience-shell .gr-item.is-complete .gr-state{color:#1b6b3a;}
+.audience-shell .gr-item.is-overdue .gr-state{color:#a11;}
+.audience-shell .gr-item.is-outstanding .gr-state{color:#8a5a00;}
+.audience-shell .gr-tag{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:10px;background:#fff6dc;border:1px solid #e6c766;font-size:12px;}
+.audience-shell .gr-money{font-weight:600;}
+@media (max-width:520px){.audience-shell .gr-item{flex-direction:column;gap:2px;}.audience-shell .gr-state{flex-basis:auto;}}

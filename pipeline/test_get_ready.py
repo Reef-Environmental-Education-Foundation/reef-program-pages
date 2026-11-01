@@ -169,5 +169,42 @@ class CompletionStateTest(unittest.TestCase):
             self.assertEqual(gr.fetch_completion_state(REC), {})
 
 
+class ViewsPayloadTest(unittest.TestCase):
+    def test_money_only_in_administrator_view(self):
+        v = gr.views_payload(booking(), TODAY)
+        self.assertIn("$", str(v["administrator"]))
+        for k in ("educator", "family", "student"):
+            self.assertNotIn("$", str(v[k]), k)
+
+    def test_internal_reef_items_never_published(self):
+        blob = str(gr.views_payload(booking(), TODAY))
+        self.assertNotIn("never promise", blob)
+        self.assertNotIn("Rose, by hand", blob)
+        self.assertNotIn("group rates", blob)
+
+    def test_family_and_student_only_see_their_group(self):
+        v = gr.views_payload(booking(), TODAY)
+        for k in ("family", "student"):
+            self.assertEqual([g["group"] for g in v[k]["groups"]], ["Students and families"])
+
+    def test_dollar_amount_in_non_admin_view_fails_the_build(self):
+        with unittest.mock.patch.dict(gr.ITEM_VIEWS, {"bring_lunch": gr.ALL_VIEWS}):
+            with unittest.mock.patch.object(gr, "build_checklist", return_value=[
+                    {"key": "bring_lunch", "group": "Students and families", "title": "Pack $5 lunch", "due": None,
+                     "source": "x", "detail": "", "money": None, "provisional": False, "done": False, "doneOn": None}]):
+                with self.assertRaises(gr.GetReadyContentError):
+                    gr.views_payload(booking(), TODAY)
+
+    def test_provisional_flag_and_payment_verified(self):
+        v = gr.views_payload(booking(deposit_payment_status="Deposit Received"), TODAY)["administrator"]
+        self.assertTrue(v["provisional"])
+        dep = next(i for g in v["groups"] for i in g["items"] if i["key"] == "deposit")
+        self.assertTrue(dep["paymentReceived"])
+
+    def test_strict_fetch_raises(self):
+        with self.assertRaises(RuntimeError):
+            gr.fetch_completion_state("recAAAAAAAAAAAAAA", api_key="", strict=True)
+
+
 if __name__ == "__main__":
     unittest.main()
