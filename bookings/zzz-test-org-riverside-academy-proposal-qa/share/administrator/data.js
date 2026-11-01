@@ -8,16 +8,16 @@ window.BOOKING_DATA = {
   "view": {
     "status": "draft",
     "statusLabel": "Draft",
-    "version": "v2",
+    "version": "v1",
     "lastUpdated": "Nov 1, 2026",
     "orgName": "ZZZ TEST ORG \u2014 Riverside Academy (Proposal QA)",
     "dateLine": "April 13\u201314, 2027",
     "hours": null,
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A two-day marine science Expedition for 33 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "summary": "A two-day marine science Expedition for 32 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
     "scheduleDraft": true,
     "view": "administrator",
-    "purpose": "A two-day marine science Expedition for 33 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "purpose": "A two-day marine science Expedition for 32 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
     "value": [
       {
         "title": "Real citizen science, not a demo",
@@ -35,7 +35,7 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Group Size",
-        "v": "33 students + 5 chaperones"
+        "v": "32 students + 5 chaperones"
       },
       {
         "k": "Length",
@@ -52,7 +52,7 @@ window.BOOKING_DATA = {
       }
     ],
     "counts": {
-      "students": 33,
+      "students": 32,
       "chaperones": 5
     },
     "scheduleFormat": "standard",
@@ -102,8 +102,8 @@ window.BOOKING_DATA = {
       }
     ],
     "pricing": {
-      "total": "$11,194.05",
-      "perStudent": "$319.83",
+      "total": "$10,978.80",
+      "perStudent": "$322.91",
       "chaperones": "3 of your 5 chaperones are complimentary.",
       "note": "Estimated total. REEF sends a revised proposal if anything that affects price changes."
     },
@@ -127,8 +127,8 @@ window.BOOKING_DATA = {
     "optional": [],
     "paymentTerms": [
       "A $500.00 deposit holds your group's date.",
-      "Payment 2 of $5,347.02 is due Nov 1, 2026.",
-      "The final payment of $5,347.02 is due Jan 13, 2027.",
+      "Payment 2 of $5,239.40 is due Nov 1, 2026.",
+      "The final payment of $5,239.40 is due Jan 13, 2027.",
       "A 10% late fee applies to payments more than 14 days past due."
     ],
     "cancellationTerms": [
