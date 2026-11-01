@@ -2048,6 +2048,15 @@ def main():
         ))
     print(f"Wrote {booking_dir / 'index.html'}")
 
+    # version.json: the page compares its own version with this file and shows
+    # "being updated" if Airtable has moved on (render.js checkProposalVersion).
+    # A publish writes the version it just built; write_version_marker.py
+    # raises it when Airtable's Proposal Version changes later.
+    with open(booking_dir / "version.json", "w") as f:
+        json.dump({"bookingId": record_id, "currentVersion": b["proposal_version"] or 1,
+                   "updatedAt": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")}, f, indent=2)
+        f.write("\n")
+
     # Contracts are gated on commitment, not just on which page was built.
     # Everything this script writes is published to the public Pages site,
     # and a booking still at Quoting / Proposal Sent / Verbal Yes has not
