@@ -1935,6 +1935,17 @@ def build_share_views(b, page_data, is_proposal, page_url):
     return {k: audience_views.view_page_data(v, sample) for k, v in views.items()}
 
 
+def cache_busted(shell_html, data_js_path):
+    """Point the shell's data.js at data.js?v=<content hash>. GitHub Pages and browsers
+    cache the plain URL for minutes, so a republish could keep showing the old data.js
+    (ZZZ scenario test, 2026-11-02). A new publish with new content changes the hash,
+    so the page always fetches the matching file. The data.js must already be written."""
+    import hashlib
+    digest = hashlib.sha256(Path(data_js_path).read_bytes()).hexdigest()[:12]
+    return shell_html.replace('<script src="data.js"></script>',
+                              f'<script src="data.js?v={digest}"></script>')
+
+
 def write_share_views(booking_dir, view_data, org_name):
     for key, data in view_data.items():
         d = booking_dir / "share" / key
@@ -1944,8 +1955,8 @@ def write_share_views(booking_dir, view_data, org_name):
                     "Contains ONLY the fields this audience view shows. */\n")
             f.write("window.BOOKING_DATA = " + json.dumps(data, indent=2) + ";\n")
         with open(d / "index.html", "w") as f:
-            f.write(SHARE_PAGE_SHELL_TEMPLATE.format(
-                title=f"{org_name} — {data['view']['title']} — REEF"))
+            f.write(cache_busted(SHARE_PAGE_SHELL_TEMPLATE.format(
+                title=f"{org_name} — {data['view']['title']} — REEF"), d / "data.js"))
         print(f"Wrote {d / 'data.js'}")
 
 
@@ -2060,12 +2071,12 @@ def main():
     page_title = (f"{b['org_name']} — REEF Proposal" if is_proposal
                   else f"{b['org_name']} — Expedition Packet")
     with open(booking_dir / "index.html", "w") as f:
-        f.write(BOOKING_PAGE_SHELL_TEMPLATE.format(
+        f.write(cache_busted(BOOKING_PAGE_SHELL_TEMPLATE.format(
             title=page_title,
             # Real bookings get no robots meta at all (unchanged behavior);
             # only test/QA records are excluded from search.
             robots=TEST_PAGE_ROBOTS_META if is_test_org(b["org_name"]) else "",
-        ))
+        ), booking_dir / "data.js"))
     print(f"Wrote {booking_dir / 'index.html'}")
 
     # version.json: the page compares its own version with this file and shows
