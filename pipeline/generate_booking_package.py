@@ -130,6 +130,34 @@ STAGE_COMPLETED = "Completed"
 PRETRIP_WINDOW_DAYS = 120
 
 
+# Payment wording (Martha, 2026-11-02). Bookings with agreement terms show the Agreement
+# fields (20% deposit etc.) on the administrator view and the confirmed page. The
+# contract builder still reads the older Deposit Due Now / Payment 2 / Final fields
+# (undecided). Ben Gamla and both Hanover bookings stay on the old wording on purpose,
+# even though Minimum Guaranteed Paid Spaces is already set on them.
+LEGACY_PAYMENT_WORDING_IDS = {"recqb6DGaeJRpymL2", "recP88dd2wk5XdHU3", "reciijikzFlFdq3Qr"}
+
+
+def agreement_payment_terms(b, money_fn=None, date_fn=None):
+    """None when this booking keeps the old payment wording, else the agreement terms
+    ({deposit, deposit_due, payment2, payment2_due, final_due, guaranteed_cost,
+    min_spaces, provisional}). Applies only when Agreement Date or Minimum Guaranteed
+    Paid Spaces is set and the agreement deposit amount exists."""
+    if b.get("record_id") in LEGACY_PAYMENT_WORDING_IDS:
+        return None
+    if not (b.get("agreement_date") or b.get("min_guaranteed_spaces")):
+        return None
+    if not b.get("deposit_amount_agreement"):
+        return None
+    date_fn = date_fn or date_pretty
+    d = lambda v: date_fn(v) if v else ""  # noqa: E731
+    return {"deposit": b.get("deposit_amount_agreement"), "deposit_due": d(b.get("deposit_due_agreement")),
+            "payment2": b.get("payment2_amount_agreement"), "payment2_due": d(b.get("payment2_due_agreement")),
+            "final_due": d(b.get("final_due_date")),
+            "guaranteed_cost": b.get("guaranteed_cost_agreement"), "min_spaces": b.get("min_guaranteed_spaces"),
+            "provisional": not b.get("agreement_date")}
+
+
 def derive_stage(b, today=None):
     """Stage of a booking, from the latest state to the earliest:
         Completed          Status Completed
@@ -1327,6 +1355,38 @@ def build_proposal_data(b, photos=None):
 
 # ---------------------------------------------------------------- Confirmed page
 
+def build_payment_schedule(b):
+    ap = agreement_payment_terms(b)
+    if ap:
+        payment_schedule = {
+            "tier": b["payment_tier"],
+            "items": [
+                {"label": "Deposit", "amount": money(ap["deposit"]), "dueDate": ap["deposit_due"] or None},
+                {"label": "Payment 2", "amount": money(ap["payment2"]) if ap["payment2"] else None,
+                 "dueDate": ap["payment2_due"] or None},
+                {"label": "Final Payment", "amount": None, "dueDate": ap["final_due"] or None},
+            ],
+            "total": money(b["total_package_price"]),
+            "note": "From the agreement fields. The final payment is the balance under the agreement."
+                    + (" Dates are provisional until the agreement date is set." if ap["provisional"] else ""),
+        }
+    else:
+        payment_schedule = {
+            "tier": b["payment_tier"],
+            "items": [
+                {"label": "Deposit (due now)", "amount": money(b["deposit_due_now"]), "dueDate": None},
+                {"label": "Payment 2", "amount": money(b["payment2_amount"]),
+                 "dueDate": date_pretty(b["payment2_due_date"]) if b["payment2_due_date"] else None},
+                {"label": "Final Payment", "amount": money(b["final_amount"]),
+                 "dueDate": date_pretty(b["final_due_date"]) if b["final_due_date"] else None},
+            ],
+            "total": money(b["total_package_price"]),
+            "note": "Generated from REEF Bookings' payment-schedule fields (added 2026-09-03); "
+                    "confirm the 50/50 Payment 2 / Final split assumption before treating as final.",
+        }
+    return payment_schedule
+
+
 def build_confirmed_page_data(b):
     itin = load_itinerary(b["record_id"], b)
     days_raw = copy.deepcopy(itin["days"])
@@ -1377,19 +1437,7 @@ def build_confirmed_page_data(b):
         }
         agreement = {"status": "Not Sent", "zohoSignUrl": None, "lastUpdated": None}
 
-    payment_schedule = {
-        "tier": b["payment_tier"],
-        "items": [
-            {"label": "Deposit (due now)", "amount": money(b["deposit_due_now"]), "dueDate": None},
-            {"label": "Payment 2", "amount": money(b["payment2_amount"]),
-             "dueDate": date_pretty(b["payment2_due_date"]) if b["payment2_due_date"] else None},
-            {"label": "Final Payment", "amount": money(b["final_amount"]),
-             "dueDate": date_pretty(b["final_due_date"]) if b["final_due_date"] else None},
-        ],
-        "total": money(b["total_package_price"]),
-        "note": "Generated from REEF Bookings' payment-schedule fields (added 2026-09-03); "
-                "confirm the 50/50 Payment 2 / Final split assumption before treating as final.",
-    }
+    payment_schedule = build_payment_schedule(b)
 
     return {
         "docType": "pretrip",
@@ -2052,6 +2100,7 @@ def main():
     # written to share/<view>/ with per-view data files, and gated by the
     # same Approved-to-Share lock (preview runs write them to the temp dir).
     page_url = f"{PAGES_BASE_URL}/bookings/{slug}/"
+    b["agreement_payment"] = agreement_payment_terms(b)
     if derive_stage(b) == STAGE_GET_READY:
         # strict: an unreadable Checklist Items table fails the build (old page stays live)
         # instead of publishing a page that shows everything outstanding.
