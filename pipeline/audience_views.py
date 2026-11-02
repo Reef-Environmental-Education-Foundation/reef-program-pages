@@ -371,6 +371,11 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on):
     })
 
     views = {k: v for k, v in views.items() if k in enabled}
+    # Get Ready stage: per-view checklist, built by get_ready.views_payload (money in the
+    # administrator payload only). Attached before the leak check below.
+    for k, v in views.items():
+        if (b.get("get_ready") or {}).get(k):
+            v["getReady"] = b["get_ready"][k]
     money_strings = _money_strings(b, pd)
     for k in PUBLIC_VIEWS:
         if k in views:
