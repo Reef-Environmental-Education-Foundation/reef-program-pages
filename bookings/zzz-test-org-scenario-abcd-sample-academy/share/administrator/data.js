@@ -8,16 +8,16 @@ window.BOOKING_DATA = {
   "view": {
     "status": "draft",
     "statusLabel": "Draft",
-    "version": "v3",
+    "version": "v5",
     "lastUpdated": "Nov 2, 2026",
     "orgName": "ZZZ TEST ORG - Scenario ABCD Sample Academy",
-    "dateLine": "May 10, 2027",
+    "dateLine": "May 10\u201311, 2027",
     "hours": null,
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A one-day marine science Expedition for 75 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "summary": "A two-day marine science Expedition for 75 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
     "scheduleDraft": true,
     "view": "administrator",
-    "purpose": "A one-day marine science Expedition for 75 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "purpose": "A two-day marine science Expedition for 75 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
     "value": [
       {
         "title": "Real citizen science, not a demo",
@@ -30,8 +30,8 @@ window.BOOKING_DATA = {
     ],
     "facts": [
       {
-        "k": "Date",
-        "v": "May 10, 2027"
+        "k": "Dates",
+        "v": "May 10\u201311, 2027"
       },
       {
         "k": "Group Size",
@@ -39,7 +39,7 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Length",
-        "v": "One day"
+        "v": "2 days"
       },
       {
         "k": "Location",
@@ -47,7 +47,7 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Format",
-        "v": "Full group together",
+        "v": "2-day itinerary",
         "wide": true
       }
     ],
@@ -81,6 +81,22 @@ window.BOOKING_DATA = {
       {
         "time": "3:30 PM",
         "label": "Departure"
+      },
+      {
+        "time": "9:00 AM",
+        "label": "Arrival"
+      },
+      {
+        "time": "9:15\u201310:30 AM",
+        "label": "Lionfish Lesson & Dissection"
+      },
+      {
+        "time": "11:00 AM\u20132:00 PM",
+        "label": "Kayaking at Pennekamp (Mangrove Tour)"
+      },
+      {
+        "time": "2:30 PM",
+        "label": "Departure"
       }
     ],
     "outcomes": [],
@@ -95,8 +111,8 @@ window.BOOKING_DATA = {
       }
     ],
     "pricing": {
-      "total": "$17,997.00",
-      "perStudent": "$239.96",
+      "total": "$26,955.60",
+      "perStudent": "$359.41",
       "chaperones": "All 6 chaperones are complimentary.",
       "note": "Estimated total. REEF sends a revised proposal if anything that affects price changes."
     },
@@ -105,8 +121,8 @@ window.BOOKING_DATA = {
     "optional": [],
     "paymentTerms": [
       "A $1,000.00 deposit holds your group's date.",
-      "Payment 2 of $8,498.50 is due Nov 11, 2026.",
-      "The final payment of $8,498.50 is due Feb 9, 2027.",
+      "Payment 2 of $12,977.80 is due Nov 11, 2026.",
+      "The final payment of $12,977.80 is due Feb 9, 2027.",
       "A 10% late fee applies to payments more than 14 days past due."
     ],
     "cancellationTerms": [

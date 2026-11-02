@@ -8,13 +8,13 @@ window.BOOKING_DATA = {
   "view": {
     "status": "draft",
     "statusLabel": "Draft",
-    "version": "v3",
+    "version": "v5",
     "lastUpdated": "Nov 2, 2026",
     "orgName": "ZZZ TEST ORG - Scenario ABCD Sample Academy",
-    "dateLine": "May 10, 2027",
+    "dateLine": "May 10\u201311, 2027",
     "hours": null,
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A one-day marine science Expedition for 75 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "summary": "A two-day marine science Expedition for 75 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
     "scheduleDraft": true,
     "view": "student",
     "headline": "Get ready to explore the reef",
@@ -44,13 +44,35 @@ window.BOOKING_DATA = {
         "title": "Departure",
         "text": "",
         "color": null
+      },
+      {
+        "title": "Arrival",
+        "text": "",
+        "color": null
+      },
+      {
+        "title": "Lionfish Lesson & Dissection",
+        "text": "Students investigate invasive lionfish through a hands-on lesson and guided dissection, linking anatomy and adaptation to real conservation challenges in Florida Keys ecosystems.",
+        "color": null
+      },
+      {
+        "title": "Kayaking at Pennekamp (Mangrove Tour)",
+        "text": "Students explore mangroves and seagrass by kayak while investigating how coastal habitats support marine life, protect shorelines, and fit into the larger reef ecosystem.",
+        "color": null
+      },
+      {
+        "title": "Departure",
+        "text": "",
+        "color": null
       }
     ],
     "topics": [
       "Marine Ecology",
       "Florida Keys Ecology",
       "Citizen Science",
-      "Caribbean Fish ID"
+      "Caribbean Fish ID",
+      "Invasive Species",
+      "Hands-on Lab"
     ],
     "feel": [],
     "bring": [],

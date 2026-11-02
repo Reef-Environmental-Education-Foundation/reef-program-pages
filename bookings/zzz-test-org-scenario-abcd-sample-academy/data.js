@@ -11,14 +11,14 @@ window.BOOKING_DATA = {
   "proposal": {
     "meta": {
       "bookingId": "recR4mF8LDuuLSadt",
-      "proposalVersion": "v3",
+      "proposalVersion": "v5",
       "proposalDate": "",
       "programTypeLabel": "Expedition",
       "programWord": "Expedition"
     },
-    "summary": "A one-day marine science Expedition for 75 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "summary": "A two-day marine science Expedition for 75 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
     "scheduleFormat": "standard",
-    "scheduleLabel": "Schedule",
+    "scheduleLabel": "Day by Day",
     "scheduleDraft": true,
     "rotation": null,
     "pendingNote": "Your detailed schedule is still being finalized. Your REEF contact will share exact times before your contract is prepared. The activities below are included either way.",
@@ -33,7 +33,7 @@ window.BOOKING_DATA = {
     },
     "dates": {
       "label": "Proposed",
-      "range": "May 10, 2027"
+      "range": "May 10\u201311, 2027"
     },
     "location": "REEF Ocean Exploration Center, Key Largo",
     "hours": null,
@@ -62,7 +62,7 @@ window.BOOKING_DATA = {
     "confirmSummary": [
       {
         "k": "Date",
-        "v": "Monday, May 10, 2027"
+        "v": "May 10\u201311, 2027"
       },
       {
         "k": "Group",
@@ -70,7 +70,7 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Activities",
-        "v": "Welcome Program (arrival), Marine Ecology Program, and Boat Snorkel"
+        "v": "Welcome Program (arrival), Marine Ecology Program, Boat Snorkel, Kayaking at Pennekamp (Mangrove Tour), and Lionfish Lesson & Dissection"
       },
       {
         "k": "Location",
@@ -78,7 +78,7 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Estimated total",
-        "v": "$17,997.00"
+        "v": "$26,955.60"
       }
     ],
     "nextSteps": [
@@ -103,8 +103,8 @@ window.BOOKING_DATA = {
     },
     "glance": [
       {
-        "k": "Date",
-        "v": "May 10, 2027"
+        "k": "Dates",
+        "v": "May 10\u201311, 2027"
       },
       {
         "k": "Group Size",
@@ -112,7 +112,7 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Length",
-        "v": "One day"
+        "v": "2 days"
       },
       {
         "k": "Location",
@@ -120,12 +120,12 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Format",
-        "v": "Full group together",
+        "v": "2-day itinerary",
         "wide": true
       },
       {
         "k": "Focus",
-        "v": "Marine Ecology \u00b7 Florida Keys Ecology \u00b7 Citizen Science \u00b7 Caribbean Fish ID",
+        "v": "Marine Ecology \u00b7 Florida Keys Ecology \u00b7 Citizen Science \u00b7 Caribbean Fish ID \u00b7 Invasive Species \u00b7 Hands-on Lab",
         "wide": true
       }
     ],
@@ -167,8 +167,8 @@ window.BOOKING_DATA = {
     "days": [
       {
         "dayNumber": 1,
-        "totalDays": 1,
-        "title": "One Day on the Reef",
+        "totalDays": 2,
+        "title": "Day 1",
         "theme": "Hands-on marine science with REEF educators.",
         "blocks": [
           {
@@ -210,6 +210,40 @@ window.BOOKING_DATA = {
         ],
         "studentsWill": [],
         "outcomesNote": null
+      },
+      {
+        "dayNumber": 2,
+        "totalDays": 2,
+        "title": "Day 2",
+        "theme": "Hands-on marine science with REEF educators.",
+        "blocks": [
+          {
+            "time": "9:00 AM",
+            "tag": "Travel",
+            "title": "Arrival",
+            "description": ""
+          },
+          {
+            "time": "9:15\u201310:30 AM",
+            "tag": "Education",
+            "title": "Lionfish Lesson & Dissection",
+            "description": "Students investigate invasive lionfish through a hands-on lesson and guided dissection, linking anatomy and adaptation to real conservation challenges in Florida Keys ecosystems."
+          },
+          {
+            "time": "11:00 AM\u20132:00 PM",
+            "tag": "Education",
+            "title": "Kayaking at Pennekamp (Mangrove Tour)",
+            "description": "Students explore mangroves and seagrass by kayak while investigating how coastal habitats support marine life, protect shorelines, and fit into the larger reef ecosystem."
+          },
+          {
+            "time": "2:30 PM",
+            "tag": "Travel",
+            "title": "Departure",
+            "description": ""
+          }
+        ],
+        "studentsWill": [],
+        "outcomesNote": null
       }
     ],
     "included": [
@@ -230,12 +264,12 @@ window.BOOKING_DATA = {
     "pricing": {
       "tileTotal": {
         "label": "Estimated Total",
-        "num": "$17,997.00",
+        "num": "$26,955.60",
         "unit": "for 75 students and 6 chaperones"
       },
       "tileRate": {
         "label": "Per Student",
-        "num": "$239.96",
+        "num": "$359.41",
         "unit": "per student for the full Expedition"
       },
       "tileChaperones": {
@@ -251,8 +285,8 @@ window.BOOKING_DATA = {
           "Each additional chaperone beyond the complimentary spaces pays the full per-participant package price, the same as a student."
         ]
       },
-      "estimatedTotal": "$17,997.00",
-      "estimatedTotalNote": "<strong>$17,997.00</strong> is your estimated total, based on the details below. It includes REEF's program fees and every item listed under What's Included. If anything below changes, REEF will send a revised proposal with an updated total.",
+      "estimatedTotal": "$26,955.60",
+      "estimatedTotalNote": "<strong>$26,955.60</strong> is your estimated total, based on the details below. It includes REEF's program fees and every item listed under What's Included. If anything below changes, REEF will send a revised proposal with an updated total.",
       "assumptions": [],
       "whatCouldChange": [
         "Changes to your student or chaperone count",
@@ -263,7 +297,7 @@ window.BOOKING_DATA = {
     "share": {
       "status": "draft",
       "statusLabel": "Draft",
-      "version": "v3",
+      "version": "v5",
       "lastUpdated": "Nov 2, 2026",
       "needs": [
         {

@@ -8,17 +8,17 @@ window.BOOKING_DATA = {
   "view": {
     "status": "draft",
     "statusLabel": "Draft",
-    "version": "v3",
+    "version": "v5",
     "lastUpdated": "Nov 2, 2026",
     "orgName": "ZZZ TEST ORG - Scenario ABCD Sample Academy",
-    "dateLine": "May 10, 2027",
+    "dateLine": "May 10\u201311, 2027",
     "hours": null,
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A one-day marine science Expedition for 75 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "summary": "A two-day marine science Expedition for 75 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
     "scheduleDraft": true,
     "view": "family",
     "location": "REEF Ocean Exploration Center, Key Largo",
-    "intro": "A one-day marine science Expedition for 75 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "intro": "A two-day marine science Expedition for 75 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
     "experiences": [
       {
         "title": "Arrival",
@@ -38,6 +38,26 @@ window.BOOKING_DATA = {
       {
         "title": "Boat Snorkel",
         "text": "Students travel by boat to the Florida Keys coral reef to practice fish identification, observe reef ecology in the field, and connect their observations to REEF citizen science.",
+        "color": null
+      },
+      {
+        "title": "Departure",
+        "text": "",
+        "color": null
+      },
+      {
+        "title": "Arrival",
+        "text": "",
+        "color": null
+      },
+      {
+        "title": "Lionfish Lesson & Dissection",
+        "text": "Students investigate invasive lionfish through a hands-on lesson and guided dissection, linking anatomy and adaptation to real conservation challenges in Florida Keys ecosystems.",
+        "color": null
+      },
+      {
+        "title": "Kayaking at Pennekamp (Mangrove Tour)",
+        "text": "Students explore mangroves and seagrass by kayak while investigating how coastal habitats support marine life, protect shorelines, and fit into the larger reef ecosystem.",
         "color": null
       },
       {
@@ -73,6 +93,22 @@ window.BOOKING_DATA = {
       },
       {
         "time": "3:30 PM",
+        "label": "Departure"
+      },
+      {
+        "time": "9:00 AM",
+        "label": "Arrival"
+      },
+      {
+        "time": "9:15\u201310:30 AM",
+        "label": "Lionfish Lesson & Dissection"
+      },
+      {
+        "time": "11:00 AM\u20132:00 PM",
+        "label": "Kayaking at Pennekamp (Mangrove Tour)"
+      },
+      {
+        "time": "2:30 PM",
         "label": "Departure"
       }
     ],

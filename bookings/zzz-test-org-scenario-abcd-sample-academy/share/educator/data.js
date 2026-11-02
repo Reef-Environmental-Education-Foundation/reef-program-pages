@@ -8,13 +8,13 @@ window.BOOKING_DATA = {
   "view": {
     "status": "draft",
     "statusLabel": "Draft",
-    "version": "v3",
+    "version": "v5",
     "lastUpdated": "Nov 2, 2026",
     "orgName": "ZZZ TEST ORG - Scenario ABCD Sample Academy",
-    "dateLine": "May 10, 2027",
+    "dateLine": "May 10\u201311, 2027",
     "hours": null,
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A one-day marine science Expedition for 75 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "summary": "A two-day marine science Expedition for 75 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
     "scheduleDraft": true,
     "view": "educator",
     "objectives": [],
@@ -23,8 +23,8 @@ window.BOOKING_DATA = {
     "days": [
       {
         "dayNumber": 1,
-        "totalDays": 1,
-        "title": "One Day on the Reef",
+        "totalDays": 2,
+        "title": "Day 1",
         "theme": "Hands-on marine science with REEF educators.",
         "blocks": [
           {
@@ -59,6 +59,40 @@ window.BOOKING_DATA = {
           },
           {
             "time": "3:30 PM",
+            "tag": "Travel",
+            "title": "Departure",
+            "description": ""
+          }
+        ],
+        "studentsWill": [],
+        "outcomesNote": null
+      },
+      {
+        "dayNumber": 2,
+        "totalDays": 2,
+        "title": "Day 2",
+        "theme": "Hands-on marine science with REEF educators.",
+        "blocks": [
+          {
+            "time": "9:00 AM",
+            "tag": "Travel",
+            "title": "Arrival",
+            "description": ""
+          },
+          {
+            "time": "9:15\u201310:30 AM",
+            "tag": "Education",
+            "title": "Lionfish Lesson & Dissection",
+            "description": "Students investigate invasive lionfish through a hands-on lesson and guided dissection, linking anatomy and adaptation to real conservation challenges in Florida Keys ecosystems."
+          },
+          {
+            "time": "11:00 AM\u20132:00 PM",
+            "tag": "Education",
+            "title": "Kayaking at Pennekamp (Mangrove Tour)",
+            "description": "Students explore mangroves and seagrass by kayak while investigating how coastal habitats support marine life, protect shorelines, and fit into the larger reef ecosystem."
+          },
+          {
+            "time": "2:30 PM",
             "tag": "Travel",
             "title": "Departure",
             "description": ""
