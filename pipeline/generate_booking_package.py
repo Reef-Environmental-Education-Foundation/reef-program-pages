@@ -804,11 +804,12 @@ def _read_itinerary_json(record_id, required=True):
     if not path.exists():
         if not required:
             return None
+        # Every booking captured before the Airtable schedule has a JSON file, so a
+        # missing file means a booking that is meant to use the Airtable schedule.
         raise NoItineraryCaptured(
-            f"No captured itinerary for booking {record_id} at {path}. "
-            "This script deliberately does not fabricate a day-by-day schedule -- "
-            "export the itinerary JSON from that booking's already-sent proposal first "
-            "(see OXP_System_Connection_Roadmap_2026-09-03.md, priority #4, for the real fix)."
+            f"No schedule found for booking {record_id}: it has no Schedule Items in Airtable "
+            "and no captured itinerary file. Add schedule rows in the Itinerary Editor first. "
+            "This script deliberately does not fabricate a day-by-day schedule."
         )
     with open(path) as fh:
         raw = json.load(fh)
