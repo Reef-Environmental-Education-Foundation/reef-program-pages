@@ -8,17 +8,17 @@ window.BOOKING_DATA = {
   "view": {
     "status": "draft",
     "statusLabel": "Draft",
-    "version": "v2",
+    "version": "v3",
     "lastUpdated": "Nov 2, 2026",
     "orgName": "ZZZ TEST ORG - Scenario ABCD Sample Academy",
     "dateLine": "May 10, 2027",
     "hours": null,
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A one-day marine science Expedition for 60 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "summary": "A one-day marine science Expedition for 75 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
     "scheduleDraft": true,
     "view": "family",
     "location": "REEF Ocean Exploration Center, Key Largo",
-    "intro": "A one-day marine science Expedition for 60 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "intro": "A one-day marine science Expedition for 75 students and 6 chaperones at REEF Ocean Exploration Center, Key Largo.",
     "experiences": [
       {
         "title": "Arrival",
