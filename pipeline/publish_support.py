@@ -34,6 +34,10 @@ RECORD_ID_RE = re.compile(r"^rec[A-Za-z0-9]{14}$")
 # resolve). The scan runs over generated files only, never over render.js.
 BAD_TEXT_RE = re.compile(r"\bundefined\b|\bNaN\b|\$\{|\{\{")
 
+# REEF does not do fish seining (Martha, 2026-11-02). A build that mentions it fails
+# validation, so it cannot reach a school through Airtable activity or add-on lists.
+SEINING_RE = re.compile(r"(?i)\bsein(?:e|es|ed|ing)\b")
+
 PROPOSAL_REQUIRED = ("meta", "group", "dates", "roadmap", "cta", "reefContact",
                      "welcome", "glance", "days", "included", "pricing")
 
@@ -86,9 +90,13 @@ def validate_build(booking_dir, is_proposal):
     for path in scanned:
         if not path.exists():
             continue
-        hit = BAD_TEXT_RE.search(path.read_text())
+        text = path.read_text()
+        hit = BAD_TEXT_RE.search(text)
         if hit:
             problems.append(f"{path.relative_to(booking_dir)} contains {hit.group(0)!r}")
+        if SEINING_RE.search(text):
+            problems.append(f"{path.relative_to(booking_dir)} mentions seining; REEF does not offer it. "
+                            "Remove it from the activity or add-on in Airtable, then publish again")
     return problems
 
 
