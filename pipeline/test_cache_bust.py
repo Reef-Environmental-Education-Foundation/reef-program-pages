@@ -24,10 +24,10 @@ class CacheBustTest(unittest.TestCase):
 
     def test_new_content_gives_a_new_url(self):
         shell = g.SHARE_PAGE_SHELL_TEMPLATE.format(title="t")
-        a = re.search(r"v=([0-9a-f]+)", versioned(shell, "v2")).group(1)
-        b = re.search(r"v=([0-9a-f]+)", versioned(shell, "v5")).group(1)
+        a = re.search(r"data\.js\?v=([0-9a-f]+)", versioned(shell, "v2")).group(1)
+        b = re.search(r"data\.js\?v=([0-9a-f]+)", versioned(shell, "v5")).group(1)
         self.assertNotEqual(a, b)
-        self.assertEqual(a, re.search(r"v=([0-9a-f]+)", versioned(shell, "v2")).group(1))
+        self.assertEqual(a, re.search(r"data\.js\?v=([0-9a-f]+)", versioned(shell, "v2")).group(1))
 
     def test_render_js_and_styles_css_are_versioned_by_their_content(self):
         shell = g.BOOKING_PAGE_SHELL_TEMPLATE.format(title="t", robots="")
