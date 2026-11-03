@@ -2175,7 +2175,8 @@ def main():
         create_review_task(b, page_url, contract_url)
         publish_support.write_result(
             RESULT_FILE, status="published", record_id=record_id, proposal_version=b["proposal_version"],
-            page_url=page_url, message="")
+            page_url=page_url, message="",
+            estimated_total=((page_data.get("proposal") or {}).get("pricing") or {}).get("estimatedTotal"))
 
 
 if __name__ == "__main__":
