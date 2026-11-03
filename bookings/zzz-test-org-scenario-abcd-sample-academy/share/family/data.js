@@ -9,7 +9,7 @@ window.BOOKING_DATA = {
     "status": "draft",
     "statusLabel": "Draft",
     "version": "v5",
-    "lastUpdated": "Nov 2, 2026",
+    "lastUpdated": "Nov 3, 2026",
     "orgName": "ZZZ TEST ORG - Scenario ABCD Sample Academy",
     "dateLine": "May 10\u201311, 2027",
     "hours": null,

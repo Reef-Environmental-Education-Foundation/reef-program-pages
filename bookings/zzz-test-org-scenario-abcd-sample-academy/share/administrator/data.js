@@ -9,7 +9,7 @@ window.BOOKING_DATA = {
     "status": "draft",
     "statusLabel": "Draft",
     "version": "v5",
-    "lastUpdated": "Nov 2, 2026",
+    "lastUpdated": "Nov 3, 2026",
     "orgName": "ZZZ TEST ORG - Scenario ABCD Sample Academy",
     "dateLine": "May 10\u201311, 2027",
     "hours": null,
@@ -120,9 +120,11 @@ window.BOOKING_DATA = {
     "notIncluded": [],
     "optional": [],
     "paymentTerms": [
-      "A $1,000.00 deposit holds your group's date.",
-      "Payment 2 of $12,977.80 is due Nov 11, 2026.",
-      "The final payment of $12,977.80 is due Feb 9, 2027.",
+      "A $5,391.12 deposit holds your group's date and is due Nov 17, 2026.",
+      "Payment 2 of $8,086.68 is due Nov 17, 2026.",
+      "The final payment is due Feb 9, 2027. Its amount is the balance under the agreement.",
+      "The agreement guarantees $22,642.70 of program cost for a minimum of 63 paid spaces.",
+      "Payment dates are provisional until the agreement date is set.",
       "A 10% late fee applies to payments more than 14 days past due."
     ],
     "cancellationTerms": [
