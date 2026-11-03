@@ -1087,6 +1087,28 @@ def summary_count_is_stale(summary, students):
     return stale
 
 
+def default_next_steps(b, reef_first):
+    """The proposal's "Next steps" list when Airtable's "Proposal - Next Steps" field is blank.
+
+    The contract sentence states NO dollar amount (Martha, 2026-11-03): the amount is a
+    payment-schedule fact owned by Airtable's Agreement fields and may be provisional, so
+    the proposal never shows a number here. Ben Gamla and both Hanover bookings
+    (LEGACY_PAYMENT_WORDING_IDS) keep the earlier sentence exactly as it was."""
+    deposit = b.get("deposit_due_now") or 0
+    if b.get("record_id") in LEGACY_PAYMENT_WORDING_IDS:
+        contract = (f"{reef_first} prepares your contract with the payment schedule"
+                    + (f", starting with a {money(deposit)} deposit to hold your date." if deposit else "."))
+    else:
+        contract = (f"{reef_first} prepares your contract with the payment schedule"
+                    + (", starting with a deposit to hold your date." if (deposit or b.get("deposit_amount_agreement")) else "."))
+    return [
+        "Review each section of this proposal with your team.",
+        "Select “Looks Good — Prepare My Contract,” or “Request a Change” if anything needs adjusting.",
+        contract,
+        "Once the contract is signed, REEF confirms final logistics with you, including headcount, arrival details, and what to bring.",
+    ]
+
+
 def build_proposal_data(b, photos=None):
     """Builds the docType "proposal" shape -- the advanced six-section
     customer proposal experience in assets/render.js. Parallel to
@@ -1218,14 +1240,7 @@ def build_proposal_data(b, photos=None):
         confirm_summary.append({"k": "Not included",
                                 "v": join_list(clauses[:1] + [lower_first(c) for c in clauses[1:]])})
 
-    deposit = b.get("deposit_due_now") or 0
-    next_steps = split_items(b.get("proposal_next_steps")) or [
-        "Review each section of this proposal with your team.",
-        "Select “Looks Good — Prepare My Contract,” or “Request a Change” if anything needs adjusting.",
-        f"{reef_first} prepares your contract with the payment schedule"
-        + (f", starting with a {money(deposit)} deposit to hold your date." if deposit else "."),
-        "Once the contract is signed, REEF confirms final logistics with you, including headcount, arrival details, and what to bring.",
-    ]
+    next_steps = split_items(b.get("proposal_next_steps")) or default_next_steps(b, reef_first)
 
     change_topics = ("cohort assignments, activity timing, group size, transportation, meals, "
                      "accessibility needs, or program content") if rot else (
