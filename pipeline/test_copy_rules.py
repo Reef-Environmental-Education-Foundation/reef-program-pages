@@ -55,7 +55,9 @@ def repo_text_files():
     for path in REPO.rglob("*"):
         if not path.is_file() or skip_dirs & set(path.relative_to(REPO).parts):
             continue
-        if path.name.startswith("test_") or path.suffix in {".pyc", ".png", ".jpg", ".jpeg", ".docx"}:
+        # publish_support.py holds the validation guard, which has to name the word.
+        if path.name.startswith("test_") or path.name == "publish_support.py" \
+                or path.suffix in {".pyc", ".png", ".jpg", ".jpeg", ".docx"}:
             continue
         yield path
 

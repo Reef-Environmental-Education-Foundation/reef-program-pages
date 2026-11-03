@@ -13,6 +13,7 @@ from unittest import mock
 from pipeline import airtable_writeback as wb
 from pipeline import generate_booking_package as g
 from pipeline import publish_support as ps
+from pipeline.test_copy_rules import KNOWN_GENERATED_SEINING
 
 REPO = Path(g.__file__).parent.parent
 
@@ -65,7 +66,23 @@ class ValidateBuildTest(unittest.TestCase):
         for d in sorted((REPO / "bookings").iterdir()):
             if d.name.startswith(("sample", "zzz")) or not (d / "data.js").exists():
                 continue
+            if d.name in KNOWN_GENERATED_SEINING:   # Benjamin: remove once its Airtable source is clean
+                continue
             self.assertEqual(ps.validate_build(d, True), [], d.name)
+
+    def test_a_build_that_mentions_seining_fails_validation(self):
+        for word in ("seine netting", "Seining", "seined", "Seine"):
+            data = good_proposal()
+            data["proposal"]["included"] = [{"title": "Activities", "items": [f"Fish ID with {word}"]}]
+            with tempfile.TemporaryDirectory() as r:
+                problems = ps.validate_build(write_build(r, data), True)
+            self.assertTrue(any("seining" in p for p in problems), word)
+
+    def test_words_that_merely_contain_sein_are_fine(self):
+        data = good_proposal()
+        data["proposal"]["included"] = [{"title": "Activities", "items": ["Marine science", "Einstein", "reinforced"]}]
+        with tempfile.TemporaryDirectory() as r:
+            self.assertEqual(ps.validate_build(write_build(r, data), True), [])
 
 
 class GateTest(unittest.TestCase):
