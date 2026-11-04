@@ -16,7 +16,7 @@ window.BOOKING_DATA = {
       "programTypeLabel": "Expedition",
       "programWord": "Expedition"
     },
-    "summary": "A two-day marine science program for 90 middle school students in Key Largo, with groups of 30 rotating through reef snorkeling and fish surveys, kayaking at Pennekamp (Mangrove Tour), and a lionfish dissection before a day of coral ecology and citizen science.",
+    "summary": "A two-day marine science program for 90 students in Key Largo, organized into three cohorts that rotate through a coral reef boat snorkel, a mangrove kayak tour, a lionfish lesson and dissection, marine ecology, and citizen science fish identification, all at Pennekamp.",
     "scheduleFormat": "rotation",
     "scheduleLabel": "Schedule & Rotations",
     "scheduleDraft": true,
