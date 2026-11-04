@@ -95,9 +95,15 @@ Wall-clock Key Largo time throughout; there is no time-zone conversion.
 
 Row Check other than "OK" on any Schedule Item / Itinerary Activity;
 rotation = Yes with fewer than 2 cohorts; `# Cohorts` mismatch; a cohort
-letter outside the first `# Cohorts` letters; one station with two Block Types;
-cohort rows on more than one day (rotations are single-day). The existing
-overlap / off-grid / unknown-id checks run on the loaded schedule unchanged.
+letter outside the first `# Cohorts` letters; one station with two Block Types.
+The existing overlap / off-grid / unknown-id checks run on the loaded schedule,
+now per day and per cohort.
+
+**Multi-day rotations (2026-11-04):** cohort rows may appear on several days,
+reusing the same letters. The rotation then carries `days[]` (one entry per day
+with its own window, arrival and departure) and every assignment / shared row
+has a `day`; the proposal draws one grid per day. A cohort still cannot overlap
+itself within a day. Single-day rotations are unchanged (no `days`, no `day`).
 A non-empty **Schedule Changed After Approval** downgrades the run to
 PREVIEW (nothing is published); the reason is listed on the Asana review task.
 

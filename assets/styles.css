@@ -1102,6 +1102,13 @@ li{margin:0;}
 .proposal-shell .rot-list-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:12px;}
 @media (min-width:640px){ .proposal-shell .rot-list-grid{grid-template-columns:1fr 1fr;} }
 .proposal-shell .rot-list-col h4{font-size:14px;margin-bottom:6px;}
+/* Multi-day rotation: one grid per day (2026-11-04). */
+.proposal-shell .rot-day{margin-top:22px;}
+.proposal-shell .rot-day:first-child{margin-top:0;}
+.proposal-shell .rot-day-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin-bottom:8px;}
+.proposal-shell .rot-day-title{font-size:18px;margin:0;}
+.proposal-shell .rot-day-sub{font-size:13px;color:var(--p-slate);}
+.proposal-shell .rot-list-day{font-size:15px;margin:14px 0 4px;}
 .proposal-shell .rot-list-col li{font-size:13.5px;color:var(--p-ink);margin-bottom:4px;line-height:1.45;}
 .proposal-shell .rot-list-col li .mono{display:inline-block;min-width:9.5em;color:var(--teal-text);font-weight:700;}
 

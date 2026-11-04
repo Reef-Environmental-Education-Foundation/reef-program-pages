@@ -341,8 +341,9 @@ def validate_rows(booking, items, stations, rotation_setting=""):
         if cohorts and len(cohorts) != n:
             problems.append(f"'# Cohorts' is {n} but the schedule uses {len(cohorts)} "
                             f"distinct cohort(s): {', '.join(cohorts)}")
-    if cohorts and len({it["day"] for it in items if it["cohort"]}) > 1:
-        problems.append("Cohort rotations are single-day: cohort rows appear on more than one day")
+    # Cohort rotations may span several days (2026-11-04): the same cohort
+    # letters are reused on every day. A cohort still cannot overlap itself
+    # within a day; that is checked per (day, cohort) by validate_rotation.
 
     types_by_station = {}
     for it in items:
@@ -523,10 +524,21 @@ def schedule_from_rows(booking, rows, json_itin=None, log=print):
 
     rotation = None
     if rotation_possible:
-        assignments = [{"cohort": it["cohort"], "station": by_key[_station_key(it)]["id"],
-                        "start": it["start"], "end": it["end"]}
+        # Only days that actually carry cohort rows get their own grid; a
+        # rotation on a single day of a longer program renders as before.
+        rot_days = sorted({it["day"] for it in items if it["cohort"]})
+        multi_day = len(rot_days) > 1
+
+        def with_day(row, it):
+            # Single-day output is left exactly as before (no "day" key).
+            if multi_day:
+                row["day"] = it["day"]
+            return row
+
+        assignments = [with_day({"cohort": it["cohort"], "station": by_key[_station_key(it)]["id"],
+                                 "start": it["start"], "end": it["end"]}, it)
                        for it in body if it["cohort"]]
-        shared = [{"station": by_key[_station_key(it)]["id"], "start": it["start"], "end": it["end"]}
+        shared = [with_day({"station": by_key[_station_key(it)]["id"], "start": it["start"], "end": it["end"]}, it)
                   for it in body if not it["cohort"]]
         n_coh = len(cohorts)
         size_label = (booking.get("schedule_cohort_size_label") or "").strip()
@@ -550,6 +562,30 @@ def schedule_from_rows(booking, rows, json_itin=None, log=print):
             d = max(departure, key=lambda it: (it["day"], it["start"]))
             rotation["departure"] = {"time": d["start"], "label": d["name"] or "Departure",
                                      "note": d["description"]}
+        if multi_day:
+            # One grid per day. Each day has its own window (arrival -> departure)
+            # and its own arrival / departure; "departure" above stays the LAST
+            # day's, for the consumers that only know one.
+            day_meta = []
+            for n in rot_days:
+                rows_n = [it for it in items if it["day"] == n]
+                arr = [it for it in rows_n if it["block_type"] == "Arrival"]
+                dep = [it for it in rows_n if it["block_type"] == "Departure"]
+                body_n = [it for it in rows_n if it["block_type"] in STATION_TYPE_BY_BLOCK_TYPE]
+                d_start = min(it["start"] for it in rows_n)
+                d_end = max(it["start"] for it in dep) if dep else max(it["end"] for it in body_n if it["end"])
+                entry = {"day": n, "label": f"Day {n}", "startTime": d_start, "endTime": d_end}
+                if arr:
+                    a = min(arr, key=lambda it: it["start"])
+                    entry["arrival"] = {"time": a["start"], "label": a["name"] or "Arrival"}
+                if dep:
+                    dd = max(dep, key=lambda it: it["start"])
+                    entry["departure"] = {"time": dd["start"], "label": dd["name"] or "Departure",
+                                          "note": dd["description"]}
+                day_meta.append(entry)
+            rotation["days"] = day_meta
+            rotation["startTime"] = min(d["startTime"] for d in day_meta)
+            rotation["endTime"] = max(d["endTime"] for d in day_meta)
 
     result = {
         "days": days,

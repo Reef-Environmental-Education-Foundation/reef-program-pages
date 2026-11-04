@@ -1355,9 +1355,7 @@
   const DRAFT_SCHEDULE_LINE = "Draft Program Schedule — times and locations may be refined before the program.";
   function draftScheduleLine() { return el("p", { class: "rot-list-draft" }, [DRAFT_SCHEDULE_LINE]); }
 
-  function rotationTextList(rot, M, draft) {
-    const details = el("details", { class: "rot-list" }, [el("summary", {}, ["View the schedule as a list by cohort"])]);
-    if (draft) details.appendChild(draftScheduleLine());
+  function rotationListBody(rot, M) {
     const wrap = el("div", { class: "rot-list-grid" });
     M.cohorts.forEach(function (row) {
       wrap.appendChild(el("div", { class: "rot-list-col" }, [
@@ -1367,11 +1365,68 @@
         }).concat(rot.departure ? [el("li", {}, [el("span", { class: "mono" }, [clockLabel(tmin(rot.departure.time), true)]), " ", rot.departure.label || "Departure"])] : [])),
       ]));
     });
-    details.appendChild(wrap);
+    return wrap;
+  }
+
+  function rotationTextList(rot, M, draft) {
+    const details = el("details", { class: "rot-list" }, [el("summary", {}, ["View the schedule as a list by cohort"])]);
+    if (draft) details.appendChild(draftScheduleLine());
+    details.appendChild(rotationListBody(rot, M));
     return details;
   }
 
+  // MULTI-DAY rotation (2026-11-04): rot.days = [{day,label,startTime,endTime,
+  // arrival?,departure?}] and every assignment / shared row carries "day".
+  // Each day is drawn as its own rotation grid (same cohorts, same station
+  // colors); a rotation without rot.days is the single-day shape and never
+  // reaches this code.
+  function dayRotation(rot, d) {
+    return Object.assign({}, rot, {
+      startTime: d.startTime, endTime: d.endTime,
+      assignments: (rot.assignments || []).filter(function (a) { return (a.day || 1) === d.day; }),
+      shared: (rot.shared || []).filter(function (a) { return (a.day || 1) === d.day; }),
+      departure: d.departure || null,
+    });
+  }
+
+  function rotationDayHead(d) {
+    const bits = [];
+    if (d.arrival) bits.push((d.arrival.label || "Arrival") + " " + clockLabel(tmin(d.arrival.time), true));
+    if (d.departure) bits.push((d.departure.label || "Departure") + " " + clockLabel(tmin(d.departure.time), true));
+    return el("div", { class: "rot-day-head" }, [
+      el("h3", { class: "rot-day-title" }, [d.label || ("Day " + d.day)]),
+      bits.length ? el("span", { class: "rot-day-sub mono" }, [bits.join(" · ")]) : null,
+    ]);
+  }
+
+  function rotationScheduleMultiDay(rot, opts) {
+    const draft = !!(opts && opts.draft);
+    const parts = rot.days.map(function (d) {
+      const dr = dayRotation(rot, d);
+      return { d: d, rot: dr, M: rotationModel(dr) };
+    });
+    const list = el("details", { class: "rot-list" }, [el("summary", {}, ["View the schedule as a list by cohort"])]);
+    if (draft) list.appendChild(draftScheduleLine());
+    parts.forEach(function (p) {
+      list.appendChild(el("h3", { class: "rot-list-day" }, [p.d.label || ("Day " + p.d.day)]));
+      list.appendChild(rotationListBody(p.rot, p.M));
+    });
+    const lastDep = rot.days.map(function (d) { return d.departure; }).filter(Boolean).pop();
+    return el("div", { class: "rot-wrap rot-multiday" }, parts.map(function (p) {
+      return el("section", { class: "rot-day", "aria-label": (p.d.label || ("Day " + p.d.day)) + " rotation schedule" }, [
+        rotationDayHead(p.d),
+        el("div", { class: "rot-frame" }, [rotationDesktop(p.rot, p.M), rotationMobile(p.rot, p.M)]),
+      ]);
+    }).concat([
+      rotationLegend(rot, parts[0].M),
+      lastDep && lastDep.note ? el("p", { class: "rot-note rot-note-strong" }, [lastDep.note]) : null,
+      (rot.notes || []).length ? el("ul", { class: "rot-notes" }, rot.notes.map(function (n) { return el("li", {}, [n]); })) : null,
+      list,
+    ]));
+  }
+
   function rotationSchedule(rot, opts) {
+    if (rot.days && rot.days.length) return rotationScheduleMultiDay(rot, opts);
     const M = rotationModel(rot);
     const draft = !!(opts && opts.draft);
     return el("div", { class: "rot-wrap" }, [

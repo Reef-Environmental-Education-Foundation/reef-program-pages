@@ -531,5 +531,232 @@ class Validation(Base):
         self.assertIn("schedule changed after approval", reasons[0])
 
 
+# ---------------------------------------------------------------- Multi-day rotation (2026-11-04)
+
+BENJAMIN = "recXmG8ySdXrgmj85"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+def build_benjamin_rows():
+    """The Benjamin School schedule as Airtable-shaped rows: 27 Schedule Items,
+    Day 1 and Day 2, cohorts A/B/C reused on both days. Synthetic copy of the
+    structure only; no Airtable access."""
+    stations = [
+        ("boat", "Boat Snorkel", "Boat Snorkel", "Off-Site Visit", "Pennekamp"),
+        ("kayak", "Mangrove Kayak", "Mangrove Kayak", "Field Activity", "Pennekamp"),
+        ("lion", "Lionfish", "Lionfish", "Workshop", "Pennekamp"),
+        ("fish", "Fish ID", "Fish ID", "Citizen Science", "Pennekamp"),
+        ("eco", "Ecology", "Ecology", "Campus Activity", "Pennekamp"),
+        ("lunch", "Picnic Lunch", "Lunch", None, "Pennekamp"),
+        ("beach", "Beach Time & Rinse-Off", "Beach", None, "Pennekamp"),
+    ]
+    st_rows = [{"id": f"recSTN{k}", "label": lab, "name": name, "description": f"About {name}.",
+                "location": loc, "row_check": "OK", "catalog_id": None, "category": cat}
+               for k, name, lab, cat, loc in stations]
+    n = 0
+    items = []
+
+    def item(day, block_type, start, end=None, cohort="", st=None, name=""):
+        nonlocal n
+        n += 1
+        f = {sa.ITEM_FIELDS["day"]: day, sa.ITEM_FIELDS["row_check"]: "OK",
+             sa.ITEM_FIELDS["block_type"]: block_type, sa.ITEM_FIELDS["start"]: start,
+             sa.ITEM_FIELDS["name"]: name, sa.ITEM_FIELDS["description"]: "",
+             sa.ITEM_FIELDS["location"]: "", sa.ITEM_FIELDS["short"]: ""}
+        if end:
+            f[sa.ITEM_FIELDS["end"]] = end
+        if cohort:
+            f[sa.ITEM_FIELDS["cohort"]] = cohort
+        if st:
+            f[sa.ITEM_FIELDS["station"]] = [f"recSTN{st}"]
+        items.append({"id": f"recBEN{n:03d}", "fields": f})
+
+    nm = {k: name for k, name, *_ in stations}
+
+    def act(day, cohort, st, start, end):
+        item(day, "Activity", start, end, cohort, st, nm[st])
+
+    for day in (1, 2):
+        item(day, "Arrival", "09:00", name="Arrival")
+        for c in "ABC":
+            item(day, "Meal / Break", "12:00", "12:45", c, "lunch", nm["lunch"])
+        item(day, "Whole-Group Block", "15:15", "16:30", "", "beach", nm["beach"])
+        item(day, "Departure", "17:00", name="Departure")
+    # Day 1: A and B share the morning boat time (two charters); C kayaks.
+    act(1, "A", "boat", "09:30", "12:00"); act(1, "B", "boat", "09:30", "12:00")
+    act(1, "C", "kayak", "09:30", "12:00")
+    for c, first, second in (("A", "lion", "fish"), ("B", "eco", "lion"), ("C", "fish", "eco")):
+        act(1, c, first, "12:45", "14:00"); act(1, c, second, "14:00", "15:15")
+    # Day 2: the same letters, different stations; B and C have gaps.
+    act(2, "A", "kayak", "09:30", "12:00"); act(2, "C", "boat", "09:30", "12:00")
+    act(2, "B", "fish", "09:30", "10:45")
+    act(2, "A", "eco", "12:45", "14:00"); act(2, "C", "lion", "12:45", "14:00")
+    act(2, "B", "kayak", "12:45", "15:15")
+    return {"items": items, "stations": st_rows}
+
+
+def benjamin_booking(**kw):
+    b = booking(
+        record_id=BENJAMIN, cohort_count=3, schedule_count=27, schedule_cohort_size_label="",
+        schedule_notes=("{{cohort_count}} cohorts keep the same letter both days.\n"
+                        "Boat time is {{duration_adj:Boat Snorkel}}; Fish ID is {{duration:Fish ID}}."),
+        schedule_intro="", schedule_program_hours="9:00 AM – 5:00 PM")
+    b.update(kw)
+    return b
+
+
+class MultiDayRotation(unittest.TestCase):
+    def load(self, rows=None, **bk):
+        return sa.schedule_from_rows(benjamin_booking(**bk), rows or build_benjamin_rows(), None,
+                                     log=lambda *_: None)
+
+    def edit(self, rows, item_id, **fields):
+        for it in rows["items"]:
+            if it["id"] == item_id:
+                for k, v in fields.items():
+                    it["fields"][sa.ITEM_FIELDS[k]] = v
+                return
+        raise KeyError(item_id)
+
+    def test_fixture_is_27_rows(self):
+        self.assertEqual(len(build_benjamin_rows()["items"]), 27)
+
+    def test_multi_day_rotation_passes_and_validates(self):
+        import generate_booking_package as g
+        got = self.load()
+        rot = got["rotation"]
+        self.assertEqual(got["scheduleFormat"], "rotation")
+        g.validate_rotation(rot, BENJAMIN)             # the existing validator, per-day aware
+        self.assertEqual([c["id"] for c in rot["cohorts"]], ["A", "B", "C"])
+        self.assertEqual([d["day"] for d in rot["days"]], [1, 2])
+        self.assertEqual({a["day"] for a in rot["assignments"]}, {1, 2})
+        self.assertEqual(len(rot["assignments"]), 3 * 2 + 9 + 6)   # lunches + day 1 + day 2
+        self.assertEqual(len(rot["shared"]), 2)                    # one whole-group block per day
+        for d in rot["days"]:
+            self.assertEqual(d["arrival"]["time"], "09:00")
+            self.assertEqual(d["departure"]["time"], "17:00")
+
+    def test_days_cards_and_hours(self):
+        got = self.load()
+        self.assertEqual(len(got["days"]), 2)
+        self.assertEqual(got["programHours"], "9:00 AM – 5:00 PM")
+        titles = lambda d: [b["title"] for b in got["days"][d]["blocks"]]  # noqa: E731
+        self.assertIn("Beach Time & Rinse-Off", titles(0))
+        self.assertIn("Beach Time & Rinse-Off", titles(1))
+        self.assertEqual(got["rotation"]["heading"], "Three Cohorts, One Coordinated Schedule")
+
+    def test_tokens_and_intro_work_across_days(self):
+        got = self.load()
+        notes = got["rotation"]["notes"]
+        self.assertEqual(notes[0], "3 cohorts keep the same letter both days.")
+        self.assertEqual(notes[1], "Boat time is 2.5-hour; Fish ID is 1.25 hours.")
+        self.assertIn("three cohorts", got["rotation"]["intro"])
+        self.assertIn("9:00 AM – 5:00 PM", got["days"][0]["theme"])
+
+    def test_station_times_are_per_day(self):
+        import generate_booking_package as g
+        rot = self.load()["rotation"]
+        d1, d2 = g.station_times(rot, day=1), g.station_times(rot, day=2)
+        self.assertEqual(d1["boat-snorkel"], "Cohorts A & B: 9:30 AM–12:00 PM")
+        self.assertEqual(d2["boat-snorkel"], "Cohort C: 9:30 AM–12:00 PM")
+        self.assertTrue(g.station_times(rot)["boat-snorkel"].startswith("Day 1: "))   # mixed days are labelled
+
+    def test_same_day_cohort_overlap_still_fails(self):
+        import generate_booking_package as g
+        rows = build_benjamin_rows()
+        # Day 2 Cohort A Ecology (12:45-2:00) starts inside its own picnic lunch.
+        a_eco = next(i for i in rows["items"]
+                     if i["fields"][sa.ITEM_FIELDS["day"]] == 2
+                     and i["fields"].get(sa.ITEM_FIELDS["cohort"]) == "A"
+                     and i["fields"][sa.ITEM_FIELDS["name"]] == "Ecology")
+        self.edit(rows, a_eco["id"], start="12:30")
+        rot = self.load(rows)["rotation"]            # row-level checks pass; the validator must catch it
+        with self.assertRaisesRegex(g.InvalidRotation, r"cohort A on day 2: .*overlap"):
+            g.validate_rotation(rot, BENJAMIN)
+
+    def test_whole_group_block_overlap_on_one_day_fails(self):
+        import generate_booking_package as g
+        rows = build_benjamin_rows()
+        b_kayak = next(i for i in rows["items"]
+                       if i["fields"][sa.ITEM_FIELDS["day"]] == 2
+                       and i["fields"].get(sa.ITEM_FIELDS["cohort"]) == "B"
+                       and i["fields"][sa.ITEM_FIELDS["name"]] == "Mangrove Kayak")
+        self.edit(rows, b_kayak["id"], end="15:30")   # runs into the 3:15 beach block
+        with self.assertRaisesRegex(g.InvalidRotation, "cohort B on day 2"):
+            g.validate_rotation(self.load(rows)["rotation"], BENJAMIN)
+
+    def test_same_cohort_same_time_on_different_days_is_fine(self):
+        import generate_booking_package as g
+        rot = self.load()["rotation"]
+        a = [x for x in rot["assignments"] if x["cohort"] == "A" and x["start"] == "09:30"]
+        self.assertEqual(sorted(x["day"] for x in a), [1, 2])
+        g.validate_rotation(rot, BENJAMIN)
+
+    def test_day_window_is_enforced_per_day(self):
+        import generate_booking_package as g
+        rot = self.load()["rotation"]
+        rot["days"][1]["endTime"] = "15:00"           # Day 2 now ends before its 3:15 beach block
+        with self.assertRaisesRegex(g.InvalidRotation, "day 2 .* is outside"):
+            g.validate_rotation(rot, BENJAMIN)
+
+    def test_row_check_is_still_enforced(self):
+        rows = build_benjamin_rows()
+        rows["items"][5]["fields"][sa.ITEM_FIELDS["row_check"]] = "Missing end time"
+        with self.assertRaisesRegex(sa.ScheduleError, "Row Check is 'Missing end time'"):
+            self.load(rows)
+
+    def test_cohort_count_still_checked_across_days(self):
+        with self.assertRaisesRegex(sa.ScheduleError, "# Cohorts' is 4"):
+            self.load(cohort_count=4)
+
+    def test_single_day_output_has_no_day_keys(self):
+        """Ben Gamla (one day) keeps the exact pre-change shape."""
+        with open(JSON_PATH) as fh:
+            raw = json.load(fh)
+        js = {"days": raw["days"], "rotation": raw["rotation"], "audiences": raw["audiences"],
+              "summary": raw["summary"], "location": raw["location"]}
+        rot = sa.schedule_from_rows(booking(), build_rows(js), js, log=lambda *_: None)["rotation"]
+        self.assertNotIn("days", rot)
+        self.assertTrue(all("day" not in a for a in rot["assignments"]))
+
+    # ---- rendering (assets/render.js, run under node with a stub DOM)
+
+    def _render(self, rot):
+        import shutil
+        import subprocess
+        import tempfile
+        node = shutil.which("node")
+        if not node:
+            self.skipTest("node is not installed")
+        with tempfile.TemporaryDirectory() as td:
+            rp = Path(td) / "rot.json"
+            rp.write_text(json.dumps(rot))
+            out = subprocess.run([node, str(REPO_ROOT / "pipeline" / "rot_render_harness.js"),
+                                  str(REPO_ROOT / "assets" / "render.js"), str(rp)],
+                                 capture_output=True, text=True, check=True)
+        return out.stdout
+
+    def test_renders_one_grid_per_day(self):
+        html = self._render(self.load()["rotation"])
+        self.assertEqual(html.count('class="rot-day"'), 2)
+        self.assertEqual(html.count("rot-grid rot-desktop"), 2)
+        self.assertEqual(html.count("rot-grid rot-mobile"), 2)
+        self.assertIn(">Day 1<", html)
+        self.assertIn(">Day 2<", html)
+        self.assertEqual(html.count("Arrival 9:00 AM"), 2)
+        self.assertEqual(html.count("Departure 5:00 PM"), 2)
+        for st in ("Boat Snorkel", "Mangrove Kayak", "Beach Time &amp; Rinse-Off"):
+            self.assertIn(st, html)
+        # existing station colors: every station swatch uses the rot-c0..5 palette
+        self.assertEqual(html.count('class="rot-swatch rot-c'), 7)
+
+    def test_single_day_renders_one_grid_no_day_headings(self):
+        with open(JSON_PATH) as fh:
+            raw = json.load(fh)
+        html = self._render(raw["rotation"])
+        self.assertNotIn("rot-day", html)
+        self.assertEqual(html.count("rot-grid rot-desktop"), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

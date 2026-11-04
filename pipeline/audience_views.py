@@ -145,9 +145,12 @@ def _cohort_lines(rot):
     st = {s["id"]: s for s in rot["stations"]}
     out = []
     for c in rot["cohorts"]:
-        rows = sorted([a for a in rot["assignments"] if a["cohort"] == c["id"]], key=lambda a: a["start"])
+        rows = sorted([a for a in rot["assignments"] if a["cohort"] == c["id"]],
+                      key=lambda a: (a.get("day", 1), a["start"]))
+        # Multi-day rotation: say which day, so the lines never merge two days.
+        pre = (lambda a: f"Day {a.get('day', 1)} ") if rot.get("days") else (lambda a: "")
         out.append({"cohort": c["label"],
-                    "items": [{"time": f"{a['start']}-{a['end']}",
+                    "items": [{"time": f"{pre(a)}{a['start']}-{a['end']}",
                                "name": st[a["station"]].get("short") or st[a["station"]]["name"]} for a in rows]})
     return out
 
