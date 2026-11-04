@@ -317,7 +317,7 @@ window.BOOKING_DATA = {
         "dayNumber": 1,
         "totalDays": 2,
         "title": "Welcome to the Reef",
-        "theme": "Three groups of 30 rotate through reef snorkeling, kayaking at Pennekamp (Mangrove Tour), and a lionfish lesson.",
+        "theme": "Three cohorts rotate through reef snorkeling, mangrove kayaking, and hands-on lessons at Pennekamp.",
         "blocks": [
           {
             "station": "snorkel",
