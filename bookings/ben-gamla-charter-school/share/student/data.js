@@ -8,31 +8,31 @@ window.BOOKING_DATA = {
   "view": {
     "status": "draft",
     "statusLabel": "Draft",
-    "version": "v1",
-    "lastUpdated": "Oct 1, 2026",
+    "version": "v2",
+    "lastUpdated": "Oct 30, 2026",
     "orgName": "Ben Gamla Charter School",
     "dateLine": "March 17, 2027",
-    "hours": "9:00 AM\u20135:00 PM",
+    "hours": "9:00 AM \u2013 5:00 PM",
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A one-day marine science program for 115 students, organized into four cohorts rotating through hands-on experiences led by REEF educators, from 9:00 AM to 5:00 PM.",
+    "summary": "A one-day marine science Expedition for 66 students, organized into four cohorts rotating through five hands-on experiences at John Pennekamp Coral Reef State Park, Key Largo.",
     "scheduleDraft": true,
     "view": "student",
     "headline": "A day on the reef at John Pennekamp",
     "intro": "You'll spend the day with REEF educators, rotating with your cohort through hands-on marine science experiences at John Pennekamp Coral Reef State Park.",
     "experiences": [
       {
-        "title": "Glass-Bottom Boat Tour",
-        "text": "Students view living coral reef habitat and the fish that depend on it from a glass-bottom boat, with a REEF educator helping them connect what they see to how healthy reefs work.",
-        "color": 0
-      },
-      {
         "title": "Citizen Science & Fish Identification",
         "text": "Students learn how REEF's volunteer divers and snorkelers identify fish and record what they see, then practice the same identification and survey skills used in REEF's Volunteer Fish Survey Project.",
-        "color": 1
+        "color": 0
       },
       {
         "title": "Lionfish Lesson & Dissection",
         "text": "Students investigate invasive lionfish through a guided dissection, looking at anatomy and adaptations and learning why lionfish are a conservation challenge for Florida Keys reefs.",
+        "color": 1
+      },
+      {
+        "title": "Glass-Bottom Boat Tour",
+        "text": "Students view living coral reef habitat and the fish that depend on it from a glass-bottom boat, with a REEF educator helping them connect what they see to how healthy reefs work.",
         "color": 2
       },
       {

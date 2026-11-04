@@ -208,6 +208,24 @@ def _objectives(pd):
 
 
 def _payment_lines(b, defaults, money):
+    ap = b.get("agreement_payment")
+    if ap:  # agreement terms (generate_booking_package.agreement_payment_terms)
+        lines = []
+        if ap["deposit"]:
+            lines.append(f"A {money(ap['deposit'])} deposit holds your group's date"
+                         + (f" and is due {ap['deposit_due']}." if ap["deposit_due"] else "."))
+        if ap["payment2"]:
+            lines.append(f"Payment 2 of {money(ap['payment2'])}"
+                         + (f" is due {ap['payment2_due']}." if ap["payment2_due"] else " follows the deposit."))
+        if ap["final_due"]:
+            lines.append(f"The final payment is due {ap['final_due']}. Its amount is the balance under the agreement.")
+        if ap["guaranteed_cost"] and ap["min_spaces"]:
+            lines.append(f"The agreement guarantees {money(ap['guaranteed_cost'])} of program cost "
+                         f"for a minimum of {ap['min_spaces']} paid spaces.")
+        if ap["provisional"]:
+            lines.append("Payment dates are provisional until the agreement date is set.")
+        rest = [t for t in defaults["paymentTerms"] if not (ap["final_due"] and t.startswith("The final payment"))]
+        return lines + rest
     lines = []
     if b.get("deposit_due_now"):
         lines.append(f"A {money(b['deposit_due_now'])} deposit holds your group's date.")
@@ -371,6 +389,11 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on):
     })
 
     views = {k: v for k, v in views.items() if k in enabled}
+    # Get Ready stage: per-view checklist, built by get_ready.views_payload (money in the
+    # administrator payload only). Attached before the leak check below.
+    for k, v in views.items():
+        if (b.get("get_ready") or {}).get(k):
+            v["getReady"] = b["get_ready"][k]
     money_strings = _money_strings(b, pd)
     for k in PUBLIC_VIEWS:
         if k in views:

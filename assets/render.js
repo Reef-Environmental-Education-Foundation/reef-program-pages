@@ -558,6 +558,11 @@
   }
 
   function isPreview() { return !!window.REEF_PREVIEW_VIEWS; }
+  // Proposal versions arrive as "v2" (page data) or 2 (version.json): compare digits only.
+  function versionNumber(v) {
+    const n = parseInt(String(v == null ? "" : v).replace(/\D/g, ""), 10);
+    return isNaN(n) ? 0 : n;
+  }
 
   function viewHref(v, print) {
     if (isPreview()) return "?view=" + v.key + (print ? "&print=1" : "");
@@ -826,6 +831,46 @@
     const main = el("main", { id: "main", class: "a-main" });
     const add = function (node) { if (node) main.appendChild(node); };
 
+    // ---------------- GET READY (stage "Get Ready" only) ----------------
+    // Overdue/days-left are computed in the browser from the ISO due date, so they stay
+    // correct between publishes; completion is as of the publish date (G.asOf).
+    function getReadySection(G) {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      function parse(iso) { const p = String(iso).split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+      function fmt(iso) { return iso ? parse(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Date to be set"; }
+      const kids = [];
+      if (G.provisional && V.view === "administrator") {
+        kids.push(el("p", { class: "a-fine gr-prov" }, ["Payment dates and amounts are provisional until the agreement date is entered."]));
+      }
+      if (has(G.deadlines)) {
+        kids.push(dl(G.deadlines.map(function (d) {
+          return { k: d.label, v: fmt(d.date) + (d.provisional ? " (provisional)" : "") };
+        })));
+      }
+      (G.groups || []).forEach(function (grp) {
+        kids.push(el("h3", { class: "gr-group" }, [grp.group]));
+        kids.push(el("ul", { class: "gr-list" }, grp.items.map(function (it) {
+          const overdue = !it.done && it.due && parse(it.due) < today;
+          const state = it.done ? "complete" : (overdue ? "overdue" : "outstanding");
+          const label = it.done ? "Complete" + (it.doneOn ? " " + fmt(it.doneOn) : "") : (overdue ? "Overdue" : "Outstanding");
+          return el("li", { class: "gr-item is-" + state }, [
+            el("span", { class: "gr-state" }, [label]),
+            el("div", { class: "gr-body" }, [
+              el("strong", {}, [it.title]),
+              it.money ? el("span", { class: "gr-money" }, [" " + it.money + (it.provisional ? " (provisional)" : "")]) : null,
+              it.paymentReceived ? el("span", { class: "gr-tag" }, ["Payment received"]) : null,
+              it.template ? el("span", { class: "gr-tag" }, ["Template (confirm)"]) : null,
+              it.due ? el("div", { class: "a-fine" }, ["Due " + fmt(it.due) + (it.provisional ? " (provisional)" : "")]) : null,
+              it.detail ? el("div", { class: "a-fine" }, [it.detail]) : null,
+            ]),
+          ]);
+        })));
+      });
+      kids.push(el("p", { class: "a-fine" }, ["Checklist status as of " + fmt(G.asOf) + "."]));
+      return sec("GET READY", "Your checklist before the trip", kids, "a-getready");
+    }
+    if (V.getReady) add(getReadySection(V.getReady));
+
     // ---------------- ADMINISTRATOR ----------------
     if (V.view === "administrator") {
       add(sec("PURPOSE", "Program purpose and educational value", [
@@ -984,6 +1029,31 @@
       el("a", { href: "https://www.reef.org" }, ["www.REEF.org"]),
       el("span", { class: "tag" }, [(V.title || "") + " · " + (V.statusLabel || "Draft") + " " + (V.version || "") + (V.lastUpdated ? " · Updated " + V.lastUpdated : "")]),
     ]));
+
+    // Same stale-version rule as the main proposal page (see
+    // checkProposalVersion): the audience pages live at
+    // bookings/<slug>/share/<view>/, so version.json is two folders up.
+    // Pricing, payment terms and the approval box are hidden; the other
+    // content stays (it is not what changed in a way that can mislead on money).
+    if (!isPreview() && window.fetch) {
+      fetch("../../version.json", { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (v) {
+          const current = v && versionNumber(v.currentVersion);
+          if (!current || current <= (versionNumber(V.version) || 1)) return;
+          pageRoot.insertBefore(el("div", { class: "stale-banner", role: "status" }, [
+            el("strong", {}, ["This page is being updated."]),
+            " REEF has made changes to this proposal since this version was prepared. Pricing and approval are hidden until the revised version is ready."
+          ]), main);
+          pageRoot.querySelectorAll(".a-sec").forEach(function (s) {
+            const eyebrow = s.querySelector(".eyebrow");
+            if (eyebrow && /^(PRICE|TERMS)$/.test(eyebrow.textContent.trim())) s.classList.add("stale-hide");
+          });
+          pageRoot.querySelectorAll(".a-approve").forEach(function (n) { n.classList.add("stale-hide"); });
+          pageRoot.classList.add("proposal-stale");
+        })
+        .catch(function () { /* quiet */ });
+    }
 
     let wantsPrint = false;
     try { wantsPrint = new URLSearchParams(location.search).get("print") === "1"; } catch (err) { wantsPrint = false; }
@@ -2033,6 +2103,36 @@
       el("a", { href: "https://www.reef.org" }, ["www.REEF.org"]),
       el("span", { class: "tag" }, ["Explore. Discover. Make a Difference."]),
     ]));
+
+    // Stale-version banner (sprint Task 4, 2026-10-31). version.json sits next
+    // to this page and is rewritten whenever Airtable's Proposal Version
+    // changes (pipeline/write_version_marker.py) and on every publish. If it
+    // names a version newer than the one this page was built from, hide the
+    // pricing and approval buttons and say the proposal is being updated,
+    // instead of showing numbers that may no longer be right. Fails quiet:
+    // no version.json, a bad file, or an offline preview shows the page as is.
+    function checkProposalVersion() {
+      if (isPreview() || !window.fetch) return;
+      const pageVersion = versionNumber(PD.meta.proposalVersion) || 1;
+      fetch("version.json", { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (v) {
+          const current = v && versionNumber(v.currentVersion);
+          if (!current || current <= pageVersion) return;
+          const rc = PD.reefContact || {};
+          const contact = rc.email ? [" Questions? Contact ", rc.name || "REEF", " at ",
+            el("a", { href: "mailto:" + rc.email }, [rc.email]), "."] : [];
+          pageRoot.insertBefore(el("div", { class: "stale-banner", role: "status" }, [
+            el("strong", {}, ["This proposal is being updated."]),
+            " REEF has made changes since this version was prepared, so pricing and the approval buttons are hidden until the revised proposal is ready."
+          ].concat(contact)), main);
+          pageRoot.querySelectorAll("#sec-pricing, .cta-module, .confirm-summary, [data-goto='sec-pricing']")
+            .forEach(function (node) { node.classList.add("stale-hide"); });
+          pageRoot.classList.add("proposal-stale");
+        })
+        .catch(function () { /* quiet: the page simply renders as built */ });
+    }
+    checkProposalVersion();
 
     function activateSection(id) {
       SECTIONS.forEach(function (s) {

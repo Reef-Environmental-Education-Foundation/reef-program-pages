@@ -1,0 +1,61 @@
+name: Mark Proposal Version Changed
+
+# Fired by the Airtable automation when a Booking's Proposal Version changes
+# (Change Request apply, direct-edit guardrail, staff bump). Writes
+# bookings/<slug>/version.json so the live page shows "This proposal is being
+# updated" instead of stale pricing. It never regenerates or republishes a page.
+#   repository_dispatch  event_type "proposal-version-changed", client_payload.record_id
+#   workflow_dispatch    input booking_record_id
+on:
+  workflow_dispatch:
+    inputs:
+      booking_record_id:
+        description: "Airtable Bookings record ID"
+        required: true
+        type: string
+  repository_dispatch:
+    types: [proposal-version-changed]
+
+# Shares the publish group so a marker and a publish for one booking never overlap.
+concurrency:
+  group: publish-${{ github.event.inputs.booking_record_id || github.event.client_payload.record_id }}
+  cancel-in-progress: false
+
+jobs:
+  mark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: write
+    env:
+      RECORD_ID: ${{ github.event.inputs.booking_record_id || github.event.client_payload.record_id }}
+    steps:
+      - name: Validate record ID
+        run: |
+          [[ "$RECORD_ID" =~ ^rec[A-Za-z0-9]{14}$ ]] || { echo "::error::Not an Airtable record ID."; exit 1; }
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests python-docx
+      - name: Write version.json
+        env:
+          AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
+        run: python pipeline/write_version_marker.py "$RECORD_ID"
+      - name: Commit and deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "REEF Booking Pipeline"
+          git config user.email "actions@users.noreply.github.com"
+          git add bookings/*/version.json
+          if git diff --cached --quiet; then echo "No change."; exit 0; fi
+          git commit -m "Mark proposal version changed for $RECORD_ID"
+          ok=0
+          for i in 1 2 3; do
+            if git pull --rebase -q origin main && git push; then ok=1; break; fi
+            sleep $((i * 3))
+          done
+          [ "$ok" = 1 ] || { echo "::error::Could not push to main."; exit 1; }
+          gh workflow run deploy.yml --ref main

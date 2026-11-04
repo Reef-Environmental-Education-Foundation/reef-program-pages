@@ -54,7 +54,10 @@ script checks the booking's approval fields (see check_share_approval()):
     auto-approves the later pre-trip packet or contract,
   - "Approved for Proposal Version" equals the booking's current "Proposal
     Version" (when one is set), so a revised proposal needs a fresh approval,
-  - "Approved to Share By" names the person who approved it.
+  - "Approved to Share By" names the person who approved it,
+  - "Schedule Changed After Approval" is empty (2026-10-01): the Airtable
+    schedule was edited after approval, so the approved version no longer
+    matches what would publish.
 
 If any check fails, the run is PREVIEW ONLY: the page (and contract, when the
 stage calls for one) is generated into a temp folder outside the repo, packed
@@ -88,6 +91,9 @@ import docx
 sys.path.insert(0, str(Path(__file__).parent))
 import audience_views  # noqa: E402  (Approve & Share audience views, 2026-09-28)
 import estimate_view  # noqa: E402  (Estimate stage, 2026-10-10)
+import schedule_airtable  # noqa: E402  (itinerary read from Airtable, 2026-10-01)
+import get_ready  # noqa: E402  (Get Ready stage checklist)
+import publish_support  # noqa: E402  (build validation + run result, 2026-10-31)
 
 AIRTABLE_API_KEY = os.environ.get("AIRTABLE_API_KEY")
 API_ROOT = "https://api.airtable.com/v0"
@@ -116,6 +122,75 @@ PROPOSAL_HERO_FIELDS = {
 # should publish the proposal experience rather than the confirmed/pre-trip
 # packet. Everything else (Contracted and beyond) gets the pre-trip page.
 PROPOSAL_STATUSES = {"Quoting", "Proposal Sent", "Verbal Yes"}
+
+# Page stage (sprint Task 2, 2026-10-31). One site, Airtable-driven: the stage
+# is derived from the booking record every run and written to data.js
+# (meta.stage). It is data only for now; nothing in render.js reads it yet.
+STAGE_PROPOSAL = "Proposal"
+STAGE_ACCEPTED = "Accepted"
+STAGE_AGREEMENT_PENDING = "Agreement pending"
+STAGE_CONFIRMED = "Confirmed"
+STAGE_GET_READY = "Get Ready"
+STAGE_COMPLETED = "Completed"
+# ASSUMPTION (not yet decided by Martha): "Get Ready" starts this many days
+# before arrival. 120 matches the design's first journey-stage cutoff.
+PRETRIP_WINDOW_DAYS = 120
+
+
+# Payment wording (Martha, 2026-11-02). Bookings with agreement terms show the Agreement
+# fields (20% deposit etc.) on the administrator view and the confirmed page. The
+# contract builder still reads the older Deposit Due Now / Payment 2 / Final fields
+# (undecided). Ben Gamla and both Hanover bookings stay on the old wording on purpose,
+# even though Minimum Guaranteed Paid Spaces is already set on them.
+LEGACY_PAYMENT_WORDING_IDS = {"recqb6DGaeJRpymL2", "recP88dd2wk5XdHU3", "reciijikzFlFdq3Qr"}
+
+
+def agreement_payment_terms(b, money_fn=None, date_fn=None):
+    """None when this booking keeps the old payment wording, else the agreement terms
+    ({deposit, deposit_due, payment2, payment2_due, final_due, guaranteed_cost,
+    min_spaces, provisional}). Applies only when Agreement Date or Minimum Guaranteed
+    Paid Spaces is set and the agreement deposit amount exists."""
+    if b.get("record_id") in LEGACY_PAYMENT_WORDING_IDS:
+        return None
+    if not (b.get("agreement_date") or b.get("min_guaranteed_spaces")):
+        return None
+    if not b.get("deposit_amount_agreement"):
+        return None
+    date_fn = date_fn or date_pretty
+    d = lambda v: date_fn(v) if v else ""  # noqa: E731
+    return {"deposit": b.get("deposit_amount_agreement"), "deposit_due": d(b.get("deposit_due_agreement")),
+            "payment2": b.get("payment2_amount_agreement"), "payment2_due": d(b.get("payment2_due_agreement")),
+            "final_due": d(b.get("final_due_date")),
+            "guaranteed_cost": b.get("guaranteed_cost_agreement"), "min_spaces": b.get("min_guaranteed_spaces"),
+            "provisional": not b.get("agreement_date")}
+
+
+def derive_stage(b, today=None):
+    """Stage of a booking, from the latest state to the earliest:
+        Completed          Status Completed
+        Get Ready          Status Confirmed/In Progress and arrival within the pre-trip window
+        Confirmed          Status Confirmed/In Progress
+        Agreement pending  Agreement/Contract Status = Sent (or Status Contracted, awaiting signature)
+        Accepted           Proposal Response = Ready to Proceed, or Status Verbal Yes
+        Proposal           Status Quoting or Proposal Sent (also the fallback)
+    Status Cancelled is not a stage (the generator refuses to publish it)."""
+    status = b.get("status") or ""
+    if status == "Completed":
+        return STAGE_COMPLETED
+    if status in ("Confirmed", "In Progress"):
+        arrival = b.get("arrival_date")
+        if arrival:
+            days = (datetime.strptime(arrival[:10], "%Y-%m-%d").date()
+                    - (today or datetime.utcnow().date())).days
+            if days <= PRETRIP_WINDOW_DAYS:
+                return STAGE_GET_READY
+        return STAGE_CONFIRMED
+    if (b.get("agreement_contract_status") or "") == "Sent" or status == "Contracted":
+        return STAGE_AGREEMENT_PENDING
+    if (b.get("proposal_response") or "") == "Ready to Proceed" or status == "Verbal Yes":
+        return STAGE_ACCEPTED
+    return STAGE_PROPOSAL
+
 
 # Bookings.Status -> which of the 5 roadmap steps the customer is on now.
 # render.js renders steps below currentStep as done and currentStep as
@@ -157,14 +232,12 @@ SHARE_STAGE_PRETRIP = "Pre-trip Packet + Contract"
 # select; until Martha adds it the API never returns it, so resolve_stage()
 # never picks "estimate" and nothing changes (fails safe).
 SHARE_STAGE_ESTIMATE = "Estimate"
-STAGE_ESTIMATE, STAGE_PROPOSAL, STAGE_PRETRIP = "estimate", "proposal", "pretrip"
+RUN_ESTIMATE, RUN_PROPOSAL, RUN_PRETRIP = "estimate", "proposal", "pretrip"
 NEEDED_STAGE = {
-    STAGE_ESTIMATE: SHARE_STAGE_ESTIMATE,
-    STAGE_PROPOSAL: SHARE_STAGE_PROPOSAL,
-    STAGE_PRETRIP: SHARE_STAGE_PRETRIP,
+    RUN_ESTIMATE: SHARE_STAGE_ESTIMATE,
+    RUN_PROPOSAL: SHARE_STAGE_PROPOSAL,
+    RUN_PRETRIP: SHARE_STAGE_PRETRIP,
 }
-# Bookings whose status is Completed predate the 1-per-10 rule and keep 1 per 9.
-LEGACY_FREE_CHAP_DIVISOR = 9
 ASSETS_DIR = REPO_ROOT.parent / "assets"
 
 
@@ -289,8 +362,134 @@ def airtable_get(base_id, table_name, record_id):
     return resp.json()  # {"id": ..., "createdTime": ..., "fields": {...}}
 
 
+def airtable_list_by_ids(base_id, table_id, record_ids, field_ids):
+    """Fetches records by ID (100 per request) with fields keyed by FIELD ID,
+    so a rename in Airtable cannot break the pipeline. Uses POST /listRecords
+    so a long OR(RECORD_ID()=...) formula never hits URL length limits."""
+    if not AIRTABLE_API_KEY:
+        raise RuntimeError("AIRTABLE_API_KEY environment variable is not set.")
+    out = {}
+    ids = [r for r in record_ids if isinstance(r, str) and r.startswith("rec")]
+    for i in range(0, len(ids), 100):
+        chunk = ids[i:i + 100]
+        formula = "OR(" + ",".join(f"RECORD_ID()='{r}'" for r in chunk) + ")"
+        body = {"filterByFormula": formula, "returnFieldsByFieldId": True,
+                "fields": list(field_ids), "pageSize": 100}
+        while True:
+            resp = requests.post(f"{API_ROOT}/{base_id}/{table_id}/listRecords", json=body,
+                                 headers={"Authorization": f"Bearer {AIRTABLE_API_KEY}"}, timeout=30)
+            resp.raise_for_status()
+            data = resp.json()
+            for rec in data.get("records", []):
+                out[rec["id"]] = rec
+            if not data.get("offset"):
+                break
+            body["offset"] = data["offset"]
+    missing = [r for r in ids if r not in out]
+    if missing:
+        raise RuntimeError(f"Airtable returned no record for {len(missing)} linked id(s) in {table_id}: "
+                           f"{', '.join(missing[:5])}")
+    return out
+
+
+def fetch_schedule_rows(record_id):
+    """Pulls the Airtable-side schedule for one booking: the Bookings schedule
+    fields, every linked Schedule Item and Itinerary Activity, and each
+    activity's catalog Category (for the tag map). Returns a dict that
+    fetch_booking_data() merges into the booking, or None when the booking has
+    no Schedule Items (legacy JSON path)."""
+    sa = schedule_airtable
+    bk = airtable_list_by_ids(BOOKINGS_BASE, "tbl9Jb9UVSYLQ1Puc", [record_id],
+                              sa.BOOKING_FIELDS.values())[record_id]["fields"]
+    g = lambda k: bk.get(sa.BOOKING_FIELDS[k])  # noqa: E731
+    base = {
+        "schedule_count": g("count") or 0,
+        "schedule_cohort_size_label": g("cohort_size_label") or "",
+        "schedule_notes": g("notes") or "",
+        "schedule_intro": g("intro") or "",
+        "schedule_program_hours": g("program_hours") or "",
+        "schedule_row_checks": sa._text(g("row_checks")),
+        "schedule_changed_after_approval": g("changed_after_approval") or "",
+        "schedule_rows": None,
+    }
+    if not base["schedule_count"]:
+        return base
+    items = airtable_list_by_ids(BOOKINGS_BASE, "tbljjmfCplSFbUfGe", g("item_ids") or [],
+                                 sa.ITEM_FIELDS.values())
+    acts = airtable_list_by_ids(BOOKINGS_BASE, "tblL0oUvD4CG24E4j", g("activity_ids") or [],
+                                sa.STATION_FIELDS.values())
+    catalog_ids = {c for a in acts.values() for c in (a["fields"].get(sa.STATION_FIELDS["catalog"]) or [])}
+    catalog_ids |= {c for i in items.values() for c in (i["fields"].get(sa.ITEM_FIELDS["catalog"]) or [])}
+    cats = airtable_list_by_ids(BOOKINGS_BASE, "tblb3FriVJzQcCBXu", sorted(catalog_ids),
+                                [sa.CATALOG_CATEGORY_FIELD]) if catalog_ids else {}
+    stations = []
+    for a in acts.values():
+        cid = (a["fields"].get(sa.STATION_FIELDS["catalog"]) or [None])[0]
+        category = sa._text(cats[cid]["fields"].get(sa.CATALOG_CATEGORY_FIELD)) if cid else None
+        stations.append(sa.normalize_station(a, category or None))
+    base["schedule_rows"] = {"items": list(items.values()), "stations": stations}
+    return base
+
+
+# Bookings that share an organization with another booking get an explicit
+# page slug so their public URLs differ (Martha, 2026-10-30: Hanover's 2-day
+# and 4-day options). Everything else keeps slugify(Organization Name).
+SLUG_OVERRIDES = {
+    "recP88dd2wk5XdHU3": "hanover-high-school-2-day",
+    "reciijikzFlFdq3Qr": "hanover-high-school-4-day",
+}
+
+
+def booking_slug(record_id, org_name):
+    return SLUG_OVERRIDES.get(record_id) or slugify(org_name)
+
+
 def slugify(text):
     return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", text.lower())).strip("-")
+
+
+class BuildValidationError(Exception):
+    """Raised when a freshly built page fails validation; main stays untouched."""
+
+
+RESULT_FILE = os.environ.get("RESULT_FILE", "")
+
+
+def promote_build(booking_dir, slug, contract_path=None):
+    """Copy a validated build from its temp folder into bookings/ (and the
+    contract into contracts/). Overlay copy: files already published that this
+    build did not regenerate (for example photos) are kept."""
+    import shutil
+    BOOKINGS_OUT_DIR.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(booking_dir, BOOKINGS_OUT_DIR / slug, dirs_exist_ok=True)
+    if contract_path and Path(contract_path).exists():
+        CONTRACTS_OUT_DIR.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(contract_path, CONTRACTS_OUT_DIR / Path(contract_path).name)
+    print(f"Promoted the validated build to {BOOKINGS_OUT_DIR / slug}")
+
+
+class SlugCollision(Exception):
+    """Raised when a publish run would overwrite another booking's public page."""
+
+
+def published_booking_id(slug, bookings_dir=None):
+    """The Airtable record ID of the page already published at bookings/<slug>/,
+    or None when nothing is published there (or its data.js has no bookingId)."""
+    data_js = (bookings_dir or BOOKINGS_OUT_DIR) / slug / "data.js"
+    if not data_js.exists():
+        return None
+    match = re.search(r'"bookingId":\s*"(rec[A-Za-z0-9]+)"', data_js.read_text())
+    return match.group(1) if match else None
+
+
+def check_slug_available(slug, record_id, bookings_dir=None):
+    """The slug is slugify(Organization Name), so two bookings for one
+    organization (e.g. Hanover's 2-day and 4-day options) share a URL. Without
+    this check the second publish silently replaces the first's public page.
+    Returns the record ID that already holds the slug when it is a different
+    booking, else None."""
+    existing = published_booking_id(slug, bookings_dir)
+    return existing if existing and existing != record_id else None
 
 
 def reef_email(addr):
@@ -396,26 +595,28 @@ def chaperone_policy(b):
     s, c, free = b["students"] or 0, b["chaperones"] or 0, b["free_chaperones"] or 0
     discovery = "Discovery" in (b.get("pricing_model") or "") and not b.get("free_chap_override")
     lines = []
+    billable_stated = False
     if discovery:
         cap = s // 15
         lines.append(f"One chaperone space is complimentary for every 15 students. With {s} students, "
                      f"your group can bring up to {cap} chaperone{'s' if cap != 1 else ''} at no charge.")
     else:
-        t = b["free_chap_threshold"]
-        total = s + c
-        earned = total // t
-        cap = max_complimentary_chaperones(s, t)
-        if b.get("status") == "Completed":
-            # Legacy bookings keep their original (1 per 9) wording untouched.
-            rule = (f"One chaperone space is complimentary for every {t} people in your group, counting "
-                    "students and chaperones together.")
-        else:
-            rule = (f"REEF includes one free chaperone space for every {t} participants "
-                    "(students and chaperones combined).")
-        lines.append(f"{rule} Your group of {s} students and {c} chaperones "
-                     f"({total} people) earns {earned} complimentary space{'s' if earned != 1 else ''}.")
+        # Policy (Martha, 2026-10-30): one complimentary chaperone for every 9
+        # PAID participants (9 paid + 1 free = 1 per 10 total). Airtable's
+        # "# Free Chaperones" = MIN(chaperones, FLOOR((students + chaperones) / 10))
+        # is the source of truth: every count on the page comes from that field
+        # and "# Billable Chaperones", never from total people / 9.
+        billable = b["billable_chaperones"] if b.get("billable_chaperones") is not None else max(c - free, 0)
+        cap = max_complimentary_chaperones(s, b["free_chap_threshold"])
+        lines.append(f"One chaperone space is complimentary for every 9 paid participants. Your group of "
+                     f"{s} students and {c} chaperones includes {free} complimentary chaperone "
+                     f"space{'s' if free != 1 else ''}.")
         if cap >= c:
             lines.append(f"With {s} students, you can bring up to {cap} chaperones before any chaperone is billed.")
+        elif billable:
+            lines.append(f"The other {billable} chaperone{'s' if billable != 1 else ''} "
+                         f"pay{'' if billable != 1 else 's'} the full per-participant package price, the same as a student.")
+            billable_stated = True
     if c and free >= c:
         headline = f"All {c} chaperone{'s' if c != 1 else ''} are complimentary."
     elif c:
@@ -423,8 +624,9 @@ def chaperone_policy(b):
     else:
         headline = "No chaperones are listed yet."
     # Policy (Martha, 2026-09-28): anyone beyond the complimentary ratio pays the full per-participant package, same as a student.
-    lines.append("Each additional chaperone beyond the complimentary spaces pays the full "
-                 "per-participant package price, the same as a student.")
+    if not billable_stated:
+        lines.append("Each additional chaperone beyond the complimentary spaces pays the full "
+                     "per-participant package price, the same as a student.")
     return headline, lines
 
 
@@ -468,7 +670,10 @@ def fetch_booking_data(record_id):
             "welcome_line": p.get("Proposal Welcome Line", ""),
         }
 
+    schedule = fetch_schedule_rows(record_id)
+
     return {
+        **schedule,
         "record_id": record_id,
         "org_name": f.get("Organization Name", ""),
         "contact_name": f.get("Primary Contact Name", ""),
@@ -504,18 +709,15 @@ def fetch_booking_data(record_id):
         "proposal_version": f.get("Proposal Version"),
         "proposal_sent_date": f.get("Proposal Sent Date"),
         "free_chaperones": f.get("# Free Chaperones", 0),
-        "billable_chaperones": f.get("# Billable Chaperones"),
         "activity_ids": f.get("Activities Requested") or [],
-        # The ratio behind "# Free Chaperones" (defaults to the config divisor,
-        # 10, for non-legacy bookings; 9 for Completed ones; when no
+        # The ratio behind "# Free Chaperones" (defaults to 10 total people when no
         # override is set on this booking -- see the field's own formula:
         # MIN(chaperones, ROUNDDOWN((students+chaperones)/threshold, 0))).
         # Pulled through so the proposal can state the actual rule in
         # plain language instead of only showing the resulting number
         # (QA walkthrough, 2026-09-09 -- pricing clarity finding).
-        "free_chap_threshold": f.get("Free Chap Threshold Override") or (
-            LEGACY_FREE_CHAP_DIVISOR if f.get("Status") == "Completed"
-            else estimate_view.free_chaperone_divisor()),
+        "billable_chaperones": f.get("# Billable Chaperones"),
+        "free_chap_threshold": f.get("Free Chap Threshold Override") or estimate_view.free_chaperone_divisor(),
         "free_chap_override": f.get("Free Chap Threshold Override"),
         "pricing_model": f.get("Pricing Model (auto)", ""),
         "org_type": f.get("Organization Type", ""),
@@ -531,6 +733,19 @@ def fetch_booking_data(record_id):
         "asana_task_id": f.get("Asana Task ID", ""),
         # Approved-to-Share lock (2026-09-25). Collaborator fields come back
         # from the REST API as {"id", "email", "name"} objects.
+        # Agreement-model fields (Airtable, added 10/2026). Read only; the page
+        # does not show them yet (see get_ready.py). Dates are provisional while
+        # Agreement Date is blank.
+        "agreement_date": f.get("Agreement Date"),
+        "guarantee_lock_date": f.get("Guarantee Lock Date"),
+        "final_roster_due": f.get("Final Roster Due"),
+        "deposit_amount_agreement": f.get("Deposit Amount (Agreement)"),
+        "deposit_due_agreement": f.get("Deposit Due (Agreement)"),
+        "payment2_amount_agreement": f.get("Payment 2 Amount (Agreement)"),
+        "payment2_due_agreement": f.get("Payment 2 Due (Agreement)"),
+        "min_guaranteed_spaces": f.get("Minimum Guaranteed Paid Spaces"),
+        "guaranteed_cost_agreement": f.get("Guaranteed Program Cost (Agreement)"),
+        "contract_tier": f.get("Contract Tier"),
         "approved_to_share": bool(f.get("Approved to Share")),
         "approved_stage": f.get("Approved to Share — Stage") or "",
         "approved_version": f.get("Approved for Proposal Version"),
@@ -641,26 +856,22 @@ def download_hero_photos(b, booking_dir):
     return photos
 
 
-def load_itinerary(record_id):
-    """Returns the booking's captured itinerary, normalized to a dict:
+_ITINERARY_CACHE = {}
 
-        {"days": [...], "rotation": dict|None, "scheduleFormat": str|None,
-         "summary": str|None, "location": str|None}
 
-    Two file shapes are accepted, so every itinerary captured before
-    2026-09-28 keeps working unchanged:
-      - legacy: a bare JSON list of day objects (standard day-by-day format)
-      - schemaVersion 2: an object with "days" plus an optional "rotation"
-        block (concurrent-cohort rotation schedule), "scheduleFormat",
-        "summary" and customer-facing "location". See ROTATION SCHEMA below.
-    """
+def _read_itinerary_json(record_id, required=True):
+    """The raw captured-itinerary file, normalized to the load_itinerary()
+    shape (rotation validated). With required=False a missing file is None."""
     path = ITINERARIES_DIR / f"{record_id}.json"
     if not path.exists():
+        if not required:
+            return None
+        # Every booking captured before the Airtable schedule has a JSON file, so a
+        # missing file means a booking that is meant to use the Airtable schedule.
         raise NoItineraryCaptured(
-            f"No captured itinerary for booking {record_id} at {path}. "
-            "This script deliberately does not fabricate a day-by-day schedule -- "
-            "export the itinerary JSON from that booking's already-sent proposal first "
-            "(see OXP_System_Connection_Roadmap_2026-09-03.md, priority #4, for the real fix)."
+            f"No schedule found for booking {record_id}: it has no Schedule Items in Airtable "
+            "and no captured itinerary file. Add schedule rows in the Itinerary Editor first. "
+            "This script deliberately does not fabricate a day-by-day schedule."
         )
     with open(path) as fh:
         raw = json.load(fh)
@@ -680,6 +891,38 @@ def load_itinerary(record_id):
         # and the "audiences" section of itineraries/README.md.
         "audiences": raw.get("audiences"),
     }
+
+
+def load_itinerary(record_id, booking=None):
+    """Returns the booking's captured itinerary, normalized to a dict:
+
+        {"days": [...], "rotation": dict|None, "scheduleFormat": str|None,
+         "summary": str|None, "location": str|None, "audiences": dict|None}
+
+    Source of the SCHEDULE (2026-10-01):
+      - Airtable, when the booking has Schedule Items (booking["schedule_count"] > 0):
+        rotation and days[].blocks are generated from the Schedule Items /
+        Itinerary Activities tables; the JSON file (if any) only supplies day
+        titles, audiences, summary and location, and its own rotation/blocks
+        are ignored with a warning. See schedule_airtable.py.
+      - otherwise the JSON file, unchanged. Two shapes are accepted, so every
+        itinerary captured before 2026-09-28 keeps working:
+          - legacy: a bare JSON list of day objects (standard day-by-day format)
+          - schemaVersion 2: an object with "days" plus an optional "rotation"
+            block, "scheduleFormat", "summary" and customer-facing "location".
+    The result is cached per record so the several callers in one run agree.
+    """
+    if booking is not None and booking.get("schedule_count"):
+        key = (record_id, "airtable")
+        if key not in _ITINERARY_CACHE:
+            json_itin = _read_itinerary_json(record_id, required=False)
+            itin = schedule_airtable.schedule_from_rows(
+                booking, booking["schedule_rows"], json_itin)
+            if itin["rotation"]:
+                validate_rotation(itin["rotation"], record_id)
+            _ITINERARY_CACHE[key] = itin
+        return copy.deepcopy(_ITINERARY_CACHE[key])
+    return _read_itinerary_json(record_id)
 
 
 # ---------------------------------------------------------------- Rotation schedule
@@ -864,6 +1107,19 @@ def lower_first(text):
     return text
 
 
+def summary_count_is_stale(summary, students):
+    """True when a captured itinerary's summary states a student count that is
+    not the booking's current "# Student Participants" (e.g. the Ben Gamla
+    summary still said "115 students" after the school's count dropped to 66).
+    The caller then falls back to the summary built from the live numbers."""
+    stated = {int(n.replace(",", "")) for n in re.findall(r"(\d[\d,]*)\s+students", summary or "")}
+    stale = bool(stated) and stated != {students}
+    if stale:
+        print(f"WARNING: itinerary summary says {sorted(stated)} students but the booking has "
+              f"{students}; using the generated summary instead.", file=sys.stderr)
+    return stale
+
+
 def build_proposal_data(b, photos=None):
     """Builds the docType "proposal" shape -- the advanced six-section
     customer proposal experience in assets/render.js. Parallel to
@@ -883,7 +1139,7 @@ def build_proposal_data(b, photos=None):
     label, word = PROGRAM_WORDS_BY_BOOKING_TYPE.get(b["booking_type"], DEFAULT_PROGRAM_WORDS)
     is_group_program = b["booking_type"] != "Facility Rental"
 
-    itin = load_itinerary(b["record_id"])
+    itin = load_itinerary(b["record_id"], b)
     days = copy.deepcopy(itin["days"])
     schedule_format = resolve_schedule_format(b, itin)
     rot = copy.deepcopy(itin["rotation"]) if schedule_format == "rotation" else None
@@ -902,7 +1158,7 @@ def build_proposal_data(b, photos=None):
     hours = None
     experiences = []
     if rot:
-        hours = clock_range(rot["startTime"], rot["endTime"])
+        hours = itin.get("programHours") or clock_range(rot["startTime"], rot["endTime"])
         times = station_times(rot)
         experiences = [s["name"] for s in rot["stations"] if s.get("type", "experience") == "experience"]
         n_cohorts = len(rot["cohorts"])
@@ -923,7 +1179,7 @@ def build_proposal_data(b, photos=None):
         experiences = b.get("activity_names") or []
         format_line = "Full group together" if n_days == 1 else f"{n_days}-day itinerary"
 
-    if itin.get("summary"):
+    if itin.get("summary") and not summary_count_is_stale(itin["summary"], students):
         summary = itin["summary"]
     elif not is_group_program:
         summary = f"A {word} at {location}, prepared for {b['org_name'] or 'your group'}."
@@ -1014,6 +1270,7 @@ def build_proposal_data(b, photos=None):
         "assetDepth": 2,
         "meta": {
             "sampleFlag": False,
+            "stage": derive_stage(b),
             "generatedFrom": b["record_id"],
             "generatedNote": f"Generated by generate_booking_package.py from live Airtable "
                               f"fields on {datetime.utcnow().strftime('%Y-%m-%d')}.",
@@ -1131,8 +1388,40 @@ def build_proposal_data(b, photos=None):
 
 # ---------------------------------------------------------------- Confirmed page
 
+def build_payment_schedule(b):
+    ap = agreement_payment_terms(b)
+    if ap:
+        payment_schedule = {
+            "tier": b["payment_tier"],
+            "items": [
+                {"label": "Deposit", "amount": money(ap["deposit"]), "dueDate": ap["deposit_due"] or None},
+                {"label": "Payment 2", "amount": money(ap["payment2"]) if ap["payment2"] else None,
+                 "dueDate": ap["payment2_due"] or None},
+                {"label": "Final Payment", "amount": None, "dueDate": ap["final_due"] or None},
+            ],
+            "total": money(b["total_package_price"]),
+            "note": "From the agreement fields. The final payment is the balance under the agreement."
+                    + (" Dates are provisional until the agreement date is set." if ap["provisional"] else ""),
+        }
+    else:
+        payment_schedule = {
+            "tier": b["payment_tier"],
+            "items": [
+                {"label": "Deposit (due now)", "amount": money(b["deposit_due_now"]), "dueDate": None},
+                {"label": "Payment 2", "amount": money(b["payment2_amount"]),
+                 "dueDate": date_pretty(b["payment2_due_date"]) if b["payment2_due_date"] else None},
+                {"label": "Final Payment", "amount": money(b["final_amount"]),
+                 "dueDate": date_pretty(b["final_due_date"]) if b["final_due_date"] else None},
+            ],
+            "total": money(b["total_package_price"]),
+            "note": "Generated from REEF Bookings' payment-schedule fields (added 2026-09-03); "
+                    "confirm the 50/50 Payment 2 / Final split assumption before treating as final.",
+        }
+    return payment_schedule
+
+
 def build_confirmed_page_data(b):
-    itin = load_itinerary(b["record_id"])
+    itin = load_itinerary(b["record_id"], b)
     days_raw = copy.deepcopy(itin["days"])
     if itin["rotation"]:
         # The pre-trip page has no rotation matrix yet; give each activity its
@@ -1181,25 +1470,14 @@ def build_confirmed_page_data(b):
         }
         agreement = {"status": "Not Sent", "zohoSignUrl": None, "lastUpdated": None}
 
-    payment_schedule = {
-        "tier": b["payment_tier"],
-        "items": [
-            {"label": "Deposit (due now)", "amount": money(b["deposit_due_now"]), "dueDate": None},
-            {"label": "Payment 2", "amount": money(b["payment2_amount"]),
-             "dueDate": date_pretty(b["payment2_due_date"]) if b["payment2_due_date"] else None},
-            {"label": "Final Payment", "amount": money(b["final_amount"]),
-             "dueDate": date_pretty(b["final_due_date"]) if b["final_due_date"] else None},
-        ],
-        "total": money(b["total_package_price"]),
-        "note": "Generated from REEF Bookings' payment-schedule fields (added 2026-09-03); "
-                "confirm the 50/50 Payment 2 / Final split assumption before treating as final.",
-    }
+    payment_schedule = build_payment_schedule(b)
 
     return {
         "docType": "pretrip",
         "assetDepth": 2,
         "meta": {
             "sampleFlag": False,
+            "stage": derive_stage(b),
             "generatedFrom": b["record_id"],
             "generatedNote": f"Generated by generate_booking_package.py from live Airtable "
                               f"fields on {datetime.utcnow().strftime('%Y-%m-%d')}.",
@@ -1358,16 +1636,18 @@ def resolve_stage(b):
     estimate: it builds the proposal/pretrip page and the lock then reports a
     stage mismatch, so the run is a preview (fails safe)."""
     if b["status"] == "Quoting" and b["approved_stage"] == SHARE_STAGE_ESTIMATE:
-        return STAGE_ESTIMATE
+        return RUN_ESTIMATE
     if b["status"] in PROPOSAL_STATUSES:
-        return STAGE_PROPOSAL
-    return STAGE_PRETRIP
+        return RUN_PROPOSAL
+    return RUN_PRETRIP
 
 
 def check_share_approval(b, stage):
     """Returns a list of reasons this booking is NOT approved to be published
     for the page this run would build (`stage` from resolve_stage()). An empty
     list means approved. See the module docstring (Martha, 2026-09-25)."""
+    if isinstance(stage, bool):   # legacy callers pass is_proposal
+        stage = RUN_PROPOSAL if stage else RUN_PRETRIP
     needed_stage = NEEDED_STAGE[stage]
     problems = []
     if not b["approved_to_share"]:
@@ -1376,12 +1656,17 @@ def check_share_approval(b, stage):
         problems.append(
             f"'Approved to Share — Stage' is {b['approved_stage'] or 'blank'!r}, "
             f"but this run would build the {needed_stage!r} stage")
-    if b["proposal_version"] is not None and b["approved_version"] != b["proposal_version"]:
+    if b["approved_version"] != b["proposal_version"]:
         problems.append(
             f"'Approved for Proposal Version' is {b['approved_version']!r} but the current "
             f"'Proposal Version' is {b['proposal_version']!r} -- a revised proposal needs a fresh approval")
     if not b["approved_by"]:
         problems.append("'Approved to Share By' is blank")
+    if b.get("schedule_changed_after_approval"):
+        problems.append(
+            f"The schedule changed after approval ('Schedule Changed After Approval' = "
+            f"{b['schedule_changed_after_approval']!r}); the approved version no longer matches "
+            "the Airtable schedule -- re-review it and re-approve")
     return problems
 
 
@@ -1481,6 +1766,50 @@ def asana_project_for_booking(booking_type):
     return ASANA_OXP_PROJECT_GID
 
 
+def review_task_marker(b):
+    version = b.get("proposal_version")
+    return f"[{b['record_id']} v{version if version is not None else '-'}]"
+
+
+def find_open_review_task(b, marker):
+    """GID of an open (not completed) review task whose name carries `marker`,
+    or None. Searches the booking's tracking task's subtasks, else the routing
+    project. A search failure returns None (a duplicate beats a lost task)."""
+    parent_gid = b.get("asana_task_id")
+    if parent_gid:
+        url = f"{ASANA_API_ROOT}/tasks/{parent_gid}/subtasks"
+        params = {"opt_fields": "name,completed", "limit": 100}
+    else:
+        url = f"{ASANA_API_ROOT}/projects/{asana_project_for_booking(b['booking_type'])}/tasks"
+        params = {"opt_fields": "name,completed", "completed_since": "now", "limit": 100}
+    try:
+        while True:
+            resp = requests.get(url, headers={"Authorization": f"Bearer {ASANA_API_KEY}"},
+                                params=params, timeout=30)
+            resp.raise_for_status()
+            body = resp.json()
+            for task in body.get("data", []):
+                if marker in (task.get("name") or "") and not task.get("completed"):
+                    return task["gid"]
+            offset = (body.get("next_page") or {}).get("offset")
+            if not offset:
+                return None
+            params = dict(params, offset=offset)
+    except requests.RequestException as exc:
+        print(f"WARNING: could not search Asana for an open review task: {exc}", file=sys.stderr)
+        return None
+
+
+def add_asana_comment(task_gid, text):
+    try:
+        resp = requests.post(f"{ASANA_API_ROOT}/tasks/{task_gid}/stories",
+                             headers={"Authorization": f"Bearer {ASANA_API_KEY}"},
+                             json={"data": {"text": text}}, timeout=30)
+        resp.raise_for_status()
+    except requests.RequestException as exc:
+        print(f"WARNING: could not comment on Asana task {task_gid}: {exc}", file=sys.stderr)
+
+
 def create_review_task(b, page_url, contract_url, preview_reasons=None, attachments=(),
                        stage_key=None):
     """Creates an Asana task gating human review before the generated
@@ -1501,6 +1830,21 @@ def create_review_task(b, page_url, contract_url, preview_reasons=None, attachme
     section for how to create one. If it's not set, this logs a warning
     and returns without failing the rest of the pipeline run.
     """
+    # QA/test records are run through the real publish pipeline on purpose
+    # (see the sampleFlag override in main()), but the review task is a
+    # process gate for a customer send that will never happen for a ZZZ
+    # booking -- every QA run was putting another "review before sending"
+    # task in Rose's queue for a group that does not exist. The page and
+    # contract are still generated exactly as before; only the Asana task
+    # is skipped. Placed at the top of the function, like the sampleFlag
+    # override, so no future call site can reintroduce it.
+    if is_test_org(b["org_name"]):
+        print(
+            f"Skipping Asana review task: {b['org_name']!r} is a test/QA record "
+            f"(no customer send to gate). The page was still generated normally."
+        )
+        return
+
     if not ASANA_API_KEY:
         print(
             "ASANA_API_KEY not set -- skipping review task creation. "
@@ -1516,7 +1860,7 @@ def create_review_task(b, page_url, contract_url, preview_reasons=None, attachme
         stage = NEEDED_STAGE[stage_key] if stage_key else (
             SHARE_STAGE_PROPOSAL if contract_url is None else SHARE_STAGE_PRETRIP)
         name = f"PREVIEW (not published) — review before sharing — {b['org_name']}"
-        if stage_key == STAGE_ESTIMATE:
+        if stage_key == RUN_ESTIMATE:
             name = f"PREVIEW (not published) - Estimate - {b['org_name']}"
         notes = (
             f"Auto-generated by generate_booking_package.py for booking {b['record_id']}.\n\n"
@@ -1527,7 +1871,7 @@ def create_review_task(b, page_url, contract_url, preview_reasons=None, attachme
             + (", plus the attached contract .docx" if contract_url else "")
             + ("). Check the price range, the per-student range, the chaperone policy, and that the "
                "itinerary is labelled as a sample. An Estimate has no Approve button, no contract, "
-               "and no audience views.\n\n" if stage_key == STAGE_ESTIMATE else
+               "and no audience views.\n\n" if stage_key == RUN_ESTIMATE else
                "). Check dates, price, org/contact details, and the day-by-day content.\n"
                "Its last step, Approve & Share, has Preview buttons for the four audience views "
                "(administrator, educator, family, student) -- check each one too.\n\n")
@@ -1545,7 +1889,7 @@ def create_review_task(b, page_url, contract_url, preview_reasons=None, attachme
         notes = (
             f"Auto-generated by generate_booking_package.py for booking {b['record_id']}.\n\n"
             "Review before this goes to the customer:\n"
-            + (f"- Estimate page: {page_url}\n" if stage_key == STAGE_ESTIMATE
+            + (f"- Estimate page: {page_url}\n" if stage_key == RUN_ESTIMATE
                else f"- Proposal/pre-trip page: {page_url}\n")
             + "  (may take a couple of minutes to go live after this task is created)\n"
             + (f"- Contract: {contract_url}\n\n" if contract_url else
@@ -1560,6 +1904,22 @@ def create_review_task(b, page_url, contract_url, preview_reasons=None, attachme
             f"\n\nApproved to share by {b['approved_by']} on {b['approved_date'] or '(no date set)'} "
             f"(stage: {b['approved_stage']}, proposal version: {b['approved_version']})."
         )
+
+    # At most one open review task per booking and Proposal Version: the name
+    # carries a marker, and a re-run (for example a publish after a preview)
+    # adds a comment to the open task instead of creating a second one.
+    marker = review_task_marker(b)
+    name = f"{name} {marker}"
+    existing = find_open_review_task(b, marker)
+    if existing:
+        note = ("Re-run of the publish pipeline: "
+                + ("preview only, still not published. " + "; ".join(preview_reasons) if preview_reasons is not None
+                   else f"published. Page: {page_url}"))
+        add_asana_comment(existing, note)
+        print(f"Open Asana review task {existing} already exists for {marker}; added a comment instead of a new task.")
+        for path in attachments:
+            attach_to_asana(existing, path)
+        return existing
 
     payload = {"data": {"name": name, "notes": notes, "assignee": ASANA_REVIEWER_GID}}
     parent_gid = b.get("asana_task_id")
@@ -1694,7 +2054,7 @@ def build_share_views(b, page_data, is_proposal, page_url):
     rebuilt with build_proposal_data() (no photos) so both stages project
     from one function, not two copies of the booking's details."""
     pd = page_data["proposal"] if is_proposal else build_proposal_data(b)["proposal"]
-    itin = load_itinerary(b["record_id"])
+    itin = load_itinerary(b["record_id"], b)
     share, views = audience_views.build_views(
         b, pd, itin, money, date_pretty, page_url,
         generated_on=date_pretty(datetime.utcnow().strftime("%Y-%m-%d")))
@@ -1710,6 +2070,17 @@ def build_share_views(b, page_data, is_proposal, page_url):
     return {k: audience_views.view_page_data(v, sample) for k, v in views.items()}
 
 
+def cache_busted(shell_html, data_js_path):
+    """Point the shell's data.js at data.js?v=<content hash>. GitHub Pages and browsers
+    cache the plain URL for minutes, so a republish could keep showing the old data.js
+    (ZZZ scenario test, 2026-11-02). A new publish with new content changes the hash,
+    so the page always fetches the matching file. The data.js must already be written."""
+    import hashlib
+    digest = hashlib.sha256(Path(data_js_path).read_bytes()).hexdigest()[:12]
+    return shell_html.replace('<script src="data.js"></script>',
+                              f'<script src="data.js?v={digest}"></script>')
+
+
 def write_share_views(booking_dir, view_data, org_name):
     for key, data in view_data.items():
         d = booking_dir / "share" / key
@@ -1719,8 +2090,8 @@ def write_share_views(booking_dir, view_data, org_name):
                     "Contains ONLY the fields this audience view shows. */\n")
             f.write("window.BOOKING_DATA = " + json.dumps(data, indent=2) + ";\n")
         with open(d / "index.html", "w") as f:
-            f.write(SHARE_PAGE_SHELL_TEMPLATE.format(
-                title=f"{org_name} — {data['view']['title']} — REEF"))
+            f.write(cache_busted(SHARE_PAGE_SHELL_TEMPLATE.format(
+                title=f"{org_name} — {data['view']['title']} — REEF"), d / "data.js"))
         print(f"Wrote {d / 'data.js'}")
 
 
@@ -1745,10 +2116,10 @@ def main():
             "Decide the intended behavior first, then teach this script that rule explicitly."
         )
 
-    slug = slugify(b["org_name"])
+    slug = booking_slug(record_id, b["org_name"])
     stage = resolve_stage(b)
-    is_estimate = stage == STAGE_ESTIMATE
-    is_proposal = stage == STAGE_PROPOSAL
+    is_estimate = stage == RUN_ESTIMATE
+    is_proposal = stage == RUN_PROPOSAL
 
     # Approved-to-Share lock (Martha, 2026-09-25): decided BEFORE anything is
     # written. Unapproved runs write only to a temp folder outside the repo,
@@ -1763,11 +2134,26 @@ def main():
         for r in preview_reasons:
             print(f"  - {r}")
     else:
-        bookings_out, contracts_out = BOOKINGS_OUT_DIR, CONTRACTS_OUT_DIR
+        # Built in a temp folder and validated first; only a clean build is
+        # copied into bookings/ (see promote_build below), so a failed build
+        # can never replace the page that is live.
+        out_root = Path(tempfile.mkdtemp(prefix="reef-build-"))
+        bookings_out, contracts_out = out_root / "bookings", out_root / "contracts"
         print(f"Approved to share by {b['approved_by']} ({b['approved_stage']}) -- publishing.")
 
     bookings_out.mkdir(parents=True, exist_ok=True)
     contracts_out.mkdir(parents=True, exist_ok=True)
+
+    # A publish must never replace a different booking's public page; a
+    # preview writes only to the temp folder, so it just warns.
+    holder = check_slug_available(slug, record_id)
+    if holder:
+        msg = (f"bookings/{slug}/ is already published for booking {holder}, "
+               f"and {record_id} has the same organization name, so it would get the same URL.")
+        if not preview:
+            raise SlugCollision(msg + " Decide how the second booking's URL should differ "
+                                "before publishing; nothing was written.")
+        print(f"WARNING: {msg} It cannot be published as-is.")
 
     booking_dir = bookings_out / slug
     booking_dir.mkdir(exist_ok=True)
@@ -1813,8 +2199,18 @@ def main():
     page_url = f"{PAGES_BASE_URL}/bookings/{slug}/"
     if is_estimate:
         view_data = {}   # an Estimate has no Approve & Share views
+        schedule_airtable.assert_no_tokens(page_data, "estimate page")
     else:
+        b["agreement_payment"] = agreement_payment_terms(b)
+        if derive_stage(b) == STAGE_GET_READY:
+            # strict: an unreadable Checklist Items table fails the build (old page stays live)
+            # instead of publishing a page that shows everything outstanding.
+            b["checklist_state"] = get_ready.fetch_completion_state(record_id, strict=True)
+            b["get_ready"] = get_ready.views_payload(b)
         view_data = build_share_views(b, page_data, is_proposal, page_url)
+        # Never publish a literal {{token}}, on the Airtable path or the JSON path.
+        schedule_airtable.assert_no_tokens(page_data, "booking page")
+        schedule_airtable.assert_no_tokens(view_data, "audience views")
         write_share_views(booking_dir, view_data, b["org_name"])
 
     with open(booking_dir / "data.js", "w") as f:
@@ -1826,17 +2222,23 @@ def main():
                   else f"{b['org_name']} — REEF Proposal" if is_proposal
                   else f"{b['org_name']} — Expedition Packet")
     with open(booking_dir / "index.html", "w") as f:
-        if is_estimate:
-            f.write(ESTIMATE_PAGE_SHELL_TEMPLATE.format(
-                title=page_title, robots=ESTIMATE_PAGE_ROBOTS_META))
-        else:
-            f.write(BOOKING_PAGE_SHELL_TEMPLATE.format(
-                title=page_title,
-                # Real bookings get no robots meta at all (unchanged behavior);
-                # only test/QA records are excluded from search.
-                robots=TEST_PAGE_ROBOTS_META if is_test_org(b["org_name"]) else "",
-            ))
+        shell = (ESTIMATE_PAGE_SHELL_TEMPLATE.format(title=page_title, robots=ESTIMATE_PAGE_ROBOTS_META)
+                 if is_estimate else BOOKING_PAGE_SHELL_TEMPLATE.format(
+                     title=page_title,
+                     # Real bookings get no robots meta at all (unchanged behavior);
+                     # only test/QA records are excluded from search.
+                     robots=TEST_PAGE_ROBOTS_META if is_test_org(b["org_name"]) else ""))
+        f.write(cache_busted(shell, booking_dir / "data.js"))
     print(f"Wrote {booking_dir / 'index.html'}")
+
+    # version.json: the page compares its own version with this file and shows
+    # "being updated" if Airtable has moved on (render.js checkProposalVersion).
+    # A publish writes the version it just built; write_version_marker.py
+    # raises it when Airtable's Proposal Version changes later.
+    with open(booking_dir / "version.json", "w") as f:
+        json.dump({"bookingId": record_id, "currentVersion": b["proposal_version"] or 1,
+                   "updatedAt": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")}, f, indent=2)
+        f.write("\n")
 
     # Contracts are gated on commitment, not just on which page was built.
     # Everything this script writes is published to the public Pages site,
@@ -1868,9 +2270,33 @@ def main():
                            stage_key=stage)
         print(f"PREVIEW ONLY -- wrote {preview_html} (attached to the Asana review task). "
               "Nothing under bookings/ or contracts/ was changed, so nothing will be published.")
+        publish_support.write_result(
+            RESULT_FILE, status="blocked", record_id=record_id, proposal_version=b["proposal_version"],
+            page_url=page_url,
+            message="Not published, the previous version (if any) is still live: " + "; ".join(preview_reasons))
+        sys.exit(3)
     else:
+        problems = publish_support.validate_build(booking_dir, is_proposal)
+        if problems:
+            raise BuildValidationError(
+                "The build failed validation, so nothing was published: " + "; ".join(problems))
+        promote_build(booking_dir, slug, contract_path if contract_url else None)
         create_review_task(b, page_url, contract_url, stage_key=stage)
+        publish_support.write_result(
+            RESULT_FILE, status="published", record_id=record_id, proposal_version=b["proposal_version"],
+            page_url=page_url, message="")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as exc:
+        # The workflow's last step reads this to write the failure onto the
+        # Bookings record; the previous page stays live because nothing was
+        # copied into bookings/.
+        publish_support.write_result(
+            RESULT_FILE, status="failed", record_id=sys.argv[1] if len(sys.argv) > 1 else "",
+            message=f"{type(exc).__name__}: {exc}"[:3500])
+        raise

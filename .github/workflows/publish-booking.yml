@@ -1,12 +1,19 @@
 name: Publish Booking Package (manual)
 
-# Manual trigger only, on purpose (Stage 1 of the roadmap in
-# OXP_System_Connection_Roadmap_2026-09-03.md). A staff person runs this
-# from the Actions tab with a booking's Airtable record ID after a status
-# change, and reviews the diff before it goes live. Once this is proven
-# reliable, Stage 2 can swap the trigger below for `repository_dispatch`
-# fired by the Airtable "Ready to Move Forward" automation instead of a
-# human clicking a button -- no other part of this file needs to change.
+# Triggers (2026-10-31):
+#   workflow_dispatch   a staff person runs this from the Actions tab with a
+#                       Bookings record ID (input name unchanged:
+#                       booking_record_id).
+#   repository_dispatch event_type "publish-booking" with
+#                       client_payload.record_id -- fired by the Airtable
+#                       automation when Rose checks "Publish Requested".
+#
+# The generator only publishes when the booking is Approved to Share for the
+# CURRENT Proposal Version. It builds into a temp folder, validates, and only
+# then copies into bookings/, so a failed build never replaces the live page.
+# The last step records the outcome on the Bookings record (Last Publish
+# Result / Message / Published Proposal Version / Last Published At) and
+# clears Publish Requested, whether the run succeeded or failed.
 on:
   workflow_dispatch:
     inputs:
@@ -14,14 +21,37 @@ on:
         description: "Airtable Bookings record ID, e.g. rec4YP9ruVPOD90US"
         required: true
         type: string
+  repository_dispatch:
+    types: [publish-booking]
+
+# One publish per booking at a time: a second click queues behind the first
+# instead of double-publishing.
+concurrency:
+  group: publish-${{ github.event.inputs.booking_record_id || github.event.client_payload.record_id }}
+  cancel-in-progress: false
 
 jobs:
   generate-and-publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
       actions: write
+    env:
+      # Passed through the environment (never interpolated into shell text) and
+      # validated below, so a crafted payload cannot inject commands.
+      RECORD_ID: ${{ github.event.inputs.booking_record_id || github.event.client_payload.record_id }}
     steps:
+      - name: Validate record ID
+        run: |
+          # The runner context is not available in job-level env, so the result
+          # file path is exported here for every later step.
+          echo "RESULT_FILE=$RUNNER_TEMP/publish-result.json" >> "$GITHUB_ENV"
+          if [[ ! "$RECORD_ID" =~ ^rec[A-Za-z0-9]{14}$ ]]; then
+            echo "::error::'$RECORD_ID' is not an Airtable record ID (expected rec + 14 characters)."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
@@ -31,28 +61,20 @@ jobs:
       - name: Install dependencies
         run: pip install requests python-docx
 
-      # Approved-to-Share lock (Martha, 2026-09-25): the script publishes ONLY
-      # if the booking is approved in Airtable (Approved to Share + matching
-      # Stage + Proposal Version + Approved By). Otherwise it builds an internal
-      # preview, attaches it to an Asana review task, and writes nothing under
-      # bookings/ or contracts/ -- so the commit step below finds no changes
-      # and nothing is pushed or deployed. See generate_booking_package.py.
+      # Approved-to-Share lock (Martha, 2026-09-25): publishes ONLY if the
+      # booking is approved in Airtable (Approved to Share + matching Stage +
+      # Approved for Proposal Version equal to Proposal Version + Approved By).
+      # Otherwise it builds an internal preview, attaches it to an Asana review
+      # task, writes nothing under bookings/ or contracts/, and exits non-zero.
       - name: Generate page + contract (publishes only if Approved to Share)
+        id: gen
         env:
-          # Repo secret -- a read-only Airtable personal access token
-          # scoped to the REEF Bookings | PILOT base (app3FIECuG8iQr7kY)
-          # and the EPO base (appCK2qlT3WHdhYKd). See HANDOFF_INSTRUCTIONS.md
-          # for how to create this and add it as a secret.
+          # Read-only Airtable personal access token (REEF Bookings | PILOT
+          # base app3FIECuG8iQr7kY and the EPO base appCK2qlT3WHdhYKd).
           AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
-          # Repo secret -- an Asana Personal Access Token, used only to
-          # create the post-generation review task for Rose (Martha,
-          # 2026-09-04). See README.md's "Setting up the ASANA_API_KEY
-          # secret" section for how to create one. If this secret is
-          # unset, generate_booking_package.py logs a warning and skips
-          # creating the review task -- it does not fail the run.
+          # Asana PAT, used only for the review task for Rose. Unset = skipped.
           ASANA_API_KEY: ${{ secrets.ASANA_API_KEY }}
-        run: |
-          python pipeline/generate_booking_package.py "${{ github.event.inputs.booking_record_id }}"
+        run: python pipeline/generate_booking_package.py "$RECORD_ID"
 
       - name: Commit generated files
         id: commit
@@ -63,20 +85,45 @@ jobs:
           if git diff --cached --quiet; then
             echo "pushed=false" >> "$GITHUB_OUTPUT"
           else
-            git commit -m "Publish booking package for ${{ github.event.inputs.booking_record_id }}"
-            git push
+            git commit -m "Publish booking package for $RECORD_ID"
+            # Other bookings may publish at the same time; rebase and retry.
+            ok=0
+            for i in 1 2 3; do
+              if git pull --rebase -q origin main && git push; then ok=1; break; fi
+              sleep $((i * 3))
+            done
+            [ "$ok" = 1 ] || { echo "::error::Could not push to main."; exit 1; }
             echo "pushed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # A push made with the workflow's own GITHUB_TOKEN does NOT trigger
-      # other workflows (GitHub blocks that to prevent infinite loops), so
-      # deploy.yml's `on: push` never fires for the commit above -- the new
-      # booking page would sit on `main` without ever going live on Pages.
-      # Dispatching it explicitly here (an intentional API call, not an
-      # automatic event) works around that and keeps Pages in sync with
-      # every publish.
-      - name: Trigger Pages deploy
+      # A push made with the workflow's own GITHUB_TOKEN does NOT trigger other
+      # workflows, so deploy.yml is dispatched explicitly -- and then watched,
+      # so the result written to Airtable means "the page is live", not just
+      # "the commit was pushed".
+      - name: Trigger Pages deploy and wait for it
+        id: deploy
         if: steps.commit.outputs.pushed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run deploy.yml --ref main
+        run: |
+          url=$(gh workflow run deploy.yml --ref main 2>&1 | grep -o 'https://[^ ]*/runs/[0-9]*' | tail -1 || true)
+          if [ -n "$url" ]; then
+            id="${url##*/}"
+          else
+            sleep 20
+            id=$(gh run list --workflow deploy.yml --limit 1 --json databaseId -q '.[0].databaseId')
+          fi
+          echo "Watching deploy run $id"
+          gh run watch "$id" --exit-status
+
+      # Always runs, success or failure. Never fails the workflow.
+      - name: Record the result on the Bookings record
+        if: always()
+        env:
+          GENERATE_OUTCOME: ${{ steps.gen.outcome }}
+          COMMIT_OUTCOME: ${{ steps.commit.outcome }}
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
+          PUSHED: ${{ steps.commit.outputs.pushed }}
+          # Write-scoped token, kept separate from the read-only AIRTABLE_API_KEY.
+          AIRTABLE_WRITE_KEY: ${{ secrets.AIRTABLE_WRITE_KEY }}
+        run: python pipeline/airtable_writeback.py
