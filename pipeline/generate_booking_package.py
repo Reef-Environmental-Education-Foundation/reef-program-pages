@@ -2192,6 +2192,10 @@ def main():
     # branch above can leave a ZZZ record unbannered.
     if is_test_org(b["org_name"]):
         page_data.setdefault("meta", {})["sampleFlag"] = True
+    if is_estimate:
+        # Step 3 guard, re-run on the final payload (after the sampleFlag override)
+        # and before anything below is written, in preview and publish runs alike.
+        estimate_view.assert_estimate_safe(page_data)
 
     # Approve & Share audience views (2026-09-28). Built from the same facts,
     # written to share/<view>/ with per-view data files, and gated by the

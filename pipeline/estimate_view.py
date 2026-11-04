@@ -195,7 +195,7 @@ def build_estimate_data(b, itinerary_days, defaults=None, is_sample=False):
     if not is_sample and b.get("org_name"):
         subject += quote(f" — {b['org_name']}")
 
-    return {
+    payload = {
         "docType": "estimate",
         "assetDepth": 2,
         "meta": {
@@ -231,3 +231,101 @@ def build_estimate_data(b, itinerary_days, defaults=None, is_sample=False):
             "mailto": f"mailto:{contact['email']}?subject={subject}",
         },
     }
+    return assert_estimate_safe(payload)
+
+
+# ---------------------------------------------------------------- privacy guard (Step 3)
+#
+# GitHub Pages and this repo are public, so the guard runs at BUILD time, after
+# the payload is assembled and before anything is written, in preview AND
+# publish runs. It fails the run (nothing is written, the old page stays live)
+# if anything internal could reach an estimate page. Three independent checks:
+#
+#   1. STRUCTURE: every key must be on the allowlist below. A new or injected
+#      field (named margin or anything else) fails, so safety does not depend
+#      on guessing the right bad word.
+#   2. DENYLIST: no key or string may mention margin, staff labor, campus cost,
+#      net income, a margin summary, vendor/direct cost, or the uplift (the 5%
+#      uplift label or a bare 5% figure).
+#   3. MONEY AND CONTACT: the only $ amounts allowed are the four price labels;
+#      the itinerary may carry no $ at all; the only email address allowed is
+#      REEF's (no school contacts).
+
+class EstimatePrivacyError(EstimateContentError):
+    """Raised when internal data could reach a public estimate page."""
+
+
+_ITINERARY_KEYS = {
+    "note": None,
+    "days": {"dayNumber": None, "totalDays": None, "title": None, "theme": None,
+             "blocks": {"time": None, "tag": None, "title": None, "description": None}},
+}
+ALLOWED_SCHEMA = {
+    "docType": None, "assetDepth": None,
+    "meta": {"sampleFlag": None, "sampleFlagText": None, "robots": None, "generatedFrom": None},
+    "org": {"displayName": None},
+    "group": {"students": None, "chaperones": None, "freeChaperones": None},
+    "itinerary": _ITINERARY_KEYS,
+    "estimate": {"ribbon": None, "low": None, "high": None, "lowLabel": None, "highLabel": None,
+                 "perPaidStudentLow": None, "perPaidStudentHigh": None,
+                 "perPaidStudentLowLabel": None, "perPaidStudentHighLabel": None,
+                 "paidSpaces": None, "chaperonePolicy": None, "changes": None, "notIncluded": None},
+    "cta": {"label": None, "mailto": None},
+}
+DENY_RE = re.compile(
+    r"margin|net[\s_-]*income|staff[\s_-]*(labor|labour|cost|hours)|campus[\s_-]*(cost|facility[\s_-]*fee)"
+    r"|vendor[\s_-]*cost|direct[\s_-]*cost|program[\s_-]*cost|uplift|markup|mark-up"
+    r"|(?<![\d.])5(\.0+)?\s?%", re.I)
+MONEY_RE = re.compile(r"\$\s?\d")
+EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
+PRICE_LABEL_KEYS = ("lowLabel", "highLabel", "perPaidStudentLowLabel", "perPaidStudentHighLabel")
+
+
+def _walk(node, schema, path, problems):
+    if isinstance(node, dict):
+        if not isinstance(schema, dict):
+            problems.append(f"{path or 'root'}: unexpected object")
+            return
+        for key, val in node.items():
+            here = f"{path}.{key}" if path else key
+            if key not in schema:
+                problems.append(f"{here}: field is not on the estimate allowlist")
+                continue
+            if DENY_RE.search(key):
+                problems.append(f"{here}: field name matches the internal-data denylist")
+            _walk(val, schema[key], here, problems)
+    elif isinstance(node, list):
+        for i, item in enumerate(node):
+            _walk(item, schema, f"{path}[{i}]", problems)
+    # scalars: nothing structural to check here
+
+
+def _strings(node, path=""):
+    if isinstance(node, dict):
+        for k, v in node.items():
+            yield from _strings(v, f"{path}.{k}" if path else k)
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            yield from _strings(v, f"{path}[{i}]")
+    elif isinstance(node, str):
+        yield path, node
+
+
+def assert_estimate_safe(data):
+    """Raises EstimatePrivacyError listing every problem; returns data if clean."""
+    problems = []
+    _walk(data, ALLOWED_SCHEMA, "", problems)
+    price_strings = {(data.get("estimate") or {}).get(k) for k in PRICE_LABEL_KEYS}
+    for path, text in _strings(data):
+        hit = DENY_RE.search(text)
+        if hit:
+            problems.append(f"{path}: text mentions {hit.group(0)!r}")
+        if MONEY_RE.search(text) and text not in price_strings:
+            problems.append(f"{path}: contains a $ amount that is not one of the four price labels")
+        for email in EMAIL_RE.findall(text):
+            if not email.lower().endswith("@reef.org"):
+                problems.append(f"{path}: contains a non-REEF email address")
+    if problems:
+        raise EstimatePrivacyError(
+            "Estimate failed the privacy guard, so nothing was written: " + "; ".join(problems))
+    return data
