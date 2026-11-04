@@ -9,56 +9,76 @@ window.BOOKING_DATA = {
     "status": "draft",
     "statusLabel": "Draft",
     "version": "v1",
-    "lastUpdated": "Oct 30, 2026",
+    "lastUpdated": "Nov 4, 2026",
     "orgName": "The Benjamin School",
     "dateLine": "April 15\u201316, 2027",
-    "hours": null,
+    "hours": "9:00 AM \u2013 5:00 PM",
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A two-day marine science program for 90 middle school students in Key Largo, with groups of 30 rotating through reef snorkeling and fish surveys, mangrove kayaking, and a lionfish dissection before a day of coral ecology and citizen science.",
+    "summary": "A two-day marine science program for 90 middle school students in Key Largo, with groups of 30 rotating through reef snorkeling and fish surveys, kayaking at Pennekamp (Mangrove Tour), and a lionfish dissection before a day of coral ecology and citizen science.",
     "scheduleDraft": true,
     "view": "family",
     "location": "Key Largo, Florida",
-    "intro": "A two-day marine science program for 90 middle school students in Key Largo, with groups of 30 rotating through reef snorkeling and fish surveys, mangrove kayaking, and a lionfish dissection before a day of coral ecology and citizen science.",
+    "intro": "A two-day marine science program for 90 middle school students in Key Largo, with groups of 30 rotating through reef snorkeling and fish surveys, kayaking at Pennekamp (Mangrove Tour), and a lionfish dissection before a day of coral ecology and citizen science.",
     "experiences": [
       {
-        "title": "Arrival & Welcome",
-        "text": "Your group arrives in Key Largo. REEF educators welcome the group, preview the day, and introduce the three groups of 30 students.",
-        "color": null
+        "title": "Coral Reef Boat Snorkel",
+        "text": "Students travel by boat to snorkel the Florida Keys' coral reef, practice fish identification, and collect observations that connect to REEF's Volunteer Fish Survey Project.",
+        "color": 0
       },
       {
-        "title": "Rotation 1: Reef, Mangroves & Lionfish",
-        "text": "Each group of 30 students takes part in one of three stations: reef snorkel and fish surveys, mangrove kayaking, or a lionfish lesson and dissection. Over three rotations, every group visits all three stations. Station order is confirmed once boat times are set.",
-        "color": null
+        "title": "Mangrove Kayak Tour",
+        "text": "Students paddle double kayaks through Pennekamp's mangrove channels, learning how mangroves shelter young fish and protect the coast.",
+        "color": 1
       },
       {
-        "title": "Rotation 2: Reef, Mangroves & Lionfish",
-        "text": "Each group of 30 students takes part in one of three stations: reef snorkel and fish surveys, mangrove kayaking, or a lionfish lesson and dissection. Over three rotations, every group visits all three stations. Station order is confirmed once boat times are set.",
-        "color": null
+        "title": "Lionfish Lesson & Dissection",
+        "text": "Students investigate invasive lionfish through a guided dissection, looking at anatomy and adaptations and learning why lionfish are a conservation challenge for Florida Keys reefs.",
+        "color": 3
       },
       {
-        "title": "Rotation 3: Reef, Mangroves & Lionfish",
-        "text": "Each group of 30 students takes part in one of three stations: reef snorkel and fish surveys, mangrove kayaking, or a lionfish lesson and dissection. Over three rotations, every group visits all three stations. Station order is confirmed once boat times are set.",
-        "color": null
+        "title": "Marine Ecology",
+        "text": "A REEF educator-led program on how reef, seagrass, and mangrove communities work and how the species within them depend on one another.",
+        "color": 4
       },
       {
-        "title": "Coral Reef Ecology",
-        "text": "A Florida Keys coral lesson on how reefs are built, how the organisms on them depend on each other, and how coral restoration helps reefs recover.",
-        "color": null
+        "title": "Citizen Science & Fish Identification",
+        "text": "Students learn how REEF's volunteer divers and snorkelers identify fish and record what they see, then practice the same identification and survey skills used in REEF's Volunteer Fish Survey Project.",
+        "color": 5
       },
       {
-        "title": "Fish ID & Seine Netting",
-        "text": "Students build fish identification skills and use seine netting to sample and identify fish up close.",
-        "color": null
+        "title": "Beach Time & Rinse-Off",
+        "text": "Time to relax at the beach, rinse off at the park showers, and get ready for the ride back.",
+        "color": 0
       },
       {
-        "title": "Citizen Science & the Volunteer Fish Survey Project",
-        "text": "Students learn how REEF's volunteer divers and snorkelers record the fish they see, and why that data matters to scientists and reef managers. They practice the survey method they will use on the reef.",
-        "color": null
+        "title": "Mangrove Kayak Tour",
+        "text": "Students paddle double kayaks through Pennekamp's mangrove channels, learning how mangroves shelter young fish and protect the coast.",
+        "color": 1
       },
       {
-        "title": "Departure",
-        "text": "Your group departs. Lunch is not included in this proposal.",
-        "color": null
+        "title": "Citizen Science & Fish Identification",
+        "text": "Students learn how REEF's volunteer divers and snorkelers identify fish and record what they see, then practice the same identification and survey skills used in REEF's Volunteer Fish Survey Project.",
+        "color": 5
+      },
+      {
+        "title": "Coral Reef Boat Snorkel",
+        "text": "Students travel by boat to snorkel the Florida Keys' coral reef, practice fish identification, and collect observations that connect to REEF's Volunteer Fish Survey Project.",
+        "color": 0
+      },
+      {
+        "title": "Marine Ecology",
+        "text": "A REEF educator-led program on how reef, seagrass, and mangrove communities work and how the species within them depend on one another.",
+        "color": 4
+      },
+      {
+        "title": "Lionfish Lesson & Dissection",
+        "text": "Students investigate invasive lionfish through a guided dissection, looking at anatomy and adaptations and learning why lionfish are a conservation challenge for Florida Keys reefs.",
+        "color": 3
+      },
+      {
+        "title": "Beach Time & Rinse-Off",
+        "text": "Time to relax at the beach, rinse off at the park showers, and get ready for the ride back.",
+        "color": 0
       }
     ],
     "whyItMatters": [
@@ -67,44 +87,16 @@ window.BOOKING_DATA = {
     ],
     "schedule": [
       {
-        "time": "9:00 AM\u201310:00 AM",
-        "label": "Arrival & Welcome"
+        "time": "9:00 AM",
+        "label": "Program begins. Students work in 3 small groups (cohorts) that rotate between activities."
       },
       {
-        "time": "10:00 AM\u201312:00 PM",
-        "label": "Rotation 1: Reef, Mangroves & Lionfish"
+        "time": "12:00 PM\u201312:45 PM",
+        "label": "Picnic lunch. Each cohort has its own lunch time in this window."
       },
       {
-        "time": "12:00 PM\u20131:00 PM",
-        "label": "Lunch (on your own)"
-      },
-      {
-        "time": "1:00 PM\u20133:00 PM",
-        "label": "Rotation 2: Reef, Mangroves & Lionfish"
-      },
-      {
-        "time": "3:15 PM\u20135:00 PM",
-        "label": "Rotation 3: Reef, Mangroves & Lionfish"
-      },
-      {
-        "time": "9:00 AM\u201310:30 AM",
-        "label": "Coral Reef Ecology"
-      },
-      {
-        "time": "10:45 AM\u201312:00 PM",
-        "label": "Fish ID & Seine Netting"
-      },
-      {
-        "time": "12:00 PM\u20131:00 PM",
-        "label": "Lunch (on your own)"
-      },
-      {
-        "time": "1:00 PM\u20132:30 PM",
-        "label": "Citizen Science & the Volunteer Fish Survey Project"
-      },
-      {
-        "time": "2:30 PM",
-        "label": "Departure"
+        "time": "5:00 PM",
+        "label": "Program ends."
       }
     ],
     "bring": [],

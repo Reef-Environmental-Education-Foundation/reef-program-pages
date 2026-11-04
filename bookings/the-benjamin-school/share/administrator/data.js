@@ -9,15 +9,15 @@ window.BOOKING_DATA = {
     "status": "draft",
     "statusLabel": "Draft",
     "version": "v1",
-    "lastUpdated": "Oct 30, 2026",
+    "lastUpdated": "Nov 4, 2026",
     "orgName": "The Benjamin School",
     "dateLine": "April 15\u201316, 2027",
-    "hours": null,
+    "hours": "9:00 AM \u2013 5:00 PM",
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A two-day marine science program for 90 middle school students in Key Largo, with groups of 30 rotating through reef snorkeling and fish surveys, mangrove kayaking, and a lionfish dissection before a day of coral ecology and citizen science.",
+    "summary": "A two-day marine science program for 90 middle school students in Key Largo, with groups of 30 rotating through reef snorkeling and fish surveys, kayaking at Pennekamp (Mangrove Tour), and a lionfish dissection before a day of coral ecology and citizen science.",
     "scheduleDraft": true,
     "view": "administrator",
-    "purpose": "A two-day marine science program for 90 middle school students in Key Largo, with groups of 30 rotating through reef snorkeling and fish surveys, mangrove kayaking, and a lionfish dissection before a day of coral ecology and citizen science.",
+    "purpose": "A two-day marine science program for 90 middle school students in Key Largo, with groups of 30 rotating through reef snorkeling and fish surveys, kayaking at Pennekamp (Mangrove Tour), and a lionfish dissection before a day of coral ecology and citizen science.",
     "value": [
       {
         "title": "Real citizen science, not a demo",
@@ -35,11 +35,11 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Group Size",
-        "v": "90 students + 14 chaperones"
+        "v": "90 students + 10 chaperones"
       },
       {
-        "k": "Length",
-        "v": "2 days"
+        "k": "Program Hours",
+        "v": "9:00 AM \u2013 5:00 PM"
       },
       {
         "k": "Location",
@@ -47,56 +47,128 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Format",
-        "v": "2-day itinerary",
+        "v": "Three cohorts rotating through five hands-on experiences",
         "wide": true
       }
     ],
     "counts": {
       "students": 90,
-      "chaperones": 14
+      "chaperones": 10
     },
-    "scheduleFormat": "standard",
-    "cohortSchedule": null,
+    "scheduleFormat": "rotation",
+    "cohortSchedule": [
+      {
+        "cohort": "Cohort A",
+        "items": [
+          {
+            "time": "Day 1 09:30-12:00",
+            "name": "Snorkel"
+          },
+          {
+            "time": "Day 1 12:00-12:45",
+            "name": "Lunch"
+          },
+          {
+            "time": "Day 1 12:45-14:00",
+            "name": "Lionfish"
+          },
+          {
+            "time": "Day 1 14:00-15:15",
+            "name": "Fish ID"
+          },
+          {
+            "time": "Day 2 09:30-12:00",
+            "name": "Kayak"
+          },
+          {
+            "time": "Day 2 12:00-12:45",
+            "name": "Lunch"
+          },
+          {
+            "time": "Day 2 12:45-14:00",
+            "name": "Ecology"
+          }
+        ]
+      },
+      {
+        "cohort": "Cohort B",
+        "items": [
+          {
+            "time": "Day 1 09:30-12:00",
+            "name": "Snorkel"
+          },
+          {
+            "time": "Day 1 12:00-12:45",
+            "name": "Lunch"
+          },
+          {
+            "time": "Day 1 12:45-14:00",
+            "name": "Ecology"
+          },
+          {
+            "time": "Day 1 14:00-15:15",
+            "name": "Lionfish"
+          },
+          {
+            "time": "Day 2 09:30-10:45",
+            "name": "Fish ID"
+          },
+          {
+            "time": "Day 2 12:00-12:45",
+            "name": "Lunch"
+          },
+          {
+            "time": "Day 2 12:45-15:15",
+            "name": "Kayak"
+          }
+        ]
+      },
+      {
+        "cohort": "Cohort C",
+        "items": [
+          {
+            "time": "Day 1 09:30-12:00",
+            "name": "Kayak"
+          },
+          {
+            "time": "Day 1 12:00-12:45",
+            "name": "Lunch"
+          },
+          {
+            "time": "Day 1 12:45-14:00",
+            "name": "Fish ID"
+          },
+          {
+            "time": "Day 1 14:00-15:15",
+            "name": "Ecology"
+          },
+          {
+            "time": "Day 2 09:30-12:00",
+            "name": "Snorkel"
+          },
+          {
+            "time": "Day 2 12:00-12:45",
+            "name": "Lunch"
+          },
+          {
+            "time": "Day 2 12:45-14:00",
+            "name": "Lionfish"
+          }
+        ]
+      }
+    ],
     "simpleSchedule": [
       {
-        "time": "9:00 AM\u201310:00 AM",
-        "label": "Arrival & Welcome"
+        "time": "9:00 AM",
+        "label": "Program begins. Students work in 3 small groups (cohorts) that rotate between activities."
       },
       {
-        "time": "10:00 AM\u201312:00 PM",
-        "label": "Rotation 1: Reef, Mangroves & Lionfish"
+        "time": "12:00 PM\u201312:45 PM",
+        "label": "Picnic lunch. Each cohort has its own lunch time in this window."
       },
       {
-        "time": "12:00 PM\u20131:00 PM",
-        "label": "Lunch (on your own)"
-      },
-      {
-        "time": "1:00 PM\u20133:00 PM",
-        "label": "Rotation 2: Reef, Mangroves & Lionfish"
-      },
-      {
-        "time": "3:15 PM\u20135:00 PM",
-        "label": "Rotation 3: Reef, Mangroves & Lionfish"
-      },
-      {
-        "time": "9:00 AM\u201310:30 AM",
-        "label": "Coral Reef Ecology"
-      },
-      {
-        "time": "10:45 AM\u201312:00 PM",
-        "label": "Fish ID & Seine Netting"
-      },
-      {
-        "time": "12:00 PM\u20131:00 PM",
-        "label": "Lunch (on your own)"
-      },
-      {
-        "time": "1:00 PM\u20132:30 PM",
-        "label": "Citizen Science & the Volunteer Fish Survey Project"
-      },
-      {
-        "time": "2:30 PM",
-        "label": "Departure"
+        "time": "5:00 PM",
+        "label": "Program ends."
       }
     ],
     "outcomes": [
@@ -104,42 +176,48 @@ window.BOOKING_DATA = {
       "Explore a mangrove ecosystem by kayak.",
       "Investigate invasive lionfish through a guided dissection.",
       "Explain how coral reefs function as connected ecosystems.",
-      "Practice fish identification and sample fish with seine nets.",
+      "Practice the fish identification and survey skills REEF's citizen scientists use.",
       "Understand how REEF fish survey data is collected and used."
     ],
     "responsibilities": [
       {
         "area": "Supervision",
         "text": "Teachers and adult chaperones accompanying the group are directly responsible for students at all times, including during free time and meals. An adult chaperone must accompany student groups with participants under 18."
+      },
+      {
+        "area": "Activity operators",
+        "text": "Boat and park activities are run by independent operators who follow their own safety protocols. The boat captain makes final decisions about schedule changes for weather or safety."
       }
     ],
     "pricing": {
-      "total": "$34,765.50",
-      "perStudent": "$369.85",
-      "chaperones": "10 of your 14 chaperones are complimentary.",
+      "total": "$27,533.10",
+      "perStudent": "$305.92",
+      "chaperones": "All 10 chaperones are complimentary.",
       "note": "Estimated total. REEF sends a revised proposal if anything that affects price changes."
     },
     "included": [
-      "Two days of REEF-led marine science programming for your students and chaperones, organized so your group rotates through three programs in groups of about 30 students",
+      "Two full days of REEF-led marine science programming at John Pennekamp Coral Reef State Park, about 9:00 AM to 5:00 PM each day, organized so your group rotates through the activities in three groups of about 33",
       "Fish identification and citizen science through REEF's Volunteer Fish Survey Project",
       "An invasive species lesson with a lionfish dissection, and a coral reef and marine ecology lesson",
-      "A coral reef boat snorkel with fish surveys, including snorkel gear",
-      "A mangrove kayak tour at John Pennekamp Coral Reef State Park",
+      "A coral reef boat snorkel with fish surveys on a Pennekamp snorkel charter",
+      "A mangrove kayak tour at Pennekamp",
+      "Park entrance fees for your group",
       "Instructional materials and REEF survey supplies for every student"
     ],
     "notIncluded": [
-      "Lodging and meals (not included in this proposal)",
+      "Lodging and meals (your school arranges these directly)",
       "Travel to and from the Florida Keys and ground transportation during your program",
       "Snacks, beverages, and personal expenses"
     ],
     "optional": [
-      "An evening program for your group",
       "Seine netting for fish identification"
     ],
     "paymentTerms": [
-      "A $500.00 deposit holds your group's date.",
-      "Payment 2 of $17,132.75 is due Oct 30, 2026.",
-      "The final payment of $17,132.75 is due Jan 15, 2027.",
+      "A $5,506.62 deposit holds your group's date and is due Nov 18, 2026.",
+      "Payment 2 of $8,259.93 is due Nov 18, 2026.",
+      "The final payment is due Jan 15, 2027. Its amount is the balance under the agreement.",
+      "The agreement guarantees $23,556.10 of program cost for a minimum of 77 paid spaces.",
+      "Payment dates are provisional until the agreement date is set.",
       "A 10% late fee applies to payments more than 14 days past due."
     ],
     "cancellationTerms": [
