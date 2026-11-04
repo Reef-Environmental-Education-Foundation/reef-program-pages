@@ -911,6 +911,13 @@ def load_itinerary(record_id, booking=None):
 #   shared (optional) [ {station, start, end} ]     whole-group blocks (arrival, welcome)
 #   departure (optional) {time, label, note}
 #   notes (optional) [string]                       customer-relevant logistics only
+#   days (optional) [ {day, label, startTime, endTime, arrival?, departure?} ]
+#                             MULTI-DAY rotation (added 2026-11-04): the same cohort
+#                             letters repeat every day; one grid is drawn per entry.
+#                             Every assignment / shared row then carries "day" (1-based);
+#                             a row without "day" is day 1. Each day has its own window
+#                             (startTime/endTime), validated per day. Without "days" the
+#                             rotation is the single-day shape above, unchanged.
 #
 # Gaps between a cohort's assignments render as transition time. Overlaps,
 # unknown ids and times outside the window fail loudly here rather than
@@ -949,6 +956,15 @@ def validate_rotation(rot, record_id):
         start, end = _minutes(rot["startTime"]), _minutes(rot["endTime"])
     except (KeyError, ValueError):
         raise InvalidRotation(f"{record_id}: rotation needs startTime and endTime as HH:MM")
+    # Multi-day rotations carry a window per day; a day without one uses the
+    # overall window. Single-day rotations have no "days" and behave as before.
+    windows = {}
+    for d in rot.get("days") or []:
+        try:
+            windows[d["day"]] = (_minutes(d["startTime"]), _minutes(d["endTime"]),
+                                 d["startTime"], d["endTime"])
+        except (KeyError, ValueError):
+            problems.append(f"day {d.get('day')!r} needs day, startTime and endTime as HH:MM")
     cohorts = {c["id"] for c in rot.get("cohorts") or []}
     stations = {s["id"] for s in rot.get("stations") or []}
     if not cohorts:
@@ -957,52 +973,64 @@ def validate_rotation(rot, record_id):
         problems.append("no stations")
     by_cohort = {}
     for a in (rot.get("assignments") or []) + [dict(x, cohort="*") for x in rot.get("shared") or []]:
+        day = a.get("day", 1)
+        w_start, w_end, w_start_s, w_end_s = windows.get(day, (start, end, rot["startTime"], rot["endTime"]))
+        where = f"day {day} " if windows else ""
         if a["cohort"] != "*" and a["cohort"] not in cohorts:
             problems.append(f"assignment for unknown cohort {a['cohort']!r}")
         if a["station"] not in stations:
             problems.append(f"assignment for unknown station {a['station']!r}")
         s, e = _minutes(a["start"]), _minutes(a["end"])
-        if not (start <= s < e <= end):
-            problems.append(f"{a['cohort']} {a['station']} {a['start']}-{a['end']} is outside "
-                            f"{rot['startTime']}-{rot['endTime']} or ends before it starts")
+        if not (w_start <= s < e <= w_end):
+            problems.append(f"{where}{a['cohort']} {a['station']} {a['start']}-{a['end']} is outside "
+                            f"{w_start_s}-{w_end_s} or ends before it starts")
         if (s - start) % slot or (e - start) % slot:
-            problems.append(f"{a['cohort']} {a['station']} {a['start']}-{a['end']} is not on the "
+            problems.append(f"{where}{a['cohort']} {a['station']} {a['start']}-{a['end']} is not on the "
                             f"{slot}-minute grid")
         targets = cohorts if a["cohort"] == "*" else [a["cohort"]]
         for c in targets:
-            by_cohort.setdefault(c, []).append((s, e, a["station"]))
-    for c, spans in by_cohort.items():
+            by_cohort.setdefault((day, c), []).append((s, e, a["station"]))
+    for (day, c), spans in by_cohort.items():
         spans.sort()
         for (s1, e1, st1), (s2, e2, st2) in zip(spans, spans[1:]):
             if s2 < e1:
-                problems.append(f"cohort {c}: {st1} and {st2} overlap")
+                problems.append(f"cohort {c}{f' on day {day}' if windows else ''}: {st1} and {st2} overlap")
     if problems:
         raise InvalidRotation(f"{record_id}: rotation schedule is inconsistent: " + "; ".join(problems))
 
 
-def station_times(rot):
+def station_times(rot, day=None):
     """{station_id: "Cohorts C & D: 9:00–11:30 AM · Cohorts A & B: 12:15–2:30 PM"}
     Derived from the assignments, so the activity cards below the matrix can
-    never disagree with it. Cohorts sharing an identical time are grouped."""
+    never disagree with it. Cohorts sharing an identical time are grouped.
+
+    day=N limits it to that day of a multi-day rotation (the cards under
+    "Day N"). With day=None on a multi-day rotation every part is prefixed
+    "Day N: ", so a caller that mixes days can't misstate when something runs."""
+    multi = bool(rot.get("days"))
+    prefixed = multi and day is None
     labels = {c["id"]: c["label"] for c in rot["cohorts"]}
     order = [c["id"] for c in rot["cohorts"]]
     out = {}
     for st in rot["stations"]:
         slots = {}
         for a in rot["assignments"]:
-            if a["station"] == st["id"]:
-                slots.setdefault((a["start"], a["end"]), []).append(a["cohort"])
-        parts = []
-        for (s, e), cs in sorted(slots.items(), key=lambda kv: _minutes(kv[0][0])):
+            if a["station"] == st["id"] and (day is None or a.get("day", 1) == day):
+                slots.setdefault((a.get("day", 1), a["start"], a["end"]), []).append(a["cohort"])
+        entries = []
+        for (dy, s, e), cs in slots.items():
             cs = sorted(cs, key=order.index)
             if len(cs) == 1:
                 who = labels[cs[0]]
             else:
                 who = "Cohorts " + ", ".join(cs[:-1]) + " & " + cs[-1]
-            parts.append(f"{who}: {clock_range(s, e)}")
+            entries.append((dy, _minutes(s), f"{who}: {clock_range(s, e)}"))
         for sh in rot.get("shared") or []:
-            if sh["station"] == st["id"]:
-                parts.append(f"All cohorts: {clock_range(sh['start'], sh['end'])}")
+            if sh["station"] == st["id"] and (day is None or sh.get("day", 1) == day):
+                entries.append((sh.get("day", 1), 24 * 60, f"All cohorts: {clock_range(sh['start'], sh['end'])}"))
+        # Single-day: cohort slots by start time, then whole-group blocks (as before).
+        entries.sort(key=lambda t: (t[0], t[1]))
+        parts = [(f"Day {dy}: " if prefixed else "") + text for dy, _, text in entries]
         out[st["id"]] = " · ".join(parts)
     return out
 
@@ -1128,6 +1156,7 @@ def build_proposal_data(b, photos=None):
         hours = itin.get("programHours") or clock_range(rot["startTime"], rot["endTime"])
         times = station_times(rot)
         experiences = [s["name"] for s in rot["stations"] if s.get("type", "experience") == "experience"]
+        times_by_day = {d["day"]: station_times(rot, day=d["day"]) for d in rot.get("days") or []}
         n_cohorts = len(rot["cohorts"])
         rot.setdefault("heading", f"{number_word(n_cohorts)} Cohorts, One Coordinated Day"
                        if n_days == 1 else f"{number_word(n_cohorts)} Cohorts, One Coordinated Schedule")
@@ -1136,7 +1165,7 @@ def build_proposal_data(b, photos=None):
         for d in days:
             for blk in d.get("blocks", []):
                 if blk.get("station"):
-                    blk["when"] = times.get(blk["station"], "")
+                    blk["when"] = times_by_day.get(d["dayNumber"], times).get(blk["station"], "")
                     st = next((s for s in rot["stations"] if s["id"] == blk["station"]), {})
                     blk["color"] = st.get("color")
                     blk["location"] = st.get("location")
@@ -1394,10 +1423,12 @@ def build_confirmed_page_data(b):
         # The pre-trip page has no rotation matrix yet; give each activity its
         # cohort times as text so the confirmed page stays accurate.
         times = station_times(itin["rotation"])
+        times_by_day = {d["day"]: station_times(itin["rotation"], day=d["day"])
+                        for d in itin["rotation"].get("days") or []}
         for d in days_raw:
             for blk in d.get("blocks", []):
                 if blk.get("station") and not blk.get("time"):
-                    blk["time"] = times.get(blk["station"], "")
+                    blk["time"] = times_by_day.get(d["dayNumber"], times).get(blk["station"], "")
     days = []
     for d in days_raw:
         days.append({
