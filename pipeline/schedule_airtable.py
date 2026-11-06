@@ -379,7 +379,9 @@ def _fmt_program_hours(start, end):
 # Rows that are logistics, not "hands-on experiences" (2026-11-06): beach / showers /
 # check-in / free time. They stay on the schedule and in the day cards but are not
 # counted. A whole-group "Night Activity" / "Evening Activity" is a real activity.
-NOT_AN_ACTIVITY_RE = re.compile(r"(?i)\b(beach|showers?|rinse|check-?in|field time|free time)\b")
+# Anchored on how the row STARTS (or "check-in" anywhere), so "Ecology Hike & Beach Time" is
+# still a real activity while "Beach Time & Snorkel Check-In" / "Showers & Field Time" are not.
+NOT_AN_ACTIVITY_RE = re.compile(r"(?i)^\s*(beach|showers?|rinse|free time|field time)\b|\bcheck-?in\b")
 NIGHT_ACTIVITY_RE = re.compile(r"(?i)^\s*(night|evening) activity")
 
 
