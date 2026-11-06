@@ -57,6 +57,62 @@ def assert_no_forbidden_copy(payload, where):
             "(Optional Add-Ons, What's Included, Schedule items) or the itinerary file; nothing was published.")
 
 
+# Draft / internal-review wording must never reach a school (Martha, 2026-11-06). It is shown
+# only in the INTERNAL-PREVIEW build. A page published for a booking that is Approved to Share
+# is scanned for these words; any hit fails the publish and nothing is written to bookings/.
+INTERNAL_WORDING_RE = re.compile(
+    r"(?i)\b(draft|outstanding|tbd|to be confirmed|to be determined|pending|finaliz\w*|rose|martha"
+    # "review" only in its internal-review sense: educational use ("Fish ID Review & Exam",
+    # "students review...") is legitimate and not flagged; the school-facing Next Steps line
+    # "Review each section of this proposal with your team" is allowed below.
+    r"|(?:under|for|pending|awaiting|internal|staff|design|pre-?approval)\s+review\w*"
+    r"|review(?:ed)?\s+(?:by|task|gate|notes?|comments?)|reviewer)\b")
+# The one school-facing sentence that may say "review" (Next Steps).
+ALLOWED_PHRASES = ("Review each section of this proposal with your team",)
+EMAIL_RE = re.compile(r"[\w.+-]+@[\w.-]+")
+
+
+class InternalWording(Exception):
+    """A school-facing page contains draft / internal-review wording."""
+
+
+def _strings(node):
+    if isinstance(node, str):
+        yield node
+    elif isinstance(node, dict):
+        for v in node.values():        # values only: JSON keys are not shown to anyone
+            yield from _strings(v)
+    elif isinstance(node, list):
+        for v in node:
+            yield from _strings(v)
+
+
+def internal_wording_hits(payload, contact_names=()):
+    """Every internal-wording match in the visible strings of `payload` (a str or a
+    JSON-able structure). The booking's own REEF contact (e.g. "Rose Kelly") may be named,
+    since the school is told to call that person; any other staff name may not."""
+    allowed = {n.lower() for name in contact_names if name for n in [name] + name.split()}
+    hits = []
+    for text in _strings(payload):
+        for phrase in ALLOWED_PHRASES:
+            text = text.replace(phrase, "")
+        text = EMAIL_RE.sub("", text)
+        for m in INTERNAL_WORDING_RE.finditer(text):
+            if m.group(0).lower() in allowed:
+                continue
+            hits.append(f"{m.group(0)!r} in {text[max(0, m.start() - 40):m.end() + 40]!r}")
+    return hits
+
+
+def assert_school_facing_clean(payload, where, contact_names=()):
+    hits = internal_wording_hits(payload, contact_names)
+    if hits:
+        raise InternalWording(
+            f"{where} contains draft / internal-review wording, which is shown only in the internal "
+            "preview: " + "; ".join(hits[:8]) + (f" (+{len(hits) - 8} more)" if len(hits) > 8 else "")
+            + ". Fix the source (Airtable field, itinerary file or template); nothing was published.")
+
+
 PROPOSAL_REQUIRED = ("meta", "group", "dates", "roadmap", "cta", "reefContact",
                      "welcome", "glance", "days", "included", "pricing")
 
@@ -70,7 +126,7 @@ def parse_data_js(text):
     return json.loads(text[start:end + 1])
 
 
-def validate_build(booking_dir, is_proposal):
+def validate_build(booking_dir, is_proposal, contact_names=None):
     """Problems found in a freshly built booking folder; an empty list means
     it is safe to publish."""
     booking_dir = Path(booking_dir)
@@ -116,6 +172,13 @@ def validate_build(booking_dir, is_proposal):
         if seine:
             problems.append(f"{path.relative_to(booking_dir)} mentions {seine.group(0)!r} "
                             "(seine netting must never appear customer-facing)")
+    if is_proposal and contact_names is not None:
+        for path in [data_js] + sorted((booking_dir / "share").glob("*/data.js")):
+            try:
+                hits = internal_wording_hits(parse_data_js(path.read_text()), contact_names)
+            except (ValueError, OSError):
+                continue
+            problems += [f"{path.relative_to(booking_dir)}: internal wording {h}" for h in hits[:5]]
     return problems
 
 

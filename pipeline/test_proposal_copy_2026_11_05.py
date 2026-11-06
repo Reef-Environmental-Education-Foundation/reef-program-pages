@@ -127,6 +127,52 @@ class HoursCountAndLegendTest(unittest.TestCase):
         self.assertEqual(locs["MOTE Coral Nursery"], "103800 Overseas Hwy, Key Largo, FL 33037")
 
 
+class SchoolFacingTest(unittest.TestCase):
+    def hits(self, payload, names=("Rose Kelly",)):
+        return ps.internal_wording_hits(payload, names)
+
+    def test_flags_each_internal_word(self):
+        for w in ("Draft Program Schedule", "Outstanding decisions", "TBD", "Times to be confirmed",
+                  "Date to be determined", "Approval pending", "Schedule being finalized",
+                  "Martha will send it", "Waiting on Rose", "Under review by staff"):
+            self.assertTrue(self.hits({"x": w.replace("Waiting on Rose", "Waiting on Rose")}, names=()), w)
+
+    def test_next_steps_review_sentence_is_allowed(self):
+        self.assertEqual(self.hits(["Review each section of this proposal with your team, including the schedule"]), [])
+
+    def test_educational_review_is_not_flagged(self):
+        self.assertEqual(self.hits(["Level 2 Fish ID Review & Exam", "Students review fish identification"]), [])
+
+    def test_booking_contact_may_be_named_but_other_staff_may_not(self):
+        self.assertEqual(self.hits(["Rose Kelly", "Rose prepares your contract", "rose@REEF.org"]), [])
+        self.assertTrue(self.hits(["Martha will send it"]))
+        self.assertTrue(self.hits(["Rose prepares your contract"], names=("Pat Lee",)))
+
+    def test_json_keys_are_not_scanned(self):
+        self.assertEqual(self.hits({"scheduleDraft": False, "pendingNote": ""}), [])
+
+    def test_guard_raises(self):
+        with self.assertRaises(ps.InternalWording):
+            ps.assert_school_facing_clean({"a": "Draft Program Schedule"}, "booking page")
+
+    def test_validate_build_fails_a_published_page_with_draft_wording(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = Path(td)
+            (d / "index.html").write_text("<html></html>")
+            (d / "data.js").write_text('window.BOOKING_DATA = {"docType":"proposal","proposal":{"x":"Draft Program Schedule"}};')
+            self.assertTrue(any("internal wording" in p for p in ps.validate_build(d, True, ["Rose Kelly"])))
+
+    def test_school_facing_share_status_never_says_draft(self):
+        import audience_views as av
+        self.assertEqual(av.share_status("Quoting", None), ("draft", "Draft"))
+        self.assertEqual(av.share_status("Quoting", None, school_facing=True), ("proposal", "Proposal"))
+
+    def test_renderer_only_prints_draft_wording_behind_the_flag(self):
+        js = (REPO / "assets" / "render.js").read_text()
+        self.assertNotIn('statusLabel || "Draft"', js)
+        self.assertIn("V.scheduleDraft ? \"Proposed program · Draft schedule", js)
+
+
 class RenderOnceTest(unittest.TestCase):
     def test_stops_heading_is_written_once_in_each_renderer(self):
         js = (REPO / "assets" / "render.js").read_text()

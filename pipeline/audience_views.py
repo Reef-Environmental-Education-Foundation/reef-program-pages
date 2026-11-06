@@ -85,9 +85,13 @@ def is_schedule_draft(booking_status, contract_status):
     return (booking_status or "") not in CONFIRMED_STATUSES
 
 
-def share_status(booking_status, contract_status):
+def share_status(booking_status, contract_status, school_facing=False):
+    """("confirmed","Confirmed") or the pre-contract state. Internal builds (preview) label the
+    pre-contract state "Draft"; a school-facing build never says Draft (2026-11-06)."""
     confirmed = not is_schedule_draft(booking_status, contract_status)
-    return ("confirmed", "Confirmed") if confirmed else ("draft", "Draft")
+    if confirmed:
+        return ("confirmed", "Confirmed")
+    return ("proposal", "Proposal") if school_facing else ("draft", "Draft")
 
 
 def _validate_roles(roles, record_id):
@@ -240,7 +244,7 @@ def _payment_lines(b, defaults, money):
     return lines + defaults["paymentTerms"]
 
 
-def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on):
+def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on, school_facing=False):
     """Returns (share_block, {view_key: payload}).
 
     b      booking dict from fetch_booking_data()
@@ -250,7 +254,7 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on):
     defaults = load_defaults()
     aud = copy.deepcopy(itin.get("audiences") or {})
     record_id = b["record_id"]
-    status, status_label = share_status(b.get("status"), b.get("agreement_contract_status"))
+    status, status_label = share_status(b.get("status"), b.get("agreement_contract_status"), school_facing)
     version = pd["meta"].get("proposalVersion") or "v1"
     roles = _validate_roles(aud.get("roles"), record_id)
     logistics = aud.get("logistics") or {}
@@ -272,7 +276,7 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on):
         # Draft Program Schedule notice (2026-09-30): the same flag the
         # proposal uses, so every schedule a school hands out (cohort table,
         # rotation matrix, family schedule) carries the draft line too.
-        "scheduleDraft": bool(pd.get("scheduleDraft")),
+        "scheduleDraft": bool(pd.get("scheduleDraft")) and not school_facing,
     }
     def reef_contact():
         return {k: reef.get(k, "") for k in ("name", "role", "email", "phone")}
@@ -317,7 +321,8 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on):
         "paymentTerms": _payment_lines(b, defaults, money),
         "cancellationTerms": defaults["cancellationTerms"],
         "termsNote": defaults["termsNote"],
-        "outstanding": adm.get("outstandingDecisions") or aud.get("outstandingDecisions") or [],
+        # Internal-review wording is for the internal preview only (2026-11-06).
+        "outstanding": [] if school_facing else (adm.get("outstandingDecisions") or aud.get("outstandingDecisions") or []),
         "decisionMakers": [r for r in roles if "decisionMaker" in r["roles"] or r["approvalAuthority"]],
         "approval": {
             "enabled": adm.get("approval", True),
@@ -353,7 +358,7 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on):
         "supervision": (edu.get("supervision") or []) + defaults["supervision"],
         "counts": counts,
         "resources": (edu.get("resources") or []) + defaults["educatorResources"],
-        "remaining": edu.get("remainingDecisions") or aud.get("outstandingDecisions") or [],
+        "remaining": [] if school_facing else (edu.get("remainingDecisions") or aud.get("outstandingDecisions") or []),
         "reefContact": reef_contact(),
     })
 
@@ -403,7 +408,10 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on):
             assert_no_pricing(k, views[k], money_strings,
                               allow_other_amounts=bool((aud.get(k) or {}).get("allowDollarAmounts")))
 
-    copy_ = defaults["viewCopy"]
+    copy_ = copy.deepcopy(defaults["viewCopy"])
+    if school_facing:   # no "Outstanding decisions" promise on a card whose section is omitted
+        for v_ in copy_.values():
+            v_["includes"] = [i for i in v_.get("includes") or [] if not re.search(r"(?i)outstanding|remaining planning", i)]
     share = {
         "status": status,
         "statusLabel": status_label,

@@ -596,7 +596,7 @@
 
   function statusBadge(o) {
     return el("span", { class: "share-status is-" + (o.status || "draft") }, [
-      (o.statusLabel || "Draft") + " · " + (o.version || "v1") + (o.lastUpdated ? " · Updated " + o.lastUpdated : ""),
+      (o.statusLabel || "Proposal") + " · " + (o.version || "v1") + (o.lastUpdated ? " · Updated " + o.lastUpdated : ""),
     ]);
   }
 
@@ -807,7 +807,8 @@
     }
     const isDraft = V.status !== "confirmed";
     pageRoot.appendChild(el("div", { class: "a-status-ribbon is-" + (isDraft ? "draft" : "confirmed") }, [
-      isDraft ? "Proposed program · Draft schedule · Details may change until your contract is confirmed"
+      isDraft ? (V.scheduleDraft ? "Proposed program · Draft schedule · Details may change until your contract is confirmed"
+                                 : "Proposed program · Details may change until your contract is confirmed")
               : "Confirmed program",
     ]));
     const chips = [
@@ -1028,13 +1029,13 @@
       add(sec("GET READY", "Before the trip", [has(V.classroomPrep) ? list(V.classroomPrep) : null]));
     }
 
-    function isDraftLabel(txt) { return isDraft ? "Draft schedule: " + txt.toLowerCase() : txt; }
+    function isDraftLabel(txt) { return V.scheduleDraft ? "Draft schedule: " + txt.toLowerCase() : txt; }
 
     pageRoot.appendChild(main);
     pageRoot.appendChild(el("footer", { id: "site-footer" }, [
       "Reef Environmental Education Foundation · P.O. Box 370246, Key Largo, FL 33037 · " + REEF_FOOTER_PHONE + " · ",
       el("a", { href: "https://www.reef.org" }, ["www.REEF.org"]),
-      el("span", { class: "tag" }, [(V.title || "") + " · " + (V.statusLabel || "Draft") + " " + (V.version || "") + (V.lastUpdated ? " · Updated " + V.lastUpdated : "")]),
+      el("span", { class: "tag" }, [(V.title || "") + " · " + (V.statusLabel || "Proposal") + " " + (V.version || "") + (V.lastUpdated ? " · Updated " + V.lastUpdated : "")]),
     ]));
 
     // Same stale-version rule as the main proposal page (see
