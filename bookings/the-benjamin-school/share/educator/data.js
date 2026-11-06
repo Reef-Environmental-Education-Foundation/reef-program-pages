@@ -8,7 +8,7 @@ window.BOOKING_DATA = {
   "view": {
     "status": "proposal",
     "statusLabel": "Proposal",
-    "version": "v3",
+    "version": "v4",
     "lastUpdated": "Nov 6, 2026",
     "orgName": "The Benjamin School",
     "dateLine": "April 16\u201317, 2027",
@@ -29,7 +29,7 @@ window.BOOKING_DATA = {
     "scheduleFormat": "rotation",
     "rotation": {
       "heading": "Three Cohorts, One Coordinated Schedule",
-      "intro": "Students will be divided into three cohorts. Cohorts rotate among Citizen Science & Fish Identification, Coral Nursery Lesson at MOTE, a scheduled lunch, Ecology Hike & Beach Time, Mangrove Kayak Tour, Coral Reef Boat Snorkel, a scheduled break, Night Activity: Human Impact Skits, a scheduled break, Lionfish Lesson & Dissection, Beach Time & Snorkel Check-In, and a scheduled break. Activities run concurrently, so the schedule below shows where each cohort will be throughout the day.",
+      "intro": "Students will be divided into three cohorts. Cohorts rotate among Citizen Science & Fish Identification, Coral Nursery Lesson at MOTE, a scheduled lunch, a scheduled lunch, Ecology Hike & Beach Time, Mangrove Kayak Tour, Coral Reef Boat Snorkel, a scheduled break, Night Activity: Human Impact Skits, a scheduled break, Lionfish Lesson & Dissection, Beach Time & Snorkel Check-In, and a scheduled break. Activities run concurrently, so the schedule below shows where each cohort will be throughout the day.",
       "startTime": "07:00",
       "endTime": "21:00",
       "slotMinutes": 15,
@@ -80,13 +80,22 @@ window.BOOKING_DATA = {
           "countsAsActivity": false
         },
         {
+          "id": "lunch-pk",
+          "name": "Lunch at Pennekamp",
+          "short": "Lunch PK",
+          "location": "Pennekamp",
+          "type": "meal",
+          "color": 5,
+          "countsAsActivity": false
+        },
+        {
           "id": "ecology",
           "name": "Ecology Hike & Beach Time",
           "short": "Ecology",
           "location": "Pennekamp",
           "type": "experience",
           "color": 5,
-          "countsAsActivity": false
+          "countsAsActivity": true
         },
         {
           "id": "kayak",
@@ -199,7 +208,7 @@ window.BOOKING_DATA = {
         },
         {
           "cohort": "B",
-          "station": "lunch",
+          "station": "lunch-pk",
           "start": "12:30",
           "end": "13:00",
           "day": 1
@@ -451,9 +460,18 @@ window.BOOKING_DATA = {
             "tag": "Break",
             "title": "Lunch at REEF",
             "description": "Lunch at REEF's Ocean Exploration Center, arranged by your school.",
-            "when": "Cohort C: 12:00\u201312:30 PM \u00b7 Cohort A: 12:15\u201312:45 PM \u00b7 Cohort B: 12:30\u20131:00 PM",
+            "when": "Cohort C: 12:00\u201312:30 PM \u00b7 Cohort A: 12:15\u201312:45 PM",
             "color": 1,
             "location": "REEF Ocean Exploration Center"
+          },
+          {
+            "station": "lunch-pk",
+            "tag": "Break",
+            "title": "Lunch at Pennekamp",
+            "description": "Lunch at Pennekamp before the kayak tour, arranged by your school.",
+            "when": "Cohort B: 12:30\u20131:00 PM",
+            "color": 5,
+            "location": "Pennekamp"
           },
           {
             "station": "ecology",

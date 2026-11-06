@@ -8,7 +8,7 @@ window.BOOKING_DATA = {
   "view": {
     "status": "proposal",
     "statusLabel": "Proposal",
-    "version": "v3",
+    "version": "v4",
     "lastUpdated": "Nov 6, 2026",
     "orgName": "The Benjamin School",
     "dateLine": "April 16\u201317, 2027",
@@ -47,7 +47,7 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Format",
-        "v": "Three cohorts rotating through six hands-on experiences",
+        "v": "Three cohorts rotating through seven hands-on experiences",
         "wide": true
       }
     ],
@@ -107,7 +107,7 @@ window.BOOKING_DATA = {
           },
           {
             "time": "Day 1 12:30-13:00",
-            "name": "Lunch"
+            "name": "Lunch PK"
           },
           {
             "time": "Day 1 13:00-15:00",
