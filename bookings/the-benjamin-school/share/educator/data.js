@@ -6,31 +6,32 @@ window.BOOKING_DATA = {
     "sampleFlag": false
   },
   "view": {
-    "status": "draft",
-    "statusLabel": "Draft",
-    "version": "v1",
-    "lastUpdated": "Nov 4, 2026",
+    "status": "proposal",
+    "statusLabel": "Proposal",
+    "version": "v2",
+    "lastUpdated": "Nov 6, 2026",
     "orgName": "The Benjamin School",
-    "dateLine": "April 15\u201316, 2027",
-    "hours": "9:00 AM \u2013 5:00 PM",
+    "dateLine": "April 16\u201317, 2027",
+    "hours": "Day 1: 10:30 AM \u2013 9:00 PM; Day 2: 8:30 AM \u2013 6:15 PM",
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A two-day marine science program for 90 students in Key Largo, organized into three cohorts that rotate through a coral reef boat snorkel, a mangrove kayak tour, a lionfish lesson and dissection, marine ecology, and citizen science fish identification, all at Pennekamp.",
-    "scheduleDraft": true,
+    "summary": "A two-day marine science program for 90 students in Key Largo, organized into three cohorts that rotate through fish identification, a lionfish lesson, kayaking, snorkeling, an ecology hike and a coral nursery visit at REEF's Ocean Exploration Center, the MOTE Coral Nursery and Pennekamp Coral Reef State Park, with a whole-group night activity on Day 1.",
+    "scheduleDraft": false,
     "view": "educator",
     "objectives": [
-      "Snorkel a Key Largo coral reef and record the fish they find.",
-      "Explore a mangrove ecosystem by kayak.",
-      "Investigate invasive lionfish through a guided dissection.",
-      "Explain how coral reefs function as connected ecosystems.",
       "Practice the fish identification and survey skills REEF's citizen scientists use.",
-      "Understand how REEF fish survey data is collected and used."
+      "Learn how a coral nursery grows and restores coral.",
+      "Explore a mangrove ecosystem by kayak or study the reef on a snorkel trip.",
+      "Join the whole group for Human Impact Skits on how people affect the ocean.",
+      "Investigate invasive lionfish through a guided dissection.",
+      "Snorkel a Key Largo coral reef and record the fish they find.",
+      "Understand how coral nursery work and REEF fish survey data help protect reefs."
     ],
     "scheduleFormat": "rotation",
     "rotation": {
       "heading": "Three Cohorts, One Coordinated Schedule",
-      "intro": "Students will be divided into three cohorts. Cohorts rotate among Coral Reef Boat Snorkel, Mangrove Kayak Tour, a scheduled lunch, Lionfish Lesson & Dissection, Marine Ecology, Citizen Science & Fish Identification, and Beach Time & Rinse-Off. Activities run concurrently, so the schedule below shows where each cohort will be throughout the day.",
-      "startTime": "09:00",
-      "endTime": "17:00",
+      "intro": "Students will be divided into three cohorts. Cohorts rotate among Citizen Science & Fish Identification, Coral Nursery Lesson at MOTE, a scheduled lunch, Ecology Hike & Beach Time, Mangrove Kayak Tour, Coral Reef Boat Snorkel, a scheduled break, Night Activity: Human Impact Skits, a scheduled break, Lionfish Lesson & Dissection, Beach Time & Snorkel Check-In, and a scheduled break. Activities run concurrently, so the schedule below shows where each cohort will be throughout the day.",
+      "startTime": "07:00",
+      "endTime": "21:00",
       "slotMinutes": 15,
       "cohortSizeLabel": "",
       "cohorts": [
@@ -52,12 +53,40 @@ window.BOOKING_DATA = {
       ],
       "stations": [
         {
-          "id": "snorkel",
-          "name": "Coral Reef Boat Snorkel",
-          "short": "Snorkel",
-          "location": "Pennekamp snorkel charter",
+          "id": "fish-id",
+          "name": "Citizen Science & Fish Identification",
+          "short": "Fish ID",
+          "location": "REEF Ocean Exploration Center",
           "type": "experience",
-          "color": 0
+          "color": 1,
+          "countsAsActivity": true
+        },
+        {
+          "id": "mote",
+          "name": "Coral Nursery Lesson at MOTE",
+          "short": "MOTE",
+          "location": "MOTE Coral Nursery",
+          "type": "experience",
+          "color": 3,
+          "countsAsActivity": true
+        },
+        {
+          "id": "lunch",
+          "name": "Lunch at REEF",
+          "short": "Lunch",
+          "location": "REEF Ocean Exploration Center",
+          "type": "meal",
+          "color": 1,
+          "countsAsActivity": false
+        },
+        {
+          "id": "ecology",
+          "name": "Ecology Hike & Beach Time",
+          "short": "Ecology",
+          "location": "Pennekamp",
+          "type": "experience",
+          "color": 5,
+          "countsAsActivity": false
         },
         {
           "id": "kayak",
@@ -65,215 +94,294 @@ window.BOOKING_DATA = {
           "short": "Kayak",
           "location": "Pennekamp mangrove trails",
           "type": "experience",
-          "color": 1
+          "color": 5,
+          "countsAsActivity": true
         },
         {
-          "id": "lunch",
-          "name": "Picnic Lunch",
-          "short": "Lunch",
-          "location": "Park picnic area",
+          "id": "snorkel",
+          "name": "Coral Reef Boat Snorkel",
+          "short": "Snorkel",
+          "location": "Pennekamp snorkel charter",
+          "type": "experience",
+          "color": 5,
+          "countsAsActivity": true
+        },
+        {
+          "id": "dinner",
+          "name": "Dinner",
+          "short": "Dinner",
+          "location": "Holiday Inn event space",
           "type": "meal",
-          "color": 2
+          "color": 4,
+          "countsAsActivity": false
+        },
+        {
+          "id": "skits",
+          "name": "Night Activity: Human Impact Skits",
+          "short": "Skits",
+          "location": "Holiday Inn event space",
+          "type": "shared",
+          "color": 4,
+          "countsAsActivity": true
+        },
+        {
+          "id": "breakfast",
+          "name": "Breakfast",
+          "short": "Breakfast",
+          "location": "Holiday Inn",
+          "type": "meal",
+          "color": 4,
+          "countsAsActivity": false
         },
         {
           "id": "lionfish",
           "name": "Lionfish Lesson & Dissection",
           "short": "Lionfish",
-          "location": "Pennekamp",
+          "location": "REEF Ocean Exploration Center",
           "type": "experience",
-          "color": 3
-        },
-        {
-          "id": "ecology",
-          "name": "Marine Ecology",
-          "short": "Ecology",
-          "location": "Pennekamp",
-          "type": "experience",
-          "color": 4
-        },
-        {
-          "id": "fish-id",
-          "name": "Citizen Science & Fish Identification",
-          "short": "Fish ID",
-          "location": "Pennekamp",
-          "type": "experience",
-          "color": 5
+          "color": 1,
+          "countsAsActivity": true
         },
         {
           "id": "beach",
-          "name": "Beach Time & Rinse-Off",
+          "name": "Beach Time & Snorkel Check-In",
           "short": "Beach",
           "location": "Pennekamp beach and showers",
-          "type": "shared",
-          "color": 0
+          "type": "experience",
+          "color": 5,
+          "countsAsActivity": false
+        },
+        {
+          "id": "dinner-pk",
+          "name": "Dinner at Pennekamp",
+          "short": "Dinner PK",
+          "location": "Pennekamp",
+          "type": "meal",
+          "color": 5,
+          "countsAsActivity": false
         }
       ],
       "assignments": [
         {
           "cohort": "A",
-          "station": "snorkel",
-          "start": "09:30",
+          "station": "fish-id",
+          "start": "10:30",
           "end": "12:00",
           "day": 1
         },
         {
           "cohort": "B",
-          "station": "snorkel",
-          "start": "09:30",
+          "station": "fish-id",
+          "start": "10:30",
           "end": "12:00",
           "day": 1
         },
         {
           "cohort": "C",
-          "station": "kayak",
-          "start": "09:30",
+          "station": "mote",
+          "start": "10:30",
           "end": "12:00",
           "day": 1
         },
         {
           "cohort": "A",
           "station": "lunch",
-          "start": "12:00",
+          "start": "12:15",
           "end": "12:45",
-          "day": 1
-        },
-        {
-          "cohort": "B",
-          "station": "lunch",
-          "start": "12:00",
-          "end": "12:45",
-          "day": 1
-        },
-        {
-          "cohort": "C",
-          "station": "lunch",
-          "start": "12:00",
-          "end": "12:45",
-          "day": 1
-        },
-        {
-          "cohort": "A",
-          "station": "lionfish",
-          "start": "12:45",
-          "end": "14:00",
-          "day": 1
-        },
-        {
-          "cohort": "B",
-          "station": "ecology",
-          "start": "12:45",
-          "end": "14:00",
           "day": 1
         },
         {
           "cohort": "C",
           "station": "fish-id",
-          "start": "12:45",
-          "end": "14:00",
+          "start": "12:30",
+          "end": "14:30",
           "day": 1
         },
         {
           "cohort": "A",
-          "station": "fish-id",
-          "start": "14:00",
-          "end": "15:15",
+          "station": "ecology",
+          "start": "12:45",
+          "end": "15:00",
           "day": 1
         },
         {
           "cohort": "B",
-          "station": "lionfish",
-          "start": "14:00",
-          "end": "15:15",
+          "station": "kayak",
+          "start": "13:00",
+          "end": "15:00",
+          "day": 1
+        },
+        {
+          "cohort": "A",
+          "station": "snorkel",
+          "start": "15:00",
+          "end": "17:30",
+          "day": 1
+        },
+        {
+          "cohort": "B",
+          "station": "mote",
+          "start": "15:00",
+          "end": "17:00",
           "day": 1
         },
         {
           "cohort": "C",
-          "station": "ecology",
-          "start": "14:00",
-          "end": "15:15",
+          "station": "kayak",
+          "start": "15:00",
+          "end": "17:00",
           "day": 1
         },
         {
           "cohort": "A",
-          "station": "kayak",
-          "start": "09:30",
-          "end": "12:00",
+          "station": "mote",
+          "start": "08:30",
+          "end": "10:30",
+          "day": 2
+        },
+        {
+          "cohort": "C",
+          "station": "ecology",
+          "start": "08:30",
+          "end": "11:00",
           "day": 2
         },
         {
           "cohort": "B",
-          "station": "fish-id",
-          "start": "09:30",
-          "end": "10:45",
+          "station": "snorkel",
+          "start": "08:45",
+          "end": "11:30",
+          "day": 2
+        },
+        {
+          "cohort": "A",
+          "station": "lionfish",
+          "start": "11:00",
+          "end": "12:00",
+          "day": 2
+        },
+        {
+          "cohort": "C",
+          "station": "lionfish",
+          "start": "11:00",
+          "end": "12:00",
+          "day": 2
+        },
+        {
+          "cohort": "A",
+          "station": "lunch",
+          "start": "12:00",
+          "end": "12:45",
+          "day": 2
+        },
+        {
+          "cohort": "B",
+          "station": "lunch",
+          "start": "12:00",
+          "end": "12:45",
+          "day": 2
+        },
+        {
+          "cohort": "C",
+          "station": "lunch",
+          "start": "12:00",
+          "end": "12:45",
+          "day": 2
+        },
+        {
+          "cohort": "A",
+          "station": "kayak",
+          "start": "13:00",
+          "end": "15:00",
+          "day": 2
+        },
+        {
+          "cohort": "B",
+          "station": "lionfish",
+          "start": "13:00",
+          "end": "15:30",
+          "day": 2
+        },
+        {
+          "cohort": "C",
+          "station": "beach",
+          "start": "13:00",
+          "end": "15:00",
+          "day": 2
+        },
+        {
+          "cohort": "A",
+          "station": "beach",
+          "start": "15:00",
+          "end": "17:00",
           "day": 2
         },
         {
           "cohort": "C",
           "station": "snorkel",
-          "start": "09:30",
-          "end": "12:00",
-          "day": 2
-        },
-        {
-          "cohort": "A",
-          "station": "lunch",
-          "start": "12:00",
-          "end": "12:45",
+          "start": "15:00",
+          "end": "17:30",
           "day": 2
         },
         {
           "cohort": "B",
-          "station": "lunch",
-          "start": "12:00",
-          "end": "12:45",
-          "day": 2
-        },
-        {
-          "cohort": "C",
-          "station": "lunch",
-          "start": "12:00",
-          "end": "12:45",
-          "day": 2
-        },
-        {
-          "cohort": "A",
           "station": "ecology",
-          "start": "12:45",
-          "end": "14:00",
-          "day": 2
-        },
-        {
-          "cohort": "B",
-          "station": "kayak",
-          "start": "12:45",
-          "end": "15:15",
-          "day": 2
-        },
-        {
-          "cohort": "C",
-          "station": "lionfish",
-          "start": "12:45",
-          "end": "14:00",
+          "start": "15:30",
+          "end": "17:00",
           "day": 2
         }
       ],
       "notes": [],
+      "locations": [
+        {
+          "name": "REEF Ocean Exploration Center",
+          "address": "98380 Overseas Hwy, Key Largo, FL 33037",
+          "color": 1
+        },
+        {
+          "name": "Pennekamp Coral Reef State Park",
+          "address": "102601 Overseas Hwy, Key Largo, FL 33037",
+          "color": 5
+        },
+        {
+          "name": "MOTE Coral Nursery",
+          "address": "103800 Overseas Hwy, Key Largo, FL 33037",
+          "color": 3
+        },
+        {
+          "name": "Holiday Inn event space",
+          "address": "Meals and night activity",
+          "color": 4
+        }
+      ],
       "shared": [
         {
-          "station": "beach",
-          "start": "15:15",
-          "end": "16:30",
+          "station": "dinner",
+          "start": "19:00",
+          "end": "20:00",
           "day": 1
         },
         {
-          "station": "beach",
-          "start": "15:15",
-          "end": "16:30",
+          "station": "skits",
+          "start": "20:00",
+          "end": "21:00",
+          "day": 1
+        },
+        {
+          "station": "breakfast",
+          "start": "07:00",
+          "end": "08:00",
+          "day": 2
+        },
+        {
+          "station": "dinner-pk",
+          "start": "17:30",
+          "end": "18:15",
           "day": 2
         }
       ],
       "departure": {
-        "time": "17:00",
+        "time": "18:15",
         "label": "Departure",
         "note": ""
       },
@@ -281,136 +389,142 @@ window.BOOKING_DATA = {
         {
           "day": 1,
           "label": "Day 1",
-          "startTime": "09:00",
-          "endTime": "17:00",
-          "arrival": {
-            "time": "09:00",
-            "label": "Arrival"
-          },
-          "departure": {
-            "time": "17:00",
-            "label": "Departure",
-            "note": ""
-          }
+          "startTime": "10:30",
+          "endTime": "21:00"
         },
         {
           "day": 2,
           "label": "Day 2",
-          "startTime": "09:00",
-          "endTime": "17:00",
-          "arrival": {
-            "time": "09:00",
-            "label": "Arrival"
-          },
+          "startTime": "07:00",
+          "endTime": "18:15",
           "departure": {
-            "time": "17:00",
+            "time": "18:15",
             "label": "Departure",
             "note": ""
           }
         }
       ],
-      "startLabel": "9:00 AM",
-      "endLabel": "5:00 PM"
+      "startLabel": "7:00 AM",
+      "endLabel": "9:00 PM"
     },
     "days": [
       {
         "dayNumber": 1,
         "totalDays": 2,
         "title": "Welcome to the Reef",
-        "theme": "Three cohorts rotate through reef snorkeling, mangrove kayaking, and hands-on lessons at Pennekamp.",
+        "theme": "Three cohorts rotate between REEF's Ocean Exploration Center, Pennekamp and the MOTE Coral Nursery, then come together for dinner and a whole-group night activity.",
         "blocks": [
           {
-            "station": "snorkel",
+            "station": "fish-id",
+            "tag": "Citizen Science",
+            "title": "Citizen Science & Fish Identification",
+            "description": "Students learn how REEF's volunteer divers and snorkelers identify fish and record what they see, then practice the same identification and survey skills used in REEF's Volunteer Fish Survey Project.",
+            "when": "Cohorts A & B: 10:30 AM\u201312:00 PM \u00b7 Cohort C: 12:30\u20132:30 PM",
+            "color": 1,
+            "location": "REEF Ocean Exploration Center"
+          },
+          {
+            "station": "mote",
             "tag": "Field Experience",
-            "title": "Coral Reef Boat Snorkel",
-            "description": "Students travel by boat to snorkel the Florida Keys' coral reef, practice fish identification, and collect observations that connect to REEF's Volunteer Fish Survey Project.",
-            "when": "Cohorts A & B: 9:30 AM\u201312:00 PM",
-            "color": 0,
-            "location": "Pennekamp snorkel charter"
+            "title": "Coral Nursery Lesson at MOTE",
+            "description": "Students visit the MOTE coral nursery for a hands-on lesson on how corals are grown and restored, and how nursery work helps Florida Keys reefs recover.",
+            "when": "Cohort C: 10:30 AM\u201312:00 PM \u00b7 Cohort B: 3:00\u20135:00 PM",
+            "color": 3,
+            "location": "MOTE Coral Nursery"
+          },
+          {
+            "station": "lunch",
+            "tag": "Break",
+            "title": "Lunch at REEF",
+            "description": "Lunch at REEF's Ocean Exploration Center, arranged by your school.",
+            "when": "Cohort A: 12:15\u201312:45 PM",
+            "color": 1,
+            "location": "REEF Ocean Exploration Center"
+          },
+          {
+            "station": "ecology",
+            "tag": "Education",
+            "title": "Ecology Hike & Beach Time",
+            "description": "A REEF educator-led hike at Pennekamp on how reef, seagrass, and mangrove communities work and how the species within them depend on one another.",
+            "when": "Cohort A: 12:45\u20133:00 PM",
+            "color": 5,
+            "location": "Pennekamp"
           },
           {
             "station": "kayak",
             "tag": "Field Experience",
             "title": "Mangrove Kayak Tour",
             "description": "Students paddle double kayaks through Pennekamp's mangrove channels, learning how mangroves shelter young fish and protect the coast.",
-            "when": "Cohort C: 9:30 AM\u201312:00 PM",
-            "color": 1,
+            "when": "Cohort B: 1:00\u20133:00 PM \u00b7 Cohort C: 3:00\u20135:00 PM",
+            "color": 5,
             "location": "Pennekamp mangrove trails"
           },
           {
-            "station": "lunch",
-            "tag": "Break",
-            "title": "Picnic Lunch",
-            "description": "Each cohort has the same 45-minute picnic lunch. Lunch is not provided, so students and chaperones should bring a packed lunch.",
-            "when": "Cohorts A, B & C: 12:00\u201312:45 PM",
-            "color": 2,
-            "location": "Park picnic area"
-          },
-          {
-            "station": "lionfish",
-            "tag": "Hands-On Lab",
-            "title": "Lionfish Lesson & Dissection",
-            "description": "Students investigate invasive lionfish through a guided dissection, looking at anatomy and adaptations and learning why lionfish are a conservation challenge for Florida Keys reefs.",
-            "when": "Cohort A: 12:45\u20132:00 PM \u00b7 Cohort B: 2:00\u20133:15 PM",
-            "color": 3,
-            "location": "Pennekamp"
-          },
-          {
-            "station": "ecology",
-            "tag": "Education",
-            "title": "Marine Ecology",
-            "description": "A REEF educator-led program on how reef, seagrass, and mangrove communities work and how the species within them depend on one another.",
-            "when": "Cohort B: 12:45\u20132:00 PM \u00b7 Cohort C: 2:00\u20133:15 PM",
-            "color": 4,
-            "location": "Pennekamp"
-          },
-          {
-            "station": "fish-id",
-            "tag": "Citizen Science",
-            "title": "Citizen Science & Fish Identification",
-            "description": "Students learn how REEF's volunteer divers and snorkelers identify fish and record what they see, then practice the same identification and survey skills used in REEF's Volunteer Fish Survey Project.",
-            "when": "Cohort C: 12:45\u20132:00 PM \u00b7 Cohort A: 2:00\u20133:15 PM",
+            "station": "snorkel",
+            "tag": "Field Experience",
+            "title": "Coral Reef Boat Snorkel",
+            "description": "Students travel by boat to snorkel the Florida Keys' coral reef, practice fish identification, and collect observations that connect to REEF's Volunteer Fish Survey Project.",
+            "when": "Cohort A: 3:00\u20135:30 PM",
             "color": 5,
-            "location": "Pennekamp"
+            "location": "Pennekamp snorkel charter"
           },
           {
-            "station": "beach",
+            "station": "dinner",
+            "tag": "Break",
+            "title": "Dinner",
+            "description": "Dinner at the Holiday Inn event space, arranged by your school.",
+            "when": "All cohorts: 7:00\u20138:00 PM",
+            "color": 4,
+            "location": "Holiday Inn event space"
+          },
+          {
+            "station": "skits",
             "tag": "Education",
-            "title": "Beach Time & Rinse-Off",
-            "description": "Time to relax at the beach, rinse off at the park showers, and get ready for the ride back.",
-            "when": "All cohorts: 3:15\u20134:30 PM",
-            "color": 0,
-            "location": "Pennekamp beach and showers"
+            "title": "Night Activity: Human Impact Skits",
+            "description": "An evening activity for the whole group on how people affect the ocean, told through student skits.",
+            "when": "All cohorts: 8:00\u20139:00 PM",
+            "color": 4,
+            "location": "Holiday Inn event space"
           }
         ],
         "studentsWill": [
-          "Snorkel a Key Largo coral reef and record the fish they find.",
-          "Explore a mangrove ecosystem by kayak.",
-          "Investigate invasive lionfish through a guided dissection."
+          "Practice the fish identification and survey skills REEF's citizen scientists use.",
+          "Learn how a coral nursery grows and restores coral.",
+          "Explore a mangrove ecosystem by kayak or study the reef on a snorkel trip.",
+          "Join the whole group for Human Impact Skits on how people affect the ocean."
         ],
         "outcomesNote": null
       },
       {
         "dayNumber": 2,
         "totalDays": 2,
-        "title": "Coral, Fish & Citizen Science",
-        "theme": "Study how a coral reef works, sharpen your fish ID skills, and learn how citizen scientists contribute real data.",
+        "title": "Reef, Mangroves & Lionfish",
+        "theme": "Cohorts keep their letters and rotate through the experiences they have not yet done: coral nursery, snorkel, kayak, ecology hike and lionfish lesson.",
         "blocks": [
           {
-            "station": "kayak",
-            "tag": "Field Experience",
-            "title": "Mangrove Kayak Tour",
-            "description": "Students paddle double kayaks through Pennekamp's mangrove channels, learning how mangroves shelter young fish and protect the coast.",
-            "when": "Cohort A: 9:30 AM\u201312:00 PM \u00b7 Cohort B: 12:45\u20133:15 PM",
-            "color": 1,
-            "location": "Pennekamp mangrove trails"
+            "station": "breakfast",
+            "tag": "Break",
+            "title": "Breakfast",
+            "description": "Breakfast at the Holiday Inn, arranged by your school.",
+            "when": "All cohorts: 7:00\u20138:00 AM",
+            "color": 4,
+            "location": "Holiday Inn"
           },
           {
-            "station": "fish-id",
-            "tag": "Citizen Science",
-            "title": "Citizen Science & Fish Identification",
-            "description": "Students learn how REEF's volunteer divers and snorkelers identify fish and record what they see, then practice the same identification and survey skills used in REEF's Volunteer Fish Survey Project.",
-            "when": "Cohort B: 9:30\u201310:45 AM",
+            "station": "mote",
+            "tag": "Field Experience",
+            "title": "Coral Nursery Lesson at MOTE",
+            "description": "Students visit the MOTE coral nursery for a hands-on lesson on how corals are grown and restored, and how nursery work helps Florida Keys reefs recover.",
+            "when": "Cohort A: 8:30\u201310:30 AM",
+            "color": 3,
+            "location": "MOTE Coral Nursery"
+          },
+          {
+            "station": "ecology",
+            "tag": "Education",
+            "title": "Ecology Hike & Beach Time",
+            "description": "A REEF educator-led hike at Pennekamp on how reef, seagrass, and mangrove communities work and how the species within them depend on one another.",
+            "when": "Cohort C: 8:30\u201311:00 AM \u00b7 Cohort B: 3:30\u20135:00 PM",
             "color": 5,
             "location": "Pennekamp"
           },
@@ -419,51 +533,60 @@ window.BOOKING_DATA = {
             "tag": "Field Experience",
             "title": "Coral Reef Boat Snorkel",
             "description": "Students travel by boat to snorkel the Florida Keys' coral reef, practice fish identification, and collect observations that connect to REEF's Volunteer Fish Survey Project.",
-            "when": "Cohort C: 9:30 AM\u201312:00 PM",
-            "color": 0,
+            "when": "Cohort B: 8:45\u201311:30 AM \u00b7 Cohort C: 3:00\u20135:30 PM",
+            "color": 5,
             "location": "Pennekamp snorkel charter"
-          },
-          {
-            "station": "lunch",
-            "tag": "Break",
-            "title": "Picnic Lunch",
-            "description": "Each cohort has the same 45-minute picnic lunch. Lunch is not provided, so students and chaperones should bring a packed lunch.",
-            "when": "Cohorts A, B & C: 12:00\u201312:45 PM",
-            "color": 2,
-            "location": "Park picnic area"
-          },
-          {
-            "station": "ecology",
-            "tag": "Education",
-            "title": "Marine Ecology",
-            "description": "A REEF educator-led program on how reef, seagrass, and mangrove communities work and how the species within them depend on one another.",
-            "when": "Cohort A: 12:45\u20132:00 PM",
-            "color": 4,
-            "location": "Pennekamp"
           },
           {
             "station": "lionfish",
             "tag": "Hands-On Lab",
             "title": "Lionfish Lesson & Dissection",
             "description": "Students investigate invasive lionfish through a guided dissection, looking at anatomy and adaptations and learning why lionfish are a conservation challenge for Florida Keys reefs.",
-            "when": "Cohort C: 12:45\u20132:00 PM",
-            "color": 3,
-            "location": "Pennekamp"
+            "when": "Cohorts A & C: 11:00 AM\u201312:00 PM \u00b7 Cohort B: 1:00\u20133:30 PM",
+            "color": 1,
+            "location": "REEF Ocean Exploration Center"
+          },
+          {
+            "station": "lunch",
+            "tag": "Break",
+            "title": "Lunch at REEF",
+            "description": "Lunch at REEF's Ocean Exploration Center, arranged by your school.",
+            "when": "Cohorts A, B & C: 12:00\u201312:45 PM",
+            "color": 1,
+            "location": "REEF Ocean Exploration Center"
+          },
+          {
+            "station": "kayak",
+            "tag": "Field Experience",
+            "title": "Mangrove Kayak Tour",
+            "description": "Students paddle double kayaks through Pennekamp's mangrove channels, learning how mangroves shelter young fish and protect the coast.",
+            "when": "Cohort A: 1:00\u20133:00 PM",
+            "color": 5,
+            "location": "Pennekamp mangrove trails"
           },
           {
             "station": "beach",
             "tag": "Education",
-            "title": "Beach Time & Rinse-Off",
+            "title": "Beach Time & Snorkel Check-In",
             "description": "Time to relax at the beach, rinse off at the park showers, and get ready for the ride back.",
-            "when": "All cohorts: 3:15\u20134:30 PM",
-            "color": 0,
+            "when": "Cohort C: 1:00\u20133:00 PM \u00b7 Cohort A: 3:00\u20135:00 PM",
+            "color": 5,
             "location": "Pennekamp beach and showers"
+          },
+          {
+            "station": "dinner-pk",
+            "tag": "Break",
+            "title": "Dinner at Pennekamp",
+            "description": "Dinner at Pennekamp before departure, arranged by your school.",
+            "when": "All cohorts: 5:30\u20136:15 PM",
+            "color": 5,
+            "location": "Pennekamp"
           }
         ],
         "studentsWill": [
-          "Explain how coral reefs function as connected ecosystems.",
-          "Practice the fish identification and survey skills REEF's citizen scientists use.",
-          "Understand how REEF fish survey data is collected and used."
+          "Investigate invasive lionfish through a guided dissection.",
+          "Snorkel a Key Largo coral reef and record the fish they find.",
+          "Understand how coral nursery work and REEF fish survey data help protect reefs."
         ],
         "outcomesNote": null
       }
@@ -490,7 +613,16 @@ window.BOOKING_DATA = {
       }
     ],
     "assignmentsNote": "Your school assigns teachers and chaperones to each cohort. Use this table to plan, then share the final assignments with REEF.",
-    "logistics": [],
+    "logistics": [
+      {
+        "k": "Transitions",
+        "v": "Short gaps between activities are transition time for moving between REEF's Ocean Exploration Center, Pennekamp and the MOTE Coral Nursery. This is a planning schedule, so exact times may be refined before the program."
+      },
+      {
+        "k": "Lunch",
+        "v": "Lunch is at REEF's Ocean Exploration Center, arranged by your school."
+      }
+    ],
     "bring": [],
     "accessibility": null,
     "supervision": [
@@ -509,10 +641,10 @@ window.BOOKING_DATA = {
       "name": "Rose Kelly",
       "role": "Education Coordinator",
       "email": "rose@REEF.org",
-      "phone": "305-852-0030"
+      "phone": "305-852-0030 ext. 1005"
     },
-    "title": "Draft Educator Plan",
-    "audienceLabel": "Teachers and program staff",
+    "title": "Educator Plan",
+    "audienceLabel": "Benjamin School teachers and program staff",
     "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/the-benjamin-school/share/educator/"
   }
 };

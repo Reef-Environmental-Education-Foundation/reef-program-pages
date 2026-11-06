@@ -6,79 +6,79 @@ window.BOOKING_DATA = {
     "sampleFlag": false
   },
   "view": {
-    "status": "draft",
-    "statusLabel": "Draft",
-    "version": "v1",
-    "lastUpdated": "Nov 4, 2026",
+    "status": "proposal",
+    "statusLabel": "Proposal",
+    "version": "v2",
+    "lastUpdated": "Nov 6, 2026",
     "orgName": "The Benjamin School",
-    "dateLine": "April 15\u201316, 2027",
-    "hours": "9:00 AM \u2013 5:00 PM",
+    "dateLine": "April 16\u201317, 2027",
+    "hours": "Day 1: 10:30 AM \u2013 9:00 PM; Day 2: 8:30 AM \u2013 6:15 PM",
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A two-day marine science program for 90 students in Key Largo, organized into three cohorts that rotate through a coral reef boat snorkel, a mangrove kayak tour, a lionfish lesson and dissection, marine ecology, and citizen science fish identification, all at Pennekamp.",
-    "scheduleDraft": true,
+    "summary": "A two-day marine science program for 90 students in Key Largo, organized into three cohorts that rotate through fish identification, a lionfish lesson, kayaking, snorkeling, an ecology hike and a coral nursery visit at REEF's Ocean Exploration Center, the MOTE Coral Nursery and Pennekamp Coral Reef State Park, with a whole-group night activity on Day 1.",
+    "scheduleDraft": false,
     "view": "family",
     "location": "Key Largo, Florida",
-    "intro": "A two-day marine science program for 90 students in Key Largo, organized into three cohorts that rotate through a coral reef boat snorkel, a mangrove kayak tour, a lionfish lesson and dissection, marine ecology, and citizen science fish identification, all at Pennekamp.",
+    "intro": "A two-day marine science program for 90 students in Key Largo, organized into three cohorts that rotate through fish identification, a lionfish lesson, kayaking, snorkeling, an ecology hike and a coral nursery visit at REEF's Ocean Exploration Center, the MOTE Coral Nursery and Pennekamp Coral Reef State Park, with a whole-group night activity on Day 1.",
     "experiences": [
       {
-        "title": "Coral Reef Boat Snorkel",
-        "text": "Students travel by boat to snorkel the Florida Keys' coral reef, practice fish identification, and collect observations that connect to REEF's Volunteer Fish Survey Project.",
-        "color": 0
-      },
-      {
-        "title": "Mangrove Kayak Tour",
-        "text": "Students paddle double kayaks through Pennekamp's mangrove channels, learning how mangroves shelter young fish and protect the coast.",
+        "title": "Citizen Science & Fish Identification",
+        "text": "Students learn how REEF's volunteer divers and snorkelers identify fish and record what they see, then practice the same identification and survey skills used in REEF's Volunteer Fish Survey Project.",
         "color": 1
       },
       {
-        "title": "Lionfish Lesson & Dissection",
-        "text": "Students investigate invasive lionfish through a guided dissection, looking at anatomy and adaptations and learning why lionfish are a conservation challenge for Florida Keys reefs.",
+        "title": "Coral Nursery Lesson at MOTE",
+        "text": "Students visit the MOTE coral nursery for a hands-on lesson on how corals are grown and restored, and how nursery work helps Florida Keys reefs recover.",
         "color": 3
       },
       {
-        "title": "Marine Ecology",
-        "text": "A REEF educator-led program on how reef, seagrass, and mangrove communities work and how the species within them depend on one another.",
-        "color": 4
-      },
-      {
-        "title": "Citizen Science & Fish Identification",
-        "text": "Students learn how REEF's volunteer divers and snorkelers identify fish and record what they see, then practice the same identification and survey skills used in REEF's Volunteer Fish Survey Project.",
+        "title": "Ecology Hike & Beach Time",
+        "text": "A REEF educator-led hike at Pennekamp on how reef, seagrass, and mangrove communities work and how the species within them depend on one another.",
         "color": 5
-      },
-      {
-        "title": "Beach Time & Rinse-Off",
-        "text": "Time to relax at the beach, rinse off at the park showers, and get ready for the ride back.",
-        "color": 0
       },
       {
         "title": "Mangrove Kayak Tour",
         "text": "Students paddle double kayaks through Pennekamp's mangrove channels, learning how mangroves shelter young fish and protect the coast.",
-        "color": 1
-      },
-      {
-        "title": "Citizen Science & Fish Identification",
-        "text": "Students learn how REEF's volunteer divers and snorkelers identify fish and record what they see, then practice the same identification and survey skills used in REEF's Volunteer Fish Survey Project.",
         "color": 5
       },
       {
         "title": "Coral Reef Boat Snorkel",
         "text": "Students travel by boat to snorkel the Florida Keys' coral reef, practice fish identification, and collect observations that connect to REEF's Volunteer Fish Survey Project.",
-        "color": 0
+        "color": 5
       },
       {
-        "title": "Marine Ecology",
-        "text": "A REEF educator-led program on how reef, seagrass, and mangrove communities work and how the species within them depend on one another.",
+        "title": "Night Activity: Human Impact Skits",
+        "text": "An evening activity for the whole group on how people affect the ocean, told through student skits.",
         "color": 4
+      },
+      {
+        "title": "Coral Nursery Lesson at MOTE",
+        "text": "Students visit the MOTE coral nursery for a hands-on lesson on how corals are grown and restored, and how nursery work helps Florida Keys reefs recover.",
+        "color": 3
+      },
+      {
+        "title": "Ecology Hike & Beach Time",
+        "text": "A REEF educator-led hike at Pennekamp on how reef, seagrass, and mangrove communities work and how the species within them depend on one another.",
+        "color": 5
+      },
+      {
+        "title": "Coral Reef Boat Snorkel",
+        "text": "Students travel by boat to snorkel the Florida Keys' coral reef, practice fish identification, and collect observations that connect to REEF's Volunteer Fish Survey Project.",
+        "color": 5
       },
       {
         "title": "Lionfish Lesson & Dissection",
         "text": "Students investigate invasive lionfish through a guided dissection, looking at anatomy and adaptations and learning why lionfish are a conservation challenge for Florida Keys reefs.",
-        "color": 3
+        "color": 1
       },
       {
-        "title": "Beach Time & Rinse-Off",
+        "title": "Mangrove Kayak Tour",
+        "text": "Students paddle double kayaks through Pennekamp's mangrove channels, learning how mangroves shelter young fish and protect the coast.",
+        "color": 5
+      },
+      {
+        "title": "Beach Time & Snorkel Check-In",
         "text": "Time to relax at the beach, rinse off at the park showers, and get ready for the ride back.",
-        "color": 0
+        "color": 5
       }
     ],
     "whyItMatters": [
@@ -87,22 +87,26 @@ window.BOOKING_DATA = {
     ],
     "schedule": [
       {
-        "time": "9:00 AM",
-        "label": "Program begins. Students work in 3 small groups (cohorts) that rotate between activities."
+        "time": "Day 1, 10:30 AM",
+        "label": "Program begins. Students work in three small groups (cohorts) that rotate between REEF's Ocean Exploration Center, Pennekamp and the MOTE Coral Nursery."
       },
       {
-        "time": "12:00 PM\u201312:45 PM",
-        "label": "Picnic lunch. Each cohort has its own lunch time in this window."
+        "time": "Day 1, 7:00 PM",
+        "label": "Dinner at the Holiday Inn event space, arranged by your school, followed by the whole-group night activity, Human Impact Skits, at 8:00 PM."
       },
       {
-        "time": "5:00 PM",
-        "label": "Program ends."
+        "time": "Day 2, 7:00 AM",
+        "label": "Breakfast at the Holiday Inn, arranged by your school, then cohorts head out for the day's activities."
+      },
+      {
+        "time": "Day 2, 6:15 PM",
+        "label": "Departure."
       }
     ],
     "bring": [],
     "clothing": [],
-    "lunch": null,
-    "transportation": null,
+    "lunch": "Lunch is at REEF's Ocean Exploration Center, arranged by your school.",
+    "transportation": "Your school arranges transportation between locations and will share pickup and drop-off details.",
     "chaperoneExpectations": [
       "Teachers and adult chaperones accompanying the group are directly responsible for students at all times, including during free time and meals."
     ],
@@ -111,7 +115,7 @@ window.BOOKING_DATA = {
     "aboutReef": "REEF (Reef Environmental Education Foundation) is a marine conservation nonprofit based in Key Largo, Florida. Since 1990, REEF has trained volunteer divers and snorkelers to identify and survey fish through the Volunteer Fish Survey Project, building one of the world's largest marine life databases. REEF educators bring that same hands-on, science-first approach to every student program.",
     "contactInstructions": "Questions about the day? Please contact your child's school.",
     "title": "Family & Chaperone Overview",
-    "audienceLabel": "Parents, guardians and chaperones",
+    "audienceLabel": "Benjamin School parents, guardians and chaperones",
     "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/the-benjamin-school/share/family/"
   }
 };

@@ -6,18 +6,18 @@ window.BOOKING_DATA = {
     "sampleFlag": false
   },
   "view": {
-    "status": "draft",
-    "statusLabel": "Draft",
-    "version": "v1",
-    "lastUpdated": "Nov 4, 2026",
+    "status": "proposal",
+    "statusLabel": "Proposal",
+    "version": "v2",
+    "lastUpdated": "Nov 6, 2026",
     "orgName": "The Benjamin School",
-    "dateLine": "April 15\u201316, 2027",
-    "hours": "9:00 AM \u2013 5:00 PM",
+    "dateLine": "April 16\u201317, 2027",
+    "hours": "Day 1: 10:30 AM \u2013 9:00 PM; Day 2: 8:30 AM \u2013 6:15 PM",
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A two-day marine science program for 90 students in Key Largo, organized into three cohorts that rotate through a coral reef boat snorkel, a mangrove kayak tour, a lionfish lesson and dissection, marine ecology, and citizen science fish identification, all at Pennekamp.",
-    "scheduleDraft": true,
+    "summary": "A two-day marine science program for 90 students in Key Largo, organized into three cohorts that rotate through fish identification, a lionfish lesson, kayaking, snorkeling, an ecology hike and a coral nursery visit at REEF's Ocean Exploration Center, the MOTE Coral Nursery and Pennekamp Coral Reef State Park, with a whole-group night activity on Day 1.",
+    "scheduleDraft": false,
     "view": "administrator",
-    "purpose": "A two-day marine science program for 90 students in Key Largo, organized into three cohorts that rotate through a coral reef boat snorkel, a mangrove kayak tour, a lionfish lesson and dissection, marine ecology, and citizen science fish identification, all at Pennekamp.",
+    "purpose": "A two-day marine science program for 90 students in Key Largo, organized into three cohorts that rotate through fish identification, a lionfish lesson, kayaking, snorkeling, an ecology hike and a coral nursery visit at REEF's Ocean Exploration Center, the MOTE Coral Nursery and Pennekamp Coral Reef State Park, with a whole-group night activity on Day 1.",
     "value": [
       {
         "title": "Real citizen science, not a demo",
@@ -31,7 +31,7 @@ window.BOOKING_DATA = {
     "facts": [
       {
         "k": "Dates",
-        "v": "April 15\u201316, 2027"
+        "v": "April 16\u201317, 2027"
       },
       {
         "k": "Group Size",
@@ -39,7 +39,7 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Program Hours",
-        "v": "9:00 AM \u2013 5:00 PM"
+        "v": "Day 1: 10:30 AM \u2013 9:00 PM; Day 2: 8:30 AM \u2013 6:15 PM"
       },
       {
         "k": "Location",
@@ -47,7 +47,7 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Format",
-        "v": "Three cohorts rotating through five hands-on experiences",
+        "v": "Three cohorts rotating through six hands-on experiences",
         "wide": true
       }
     ],
@@ -61,32 +61,40 @@ window.BOOKING_DATA = {
         "cohort": "Cohort A",
         "items": [
           {
-            "time": "Day 1 09:30-12:00",
-            "name": "Snorkel"
-          },
-          {
-            "time": "Day 1 12:00-12:45",
-            "name": "Lunch"
-          },
-          {
-            "time": "Day 1 12:45-14:00",
-            "name": "Lionfish"
-          },
-          {
-            "time": "Day 1 14:00-15:15",
+            "time": "Day 1 10:30-12:00",
             "name": "Fish ID"
           },
           {
-            "time": "Day 2 09:30-12:00",
-            "name": "Kayak"
+            "time": "Day 1 12:15-12:45",
+            "name": "Lunch"
+          },
+          {
+            "time": "Day 1 12:45-15:00",
+            "name": "Ecology"
+          },
+          {
+            "time": "Day 1 15:00-17:30",
+            "name": "Snorkel"
+          },
+          {
+            "time": "Day 2 08:30-10:30",
+            "name": "MOTE"
+          },
+          {
+            "time": "Day 2 11:00-12:00",
+            "name": "Lionfish"
           },
           {
             "time": "Day 2 12:00-12:45",
             "name": "Lunch"
           },
           {
-            "time": "Day 2 12:45-14:00",
-            "name": "Ecology"
+            "time": "Day 2 13:00-15:00",
+            "name": "Kayak"
+          },
+          {
+            "time": "Day 2 15:00-17:00",
+            "name": "Beach"
           }
         ]
       },
@@ -94,32 +102,32 @@ window.BOOKING_DATA = {
         "cohort": "Cohort B",
         "items": [
           {
-            "time": "Day 1 09:30-12:00",
-            "name": "Snorkel"
-          },
-          {
-            "time": "Day 1 12:00-12:45",
-            "name": "Lunch"
-          },
-          {
-            "time": "Day 1 12:45-14:00",
-            "name": "Ecology"
-          },
-          {
-            "time": "Day 1 14:00-15:15",
-            "name": "Lionfish"
-          },
-          {
-            "time": "Day 2 09:30-10:45",
+            "time": "Day 1 10:30-12:00",
             "name": "Fish ID"
+          },
+          {
+            "time": "Day 1 13:00-15:00",
+            "name": "Kayak"
+          },
+          {
+            "time": "Day 1 15:00-17:00",
+            "name": "MOTE"
+          },
+          {
+            "time": "Day 2 08:45-11:30",
+            "name": "Snorkel"
           },
           {
             "time": "Day 2 12:00-12:45",
             "name": "Lunch"
           },
           {
-            "time": "Day 2 12:45-15:15",
-            "name": "Kayak"
+            "time": "Day 2 13:00-15:30",
+            "name": "Lionfish"
+          },
+          {
+            "time": "Day 2 15:30-17:00",
+            "name": "Ecology"
           }
         ]
       },
@@ -127,39 +135,43 @@ window.BOOKING_DATA = {
         "cohort": "Cohort C",
         "items": [
           {
-            "time": "Day 1 09:30-12:00",
-            "name": "Kayak"
+            "time": "Day 1 10:30-12:00",
+            "name": "MOTE"
           },
           {
-            "time": "Day 1 12:00-12:45",
-            "name": "Lunch"
-          },
-          {
-            "time": "Day 1 12:45-14:00",
+            "time": "Day 1 12:30-14:30",
             "name": "Fish ID"
           },
           {
-            "time": "Day 1 14:00-15:15",
+            "time": "Day 1 15:00-17:00",
+            "name": "Kayak"
+          },
+          {
+            "time": "Day 2 08:30-11:00",
             "name": "Ecology"
           },
           {
-            "time": "Day 2 09:30-12:00",
-            "name": "Snorkel"
+            "time": "Day 2 11:00-12:00",
+            "name": "Lionfish"
           },
           {
             "time": "Day 2 12:00-12:45",
             "name": "Lunch"
           },
           {
-            "time": "Day 2 12:45-14:00",
-            "name": "Lionfish"
+            "time": "Day 2 13:00-15:00",
+            "name": "Beach"
+          },
+          {
+            "time": "Day 2 15:00-17:30",
+            "name": "Snorkel"
           }
         ]
       }
     ],
     "simpleSchedule": [
       {
-        "time": "9:00 AM",
+        "time": "7:00 AM",
         "label": "Program begins. Students work in 3 small groups (cohorts) that rotate between activities."
       },
       {
@@ -167,17 +179,18 @@ window.BOOKING_DATA = {
         "label": "Picnic lunch. Each cohort has its own lunch time in this window."
       },
       {
-        "time": "5:00 PM",
+        "time": "6:15 PM",
         "label": "Program ends."
       }
     ],
     "outcomes": [
-      "Snorkel a Key Largo coral reef and record the fish they find.",
-      "Explore a mangrove ecosystem by kayak.",
-      "Investigate invasive lionfish through a guided dissection.",
-      "Explain how coral reefs function as connected ecosystems.",
       "Practice the fish identification and survey skills REEF's citizen scientists use.",
-      "Understand how REEF fish survey data is collected and used."
+      "Learn how a coral nursery grows and restores coral.",
+      "Explore a mangrove ecosystem by kayak or study the reef on a snorkel trip.",
+      "Join the whole group for Human Impact Skits on how people affect the ocean.",
+      "Investigate invasive lionfish through a guided dissection.",
+      "Snorkel a Key Largo coral reef and record the fish they find.",
+      "Understand how coral nursery work and REEF fish survey data help protect reefs."
     ],
     "responsibilities": [
       {
@@ -185,36 +198,44 @@ window.BOOKING_DATA = {
         "text": "Teachers and adult chaperones accompanying the group are directly responsible for students at all times, including during free time and meals. An adult chaperone must accompany student groups with participants under 18."
       },
       {
+        "area": "Transportation",
+        "text": "Your school arranges ground transportation between the Holiday Inn, REEF's Ocean Exploration Center, Pennekamp and the MOTE Coral Nursery."
+      },
+      {
+        "area": "Meals",
+        "text": "Your school arranges lodging and meals, including breakfast, lunch and dinner."
+      },
+      {
         "area": "Activity operators",
         "text": "Boat and park activities are run by independent operators who follow their own safety protocols. The boat captain makes final decisions about schedule changes for weather or safety."
       }
     ],
     "pricing": {
-      "total": "$27,533.10",
-      "perStudent": "$305.92",
+      "total": "$28,593.60",
+      "perStudent": "$317.71",
       "chaperones": "All 10 chaperones are complimentary.",
       "note": "Estimated total. REEF sends a revised proposal if anything that affects price changes."
     },
     "included": [
-      "Two full days of REEF-led marine science programming at John Pennekamp Coral Reef State Park, about 9:00 AM to 5:00 PM each day, organized so your group rotates through the activities in three groups of about 33",
+      "Two full days of programming at REEF's Ocean Exploration Center, the MOTE Coral Nursery, and John Pennekamp Coral Reef State Park, organized so your group rotates through the activities in three cohorts",
       "Fish identification and citizen science through REEF's Volunteer Fish Survey Project",
       "An invasive species lesson with a lionfish dissection, and a coral reef and marine ecology lesson",
-      "A coral reef boat snorkel with fish surveys on a Pennekamp snorkel charter",
+      "A coral nursery lesson at MOTE",
+      "A coral reef boat snorkel with fish surveys on a Pennekamp snorkel charter, with snorkeling gear provided",
       "A mangrove kayak tour at Pennekamp",
       "Park entrance fees for your group",
       "Instructional materials and REEF survey supplies for every student"
     ],
     "notIncluded": [
-      "Lodging and meals (your school arranges these directly)",
-      "Travel to and from the Florida Keys and ground transportation during your program",
+      "Overnight lodging, all meals, and all transportation, including travel to the Florida Keys and between program locations (your school plans and arranges these directly)",
       "Snacks, beverages, and personal expenses"
     ],
     "optional": [],
     "paymentTerms": [
-      "A $5,506.62 deposit holds your group's date and is due Nov 18, 2026.",
-      "Payment 2 of $8,259.93 is due Nov 18, 2026.",
-      "The final payment is due Jan 15, 2027. Its amount is the balance under the agreement.",
-      "The agreement guarantees $23,556.10 of program cost for a minimum of 77 paid spaces.",
+      "A $5,718.72 deposit holds your group's date and is due Nov 20, 2026.",
+      "Payment 2 of $8,578.08 is due Nov 20, 2026.",
+      "The final payment is due Jan 16, 2027. Its amount is the balance under the agreement.",
+      "The agreement guarantees $24,463.41 of program cost for a minimum of 77 paid spaces.",
       "Payment dates are provisional until the agreement date is set.",
       "A 10% late fee applies to payments more than 14 days past due."
     ],
@@ -237,10 +258,10 @@ window.BOOKING_DATA = {
       "name": "Rose Kelly",
       "role": "Education Coordinator",
       "email": "rose@REEF.org",
-      "phone": "305-852-0030"
+      "phone": "305-852-0030 ext. 1005"
     },
     "title": "Administrator Approval Summary",
-    "audienceLabel": "School or organization leadership",
+    "audienceLabel": "Benjamin School leadership",
     "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/the-benjamin-school/share/administrator/"
   }
 };
