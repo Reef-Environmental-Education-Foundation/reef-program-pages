@@ -99,6 +99,9 @@
 (function () {
   "use strict";
 
+  // Page footer phone (2026-11-06): Rose's extension is on all Explorers content.
+  const REEF_FOOTER_PHONE = "305-852-0030 ext. 1005";
+
   function el(tag, attrs, children) {
     const node = document.createElement(tag);
     attrs = attrs || {};
@@ -1029,7 +1032,7 @@
 
     pageRoot.appendChild(main);
     pageRoot.appendChild(el("footer", { id: "site-footer" }, [
-      "Reef Environmental Education Foundation · P.O. Box 370246, Key Largo, FL 33037 · 305-852-0030 · ",
+      "Reef Environmental Education Foundation · P.O. Box 370246, Key Largo, FL 33037 · " + REEF_FOOTER_PHONE + " · ",
       el("a", { href: "https://www.reef.org" }, ["www.REEF.org"]),
       el("span", { class: "tag" }, [(V.title || "") + " · " + (V.statusLabel || "Draft") + " " + (V.version || "") + (V.lastUpdated ? " · Updated " + V.lastUpdated : "")]),
     ]));
@@ -2174,7 +2177,7 @@
     });
 
     pageRoot.appendChild(el("footer", { id: "site-footer" }, [
-      "Reef Environmental Education Foundation · P.O. Box 370246, Key Largo, FL 33037 · 305-852-0030 · ",
+      "Reef Environmental Education Foundation · P.O. Box 370246, Key Largo, FL 33037 · " + REEF_FOOTER_PHONE + " · ",
       el("a", { href: "https://www.reef.org" }, ["www.REEF.org"]),
       el("span", { class: "tag" }, ["Explore. Discover. Make a Difference."]),
     ]));
@@ -2273,12 +2276,12 @@
         el("div", { class: "eyebrow" }, ["REEF OCEAN EXPLORERS"]),
         el("div", {}, [
           el("a", { href: "mailto:" + (c.reefEmail || "info@REEF.org") }, [c.reefEmail || "info@REEF.org"]),
-          " · " + (c.reefPhone || "305-852-0030"),
+          " · " + (c.reefPhone || REEF_FOOTER_PHONE),
         ]),
       ]),
     ]));
     mount("site-footer", el("div", { class: "site-footer" }, [
-      "Reef Environmental Education Foundation · P.O. Box 370246, Key Largo, FL 33037 · 305-852-0030 · ",
+      "Reef Environmental Education Foundation · P.O. Box 370246, Key Largo, FL 33037 · " + REEF_FOOTER_PHONE + " · ",
       el("a", { href: "https://www.reef.org" }, ["www.REEF.org"]),
       " · Explore. Discover. Make a Difference.",
     ]));

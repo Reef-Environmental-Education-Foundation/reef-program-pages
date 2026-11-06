@@ -59,30 +59,33 @@ class SeineGuardTest(unittest.TestCase):
 
 
 class BenjaminItineraryTest(unittest.TestCase):
+    """Airtable Schedule Items are Benjamin's only schedule source (2026-11-06);
+    the JSON holds the summary, day titles and audiences."""
+
     def setUp(self):
         self.raw = json.loads((REPO / "pipeline" / "itineraries" / f"{BENJAMIN}.json").read_text())
 
-    def test_rotation_validates_and_has_three_cohorts_two_days(self):
-        rot = self.raw["rotation"]
-        g.validate_rotation(rot, BENJAMIN)
-        self.assertEqual([c["id"] for c in rot["cohorts"]], ["A", "B", "C"])
-        self.assertEqual([d["day"] for d in rot["days"]], [1, 2])
+    def test_no_schedule_left_in_the_json(self):
+        self.assertNotIn("rotation", self.raw)
+        self.assertTrue(all("blocks" not in d for d in self.raw["days"]))
 
-    def test_three_locations_in_legend(self):
-        names = [l["name"] for l in self.raw["rotation"]["locations"]]
-        self.assertEqual(names[:3], ["REEF campus", "Pennekamp Coral Reef State Park", "MOTE Coral Nursery"])
+    def test_summary_names_the_three_locations_and_night_activity(self):
+        s = self.raw["summary"]
+        for word in ("Ocean Exploration Center", "MOTE", "Pennekamp", "night activity", "three cohorts"):
+            self.assertIn(word, s)
+        self.assertNotIn("all at Pennekamp", s)
 
-    def test_night_activity_is_an_all_cohort_block(self):
-        night = [s for s in self.raw["rotation"]["shared"] if s["station"] == "skits"]
-        self.assertEqual([(s["day"], s["start"]) for s in night], [(1, "20:00")])
+    def test_day_titles_match_the_new_schedule(self):
+        self.assertEqual([d["title"] for d in self.raw["days"]], ["Welcome to the Reef", "Reef, Mangroves & Lionfish"])
 
-    def test_audiences_have_no_old_hours_seine_or_prices(self):
-        blob = json.dumps(self.raw["audiences"])
-        self.assertNotRegex(blob, r"(?i)seine|9:00|5:00 PM|\$\d")
+    def test_no_stale_wording_anywhere_in_the_file(self):
+        blob = json.dumps(self.raw)
+        self.assertNotRegex(blob, r"(?i)middle school|seine|9:00|\$\d|bus moves|bus times")
 
-    def test_airtable_schedule_items_would_override_this_file(self):
-        # documented gotcha: with Schedule Items > 0 the rotation here is ignored
-        self.assertTrue(self.raw["rotation"])
+    def test_audiences_say_the_school_arranges_meals_and_transport(self):
+        lg = self.raw["audiences"]["logistics"]
+        self.assertIn("school arranges", lg["meals"].lower())
+        self.assertIn("school arranges", lg["transportation"].lower())
 
 
 class RenderOnceTest(unittest.TestCase):
