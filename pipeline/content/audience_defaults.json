@@ -61,7 +61,7 @@
 
   "needs": [
     {"key": "approval", "label": "Get school or organizational approval", "view": "administrator"},
-    {"key": "staff", "label": "Review with teachers or program staff", "view": "educator"},
+    {"key": "staff", "label": "Share with teachers or program staff", "view": "educator"},
     {"key": "families", "label": "Share information with parents or chaperones", "view": "family"},
     {"key": "students", "label": "Build student or participant excitement", "view": "student"},
     {"key": "changes", "label": "Request changes from REEF", "action": "change"}

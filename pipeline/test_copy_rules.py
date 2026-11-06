@@ -45,15 +45,16 @@ REPO = Path(__file__).parent.parent
 SEINING_RE = re.compile(r"(?i)\bsein(?:e|es|ed|ing)\b")
 # REEF does not do fish seining (Martha, 2026-11-02): it must not appear in any
 # option list, activity list, template, copy file or generated page.
-# Generated pages that already carry it are listed here so the test still passes;
-# the entry goes away when that booking is republished after Airtable is fixed.
-KNOWN_GENERATED_SEINING = {"the-benjamin-school"}
+# 2026-11-05: no exceptions. Every generated page is scanned, and publish_support's
+# build guard fails a run that would emit it.
 
 
 def repo_text_files():
     skip_dirs = {".git", "bookings", "node_modules", "__pycache__"}
     for path in REPO.rglob("*"):
         if not path.is_file() or skip_dirs & set(path.relative_to(REPO).parts):
+            continue
+        if path.name == "publish_support.py":   # holds the guard's own pattern
             continue
         if path.name.startswith("test_") or path.suffix in {".pyc", ".png", ".jpg", ".jpeg", ".docx"}:
             continue
@@ -75,18 +76,11 @@ class NoSeiningTest(unittest.TestCase):
                 xml = z.read("word/document.xml").decode("utf8", "ignore")
             self.assertIsNone(SEINING_RE.search(re.sub(r"<[^>]+>", "", xml)), path.name)
 
-    def test_no_seining_in_generated_pages_except_known_ones(self):
-        for page in sorted((REPO / "bookings").glob("*/**/*.js")) + sorted((REPO / "bookings").glob("*/**/*.html")):
-            slug = page.relative_to(REPO / "bookings").parts[0]
-            if slug in KNOWN_GENERATED_SEINING:
-                continue
+    def test_no_seining_in_any_generated_page(self):
+        pages = sorted((REPO / "bookings").glob("*/**/*.js")) + sorted((REPO / "bookings").glob("*/**/*.html"))
+        self.assertTrue(pages)
+        for page in pages:
             self.assertIsNone(SEINING_RE.search(page.read_text()), str(page.relative_to(REPO)))
-
-    def test_the_known_exception_list_does_not_go_stale(self):
-        for slug in KNOWN_GENERATED_SEINING:
-            hits = [p for p in (REPO / "bookings" / slug).rglob("*") if p.is_file() and p.suffix in {".js", ".html"}
-                    and SEINING_RE.search(p.read_text())]
-            self.assertTrue(hits, f"{slug} no longer mentions seining: remove it from KNOWN_GENERATED_SEINING")
 
 
 if __name__ == "__main__":

@@ -1307,3 +1307,12 @@ li{margin:0;}
 .audience-shell .gr-tag{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:10px;background:#fff6dc;border:1px solid #e6c766;font-size:12px;}
 .audience-shell .gr-money{font-weight:600;}
 @media (max-width:520px){.audience-shell .gr-item{flex-direction:column;gap:2px;}.audience-shell .gr-state{flex-basis:auto;}}
+
+/* 2026-11-05: REEF contact note inside the contact card; per-day sub-heads for the stops list */
+.proposal-shell .contact-note{margin:10px 0 12px;}
+.proposal-shell .contact-note-title{font-weight:700;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--p-slate);margin-bottom:4px;}
+.proposal-shell .contact-note .contact-blurb{margin:0 0 6px;}
+.proposal-shell .stop-day{margin-top:22px;}
+.proposal-shell .stop-day:first-of-type{margin-top:8px;}
+.proposal-shell .stop-day-title{margin:0 0 10px;font-size:18px;}
+.proposal-shell .rot-locations{margin-bottom:4px;}

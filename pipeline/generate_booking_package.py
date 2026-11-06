@@ -243,6 +243,28 @@ PROGRAM_WORDS_BY_BOOKING_TYPE = {
 }
 DEFAULT_PROGRAM_WORDS = ("Program", "program")
 
+# Overview note from the REEF contact (Martha, 2026-11-05). One standard note for every
+# proposal; it replaces the per-person "Proposal Welcome Line" so the contact is never
+# introduced twice on the Overview.
+REEF_CONTACT_NOTE = (
+    "Hi! We are so excited to welcome you all to REEF, this personalized website is a place "
+    "for you to understand what comes with your REEF Booking! Feel free to call with any "
+    "questions or changes and I would be happy to walk you through it.")
+
+# Staff contact phone extension. Read from the EPO Personnel "Extension" field when that
+# field exists on the record; otherwise this default. A blank value omits "ext." entirely.
+# (Open question 2026-11-05: confirm 1005 is right for every REEF contact.)
+REEF_CONTACT_EXTENSION_DEFAULT = "1005"
+
+
+def contact_phone(phone, ext):
+    """'305-852-0030', '1005' -> '305-852-0030 ext. 1005'. A blank extension (or no
+    phone) leaves the number untouched, so this can never print a dangling 'ext.'."""
+    phone = (phone or "").strip()
+    ext = re.sub(r"\D", "", str(ext or ""))
+    return f"{phone} ext. {ext}" if phone and ext else phone
+
+
 # ---- Static proposal copy (no Airtable source) -------------------------
 # The proposal's "why REEF works" pillars and its educator-team section
 # have no backing Airtable fields, so per Martha's direction they are
@@ -651,6 +673,8 @@ def fetch_booking_data(record_id):
             "email": reef_email(p.get("Email", "")),
             "phone": p.get("Phone", ""),
             "welcome_line": p.get("Proposal Welcome Line", ""),
+            # Field absent -> default; field present but blank -> no extension.
+            "extension": p["Extension"] if "Extension" in p else REEF_CONTACT_EXTENSION_DEFAULT,
         }
 
     schedule = fetch_schedule_rows(record_id)
@@ -854,6 +878,8 @@ def _read_itinerary_json(record_id, required=True):
         "scheduleFormat": raw.get("scheduleFormat"),
         "summary": raw.get("summary"),
         "location": raw.get("location"),
+        "programHours": raw.get("programHours"),
+        "locations": raw.get("locations"),
         # Approve & Share audience content (2026-09-28) -- see audience_views.py
         # and the "audiences" section of itineraries/README.md.
         "audiences": raw.get("audiences"),
@@ -1115,7 +1141,7 @@ def summary_count_is_stale(summary, students):
     return stale
 
 
-def build_proposal_data(b, photos=None):
+def build_proposal_data(b, photos=None, school_facing=False):
     """Builds the docType "proposal" shape -- the advanced six-section
     customer proposal experience in assets/render.js. Parallel to
     build_confirmed_page_data() below; a booking gets one or the other
@@ -1155,7 +1181,8 @@ def build_proposal_data(b, photos=None):
     if rot:
         hours = itin.get("programHours") or clock_range(rot["startTime"], rot["endTime"])
         times = station_times(rot)
-        experiences = [s["name"] for s in rot["stations"] if s.get("type", "experience") == "experience"]
+        experiences = [s["name"] for s in rot["stations"]
+                       if s.get("countsAsActivity", s.get("type", "experience") == "experience")]
         times_by_day = {d["day"]: station_times(rot, day=d["day"]) for d in rot.get("days") or []}
         n_cohorts = len(rot["cohorts"])
         rot.setdefault("heading", f"{number_word(n_cohorts)} Cohorts, One Coordinated Day"
@@ -1198,10 +1225,8 @@ def build_proposal_data(b, photos=None):
 
     reef = b["reef_contact"]
     reef_first = (reef.get("name") or "").split(" ")[0] or "Your REEF contact"
-    # QA walkthrough (2026-09-09): the contact's own welcome_line is the
-    # personal note; the Program Type description is only a fallback.
-    welcome_body = [reef.get("welcome_line")] if reef.get("welcome_line") else (
-        [pt.get("description")] if pt.get("description") else [])
+    # 2026-11-05: every proposal shows the same standard contact note.
+    welcome_body = [REEF_CONTACT_NOTE]
 
     contact_label = CONTACT_LABEL_BY_ORG_TYPE.get(b.get("org_type"), "Group Contact")
     contact_line = ", ".join(x for x in [b["contact_name"], b["contact_role"]] if x)
@@ -1282,11 +1307,14 @@ def build_proposal_data(b, photos=None):
             "summary": summary,
             "scheduleFormat": schedule_format,
             "scheduleLabel": schedule_label,
-            "scheduleDraft": audience_views.is_schedule_draft(b.get("status"), b.get("agreement_contract_status")),
+            # Draft / internal-review wording is internal-preview only: a school-facing build
+            # (any run that publishes, and the school preview) never carries the flag.
+            "scheduleDraft": (not school_facing) and audience_views.is_schedule_draft(
+                b.get("status"), b.get("agreement_contract_status")),
             "rotation": rot,
             "pendingNote": (f"Your detailed schedule is still being finalized. {reef_first} will share "
                             "exact times before your contract is prepared. The activities below are "
-                            "included either way."),
+                            "included either way.") if schedule_format == "pending" else "",
             "group": {
                 "orgName": b["org_name"],
                 "contactName": b["contact_name"],
@@ -1330,9 +1358,10 @@ def build_proposal_data(b, photos=None):
                 "name": reef.get("name", ""),
                 "role": reef.get("title", ""),
                 "photo": None,
-                "welcomeLine": reef.get("welcome_line", ""),
+                # The Overview shows REEF_CONTACT_NOTE once (welcome.body); no second blurb.
+                "welcomeLine": "",
                 "email": reef.get("email", ""),
-                "phone": reef.get("phone", ""),
+                "phone": contact_phone(reef.get("phone", ""), reef.get("extension", REEF_CONTACT_EXTENSION_DEFAULT)),
             },
             "welcome": {
                 "body": welcome_body,
@@ -1499,7 +1528,8 @@ def build_confirmed_page_data(b):
             "reefEducatorName": b["reef_contact"].get("name", ""),
             "reefEducatorTitle": b["reef_contact"].get("title", ""),
             "reefEducatorWelcomeLine": b["reef_contact"].get("welcome_line", ""),
-            "reefPhone": b["reef_contact"].get("phone", ""),
+            "reefPhone": contact_phone(b["reef_contact"].get("phone", ""),
+                                       b["reef_contact"].get("extension", REEF_CONTACT_EXTENSION_DEFAULT)),
             "reefEmail": b["reef_contact"].get("email", ""),
         },
         "hero": {
@@ -1654,7 +1684,7 @@ def _data_uri(path):
     return f"data:{mime};base64," + base64.b64encode(Path(path).read_bytes()).decode("ascii")
 
 
-def build_preview_html(page_data, booking_dir, title, reasons, views=None):
+def build_preview_html(page_data, booking_dir, title, reasons, views=None, school_facing=False):
     """Packs a generated page into ONE self-contained HTML file for internal
     review: styles, render.js, page data, the REEF logo and hero photos are
     all inlined, so the file opens straight from an Asana attachment with no
@@ -1685,13 +1715,17 @@ def build_preview_html(page_data, booking_dir, title, reasons, views=None):
     # it at the inlined copy instead (harmless no-op if that line changes).
     js = js.replace('return "../".repeat(depth) + "assets/reef-logo-white.png";',
                     "return " + json.dumps(logo_uri) + ";")
-    shell = BOOKING_PAGE_SHELL_TEMPLATE.format(title="INTERNAL PREVIEW — " + title,
+    shell = BOOKING_PAGE_SHELL_TEMPLATE.format(title=("SCHOOL-FACING PREVIEW — " if school_facing else "INTERNAL PREVIEW — ") + title,
                                                robots=TEST_PAGE_ROBOTS_META)
     banner = (
         '<div style="background:#b3261e;color:#fff;padding:14px 18px;font:600 15px/1.4 '
         'system-ui,sans-serif;text-align:center;position:sticky;top:0;z-index:9999;">'
-        "INTERNAL PREVIEW — NOT PUBLISHED — DO NOT FORWARD TO THE CUSTOMER. "
-        "Response buttons are disabled in this preview.</div>\n"
+        + ("SCHOOL-FACING PREVIEW — this is how the page reads once approved (no draft wording). "
+           "NOT PUBLISHED — DO NOT FORWARD TO THE CUSTOMER. Response buttons are disabled."
+           if school_facing else
+           "INTERNAL PREVIEW — NOT PUBLISHED — DO NOT FORWARD TO THE CUSTOMER. "
+           "Response buttons are disabled in this preview.")
+        + "</div>\n"
     )
     shell = shell.replace('<link rel="stylesheet" href="../../assets/styles.css">',
                           "<style>\n" + css + "\n</style>")
@@ -1712,7 +1746,7 @@ def build_preview_html(page_data, booking_dir, title, reasons, views=None):
     shell = shell.replace('<script src="../../assets/render.js"></script>',
                           "<script>\n" + js.replace("</script>", "<\\/script>") + "\n</script>")
     shell = shell.replace("<body>\n", "<body>\n" + banner, 1)
-    out = booking_dir / "INTERNAL-PREVIEW.html"
+    out = booking_dir / ("SCHOOL-PREVIEW.html" if school_facing else "INTERNAL-PREVIEW.html")
     out.write_text(shell)
     return out
 
@@ -1992,16 +2026,16 @@ SHARE_PAGE_SHELL_TEMPLATE = """<!doctype html>
 # audience_views.py and PRIVACY.md) -- never the coordinator's full data.
 
 
-def build_share_views(b, page_data, is_proposal, page_url):
+def build_share_views(b, page_data, is_proposal, page_url, school_facing=False):
     """Builds the share block + the four audience payloads from the same
     canonical facts as the proposal. For a pre-trip booking the facts are
     rebuilt with build_proposal_data() (no photos) so both stages project
     from one function, not two copies of the booking's details."""
-    pd = page_data["proposal"] if is_proposal else build_proposal_data(b)["proposal"]
+    pd = page_data["proposal"] if is_proposal else build_proposal_data(b, school_facing=school_facing)["proposal"]
     itin = load_itinerary(b["record_id"], b)
     share, views = audience_views.build_views(
         b, pd, itin, money, date_pretty, page_url,
-        generated_on=date_pretty(datetime.utcnow().strftime("%Y-%m-%d")))
+        generated_on=date_pretty(datetime.utcnow().strftime("%Y-%m-%d")), school_facing=school_facing)
     if is_proposal:
         page_data["proposal"]["share"] = share
     else:
@@ -2105,7 +2139,10 @@ def main():
     # when it moves from proposal to confirmed -- the page the customer
     # already has a link to just becomes the pre-trip packet.
     if is_proposal:
-        page_data = build_proposal_data(b, photos=download_hero_photos(b, booking_dir))
+        hero_photos = download_hero_photos(b, booking_dir)
+        # school_facing (2026-11-06): a run that publishes never carries draft / internal-review
+        # wording; that wording exists only in the INTERNAL-PREVIEW build.
+        page_data = build_proposal_data(b, photos=hero_photos, school_facing=not preview)
         print(f"Status {b['status']!r} -> proposal page")
     else:
         page_data = build_confirmed_page_data(b)
@@ -2137,10 +2174,31 @@ def main():
         # instead of publishing a page that shows everything outstanding.
         b["checklist_state"] = get_ready.fetch_completion_state(record_id, strict=True)
         b["get_ready"] = get_ready.views_payload(b)
-    view_data = build_share_views(b, page_data, is_proposal, page_url)
+    view_data = build_share_views(b, page_data, is_proposal, page_url, school_facing=not preview)
     # Never publish a literal {{token}}, on the Airtable path or the JSON path.
     schedule_airtable.assert_no_tokens(page_data, "booking page")
     schedule_airtable.assert_no_tokens(view_data, "audience views")
+    # Forbidden copy (see publish_support.FORBIDDEN_COPY_RE) never reaches a customer, whatever the school asked for.
+    publish_support.assert_no_forbidden_copy(page_data, "booking page")
+    publish_support.assert_no_forbidden_copy(view_data, "audience views")
+    contact_names = [(b.get("reef_contact") or {}).get("name", "")]
+    if not preview and is_proposal:
+        # Published for a school: no draft / internal-review wording anywhere (fails the run).
+        publish_support.assert_school_facing_clean(page_data, "booking page", contact_names)
+        publish_support.assert_school_facing_clean(view_data, "audience views", contact_names)
+
+    # Preview runs also build the school-facing version (what the school sees once approved),
+    # scan it, and attach it, so the wording can be checked before approval.
+    school_preview = None
+    if preview and is_proposal:
+        s_page = build_proposal_data(b, photos=hero_photos, school_facing=True)
+        s_views = build_share_views(b, s_page, is_proposal, page_url, school_facing=True)
+        s_hits = publish_support.internal_wording_hits(s_page, contact_names) \
+            + publish_support.internal_wording_hits(s_views, contact_names)
+        print(f"SCHOOL-FACING SCAN: {len(s_hits)} internal-wording hit(s)")
+        for h in s_hits:
+            print(f"  - {h}")
+        school_preview = (s_page, s_views)
     write_share_views(booking_dir, view_data, b["org_name"])
 
     with open(booking_dir / "data.js", "w") as f:
@@ -2187,7 +2245,13 @@ def main():
     if preview:
         preview_html = build_preview_html(page_data, booking_dir, page_title, preview_reasons,
                                           views=view_data)
+        publish_support.assert_no_forbidden_copy(preview_html.read_text(), "INTERNAL-PREVIEW.html")
         attachments = [preview_html] + ([contract_path] if contract_url else [])
+        if school_preview:
+            school_html = build_preview_html(school_preview[0], booking_dir, page_title, preview_reasons,
+                                             views=school_preview[1], school_facing=True)
+            publish_support.assert_no_forbidden_copy(school_html.read_text(), "SCHOOL-PREVIEW.html")
+            attachments.insert(1, school_html)
         create_review_task(b, page_url, contract_url,
                            preview_reasons=preview_reasons, attachments=attachments)
         print(f"PREVIEW ONLY -- wrote {preview_html} (attached to the Asana review task). "
@@ -2198,7 +2262,7 @@ def main():
             message="Not published, the previous version (if any) is still live: " + "; ".join(preview_reasons))
         sys.exit(3)
     else:
-        problems = publish_support.validate_build(booking_dir, is_proposal)
+        problems = publish_support.validate_build(booking_dir, is_proposal, contact_names)
         if problems:
             raise BuildValidationError(
                 "The build failed validation, so nothing was published: " + "; ".join(problems))

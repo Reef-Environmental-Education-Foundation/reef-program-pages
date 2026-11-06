@@ -1,97 +1,116 @@
 {
-  "schemaVersion": 2,
-  "scheduleFormat": "standard",
-  "sourceNote": "DRAFT 2026-10-12 for Rose's review. The Benjamin School, Apr 15–16, 2027, 90 middle school students in 3 groups of 30 rotating. No housing, no meals (Martha, 10/10). Evening program excluded: not priced or decided. Rotation order, boat times and evening program are not finalized; times are placeholders. The generator's rotation block covers a single schedule window and cannot express a rotating day 1 plus a whole-group day 2, so day 1 uses three rotation blocks in standard format. Concurrent Cohort Rotation and # Cohorts must be set in Airtable before the workflow runs. Internal only; never rendered.",
-  "location": "Key Largo, Florida",
-  "summary": "A two-day marine science program for 90 students in Key Largo, organized into three cohorts that rotate through a coral reef boat snorkel, a mangrove kayak tour, a lionfish lesson and dissection, marine ecology, and citizen science fish identification, all at Pennekamp.",
-  "days": [
+ "schemaVersion": 2,
+ "scheduleFormat": "rotation",
+ "sourceNote": "The rotation schedule lives in Airtable (Schedule Items) and is the only schedule source; this file supplies the summary, day titles, audiences and location. Updated 2026-11-06 after the Schedule Items were rewritten for the two-day, three-cohort schedule (Day 1 night activity: Human Impact Skits, 8:00 PM, Holiday Inn event space). Internal only; never rendered.",
+ "location": "Key Largo, Florida",
+ "locations": [
+  {
+   "name": "REEF Ocean Exploration Center",
+   "address": "98380 Overseas Hwy, Key Largo, FL 33037",
+   "color": 1,
+   "match": [
+    "REEF",
+    "Ocean Exploration"
+   ]
+  },
+  {
+   "name": "Pennekamp Coral Reef State Park",
+   "address": "102601 Overseas Hwy, Key Largo, FL 33037",
+   "color": 5,
+   "match": [
+    "Pennekamp"
+   ]
+  },
+  {
+   "name": "MOTE Coral Nursery",
+   "address": "103800 Overseas Hwy, Key Largo, FL 33037",
+   "color": 3,
+   "match": [
+    "MOTE"
+   ]
+  },
+  {
+   "name": "Holiday Inn event space",
+   "address": "Meals and night activity",
+   "color": 4,
+   "match": [
+    "Holiday Inn"
+   ]
+  }
+ ],
+ "summary": "A two-day marine science program for 90 students in Key Largo, organized into three cohorts that rotate through fish identification, a lionfish lesson, kayaking, snorkeling, an ecology hike and a coral nursery visit at REEF's Ocean Exploration Center, the MOTE Coral Nursery and Pennekamp Coral Reef State Park, with a whole-group night activity on Day 1.",
+ "days": [
+  {
+   "dayNumber": 1,
+   "totalDays": 2,
+   "title": "Welcome to the Reef",
+   "theme": "Three cohorts rotate between REEF's Ocean Exploration Center, Pennekamp and the MOTE Coral Nursery, then come together for dinner and a whole-group night activity.",
+   "studentsWill": [
+    "Practice the fish identification and survey skills REEF's citizen scientists use.",
+    "Learn how a coral nursery grows and restores coral.",
+    "Explore a mangrove ecosystem by kayak or study the reef on a snorkel trip.",
+    "Join the whole group for Human Impact Skits on how people affect the ocean."
+   ],
+   "outcomesNote": null
+  },
+  {
+   "dayNumber": 2,
+   "totalDays": 2,
+   "title": "Reef, Mangroves & Lionfish",
+   "theme": "Cohorts keep their letters and rotate through the experiences they have not yet done: coral nursery, snorkel, kayak, ecology hike and lionfish lesson.",
+   "studentsWill": [
+    "Investigate invasive lionfish through a guided dissection.",
+    "Snorkel a Key Largo coral reef and record the fish they find.",
+    "Understand how coral nursery work and REEF fish survey data help protect reefs."
+   ],
+   "outcomesNote": null
+  }
+ ],
+ "audiences": {
+  "_comment": "Approve & Share content, rewritten 2026-11-06 for the 2-day, 3-cohort schedule held in Airtable (REEF Ocean Exploration Center, Pennekamp, MOTE Coral Nursery, Holiday Inn). Public: no emails, phones, prices or student names. Meals, lodging and ground transportation are arranged by the school.",
+  "views": [
+   "administrator",
+   "educator",
+   "family",
+   "student"
+  ],
+  "audienceLabels": {
+   "administrator": "Benjamin School leadership",
+   "educator": "Benjamin School teachers and program staff",
+   "family": "Benjamin School parents, guardians and chaperones",
+   "student": "Benjamin School students"
+  },
+  "logistics": {
+   "transitions": "Short gaps between activities are transition time for moving between REEF's Ocean Exploration Center, Pennekamp and the MOTE Coral Nursery. This is a planning schedule, so exact times may be refined before the program.",
+   "lunch": "Lunch is at REEF's Ocean Exploration Center, arranged by your school.",
+   "meals": "Your school arranges lodging and meals, including breakfast, lunch and dinner.",
+   "transportation": "Your school arranges ground transportation between the Holiday Inn, REEF's Ocean Exploration Center, Pennekamp and the MOTE Coral Nursery.",
+   "familyTransportation": "Your school arranges transportation between locations and will share pickup and drop-off details."
+  },
+  "family": {
+   "schedule": [
     {
-      "dayNumber": 1,
-      "totalDays": 2,
-      "title": "Welcome to the Reef",
-      "theme": "Three cohorts rotate through reef snorkeling, mangrove kayaking, and hands-on lessons at Pennekamp.",
-      "blocks": [
-        {
-          "time": "9:00 AM–10:00 AM",
-          "tag": "Arrival",
-          "title": "Arrival & Welcome",
-          "description": "Your group arrives in Key Largo. REEF educators welcome the group, preview the day, and introduce the three groups of 30 students."
-        },
-        {
-          "time": "10:00 AM–12:00 PM",
-          "tag": "Rotation",
-          "title": "Rotation 1: Reef, Mangroves & Lionfish",
-          "description": "Each group of 30 students takes part in one of three stations: reef snorkel and fish surveys, kayaking at Pennekamp (Mangrove Tour), or a lionfish lesson and dissection. Over three rotations, every group visits all three stations. Station order is confirmed once boat times are set."
-        },
-        {
-          "time": "12:00 PM–1:00 PM",
-          "tag": "Break",
-          "title": "Lunch (on your own)",
-          "description": "Lunch is not included in this proposal. Your group can bring lunch or pick up food nearby."
-        },
-        {
-          "time": "1:00 PM–3:00 PM",
-          "tag": "Rotation",
-          "title": "Rotation 2: Reef, Mangroves & Lionfish",
-          "description": "Each group of 30 students takes part in one of three stations: reef snorkel and fish surveys, kayaking at Pennekamp (Mangrove Tour), or a lionfish lesson and dissection. Over three rotations, every group visits all three stations. Station order is confirmed once boat times are set."
-        },
-        {
-          "time": "3:15 PM–5:00 PM",
-          "tag": "Rotation",
-          "title": "Rotation 3: Reef, Mangroves & Lionfish",
-          "description": "Each group of 30 students takes part in one of three stations: reef snorkel and fish surveys, kayaking at Pennekamp (Mangrove Tour), or a lionfish lesson and dissection. Over three rotations, every group visits all three stations. Station order is confirmed once boat times are set."
-        }
-      ],
-      "studentsWill": [
-        "Snorkel a Key Largo coral reef and record the fish they find.",
-        "Explore a mangrove ecosystem by kayak.",
-        "Investigate invasive lionfish through a guided dissection."
-      ],
-      "outcomesNote": null
+     "time": "Day 1, 10:30 AM",
+     "label": "Program begins. Students work in three small groups (cohorts) that rotate between REEF's Ocean Exploration Center, Pennekamp and the MOTE Coral Nursery."
     },
     {
-      "dayNumber": 2,
-      "totalDays": 2,
-      "title": "Coral, Fish & Citizen Science",
-      "theme": "Study how a coral reef works, sharpen your fish ID skills, and learn how citizen scientists contribute real data.",
-      "blocks": [
-        {
-          "time": "9:00 AM–10:30 AM",
-          "tag": "Marine Ecology",
-          "title": "Coral Reef Ecology",
-          "description": "A Florida Keys coral lesson on how reefs are built, how the organisms on them depend on each other, and how coral restoration helps reefs recover."
-        },
-        {
-          "time": "10:45 AM–12:00 PM",
-          "tag": "Fish ID",
-          "title": "Citizen Science & Fish Identification",
-          "description": "Students learn how REEF's volunteer divers and snorkelers identify fish and record what they see, then practice the same identification and survey skills used in REEF's Volunteer Fish Survey Project."
-        },
-        {
-          "time": "12:00 PM–1:00 PM",
-          "tag": "Break",
-          "title": "Lunch (on your own)",
-          "description": "Lunch is not included in this proposal. Your group can bring lunch or pick up food nearby."
-        },
-        {
-          "time": "1:00 PM–2:30 PM",
-          "tag": "Citizen Science",
-          "title": "Citizen Science & the Volunteer Fish Survey Project",
-          "description": "Students learn how REEF's volunteer divers and snorkelers record the fish they see, and why that data matters to scientists and reef managers. They practice the survey method they will use on the reef."
-        },
-        {
-          "time": "2:30 PM",
-          "tag": "Departure",
-          "title": "Departure",
-          "description": "Your group departs. Lunch is not included in this proposal."
-        }
-      ],
-      "studentsWill": [
-        "Explain how coral reefs function as connected ecosystems.",
-        "Practice the fish identification and survey skills REEF's citizen scientists use.",
-        "Understand how REEF fish survey data is collected and used."
-      ],
-      "outcomesNote": null
+     "time": "Day 1, 7:00 PM",
+     "label": "Dinner at the Holiday Inn event space, arranged by your school, followed by the whole-group night activity, Human Impact Skits, at 8:00 PM."
+    },
+    {
+     "time": "Day 2, 7:00 AM",
+     "label": "Breakfast at the Holiday Inn, arranged by your school, then cohorts head out for the day's activities."
+    },
+    {
+     "time": "Day 2, 6:15 PM",
+     "label": "Departure."
     }
-  ]
+   ],
+   "lunch": "Lunch is at REEF's Ocean Exploration Center, arranged by your school."
+  },
+  "student": {
+   "headline": "Two days on the reef",
+   "intro": "You will work in a small group (a cohort) and rotate between REEF's Ocean Exploration Center, Pennekamp and the MOTE Coral Nursery."
+  }
+ }
 }

@@ -99,6 +99,9 @@
 (function () {
   "use strict";
 
+  // Page footer phone (2026-11-06): Rose's extension is on all Explorers content.
+  const REEF_FOOTER_PHONE = "305-852-0030 ext. 1005";
+
   function el(tag, attrs, children) {
     const node = document.createElement(tag);
     attrs = attrs || {};
@@ -593,7 +596,7 @@
 
   function statusBadge(o) {
     return el("span", { class: "share-status is-" + (o.status || "draft") }, [
-      (o.statusLabel || "Draft") + " · " + (o.version || "v1") + (o.lastUpdated ? " · Updated " + o.lastUpdated : ""),
+      (o.statusLabel || "Proposal") + " · " + (o.version || "v1") + (o.lastUpdated ? " · Updated " + o.lastUpdated : ""),
     ]);
   }
 
@@ -804,7 +807,8 @@
     }
     const isDraft = V.status !== "confirmed";
     pageRoot.appendChild(el("div", { class: "a-status-ribbon is-" + (isDraft ? "draft" : "confirmed") }, [
-      isDraft ? "Proposed program · Draft schedule · Details may change until your contract is confirmed"
+      isDraft ? (V.scheduleDraft ? "Proposed program · Draft schedule · Details may change until your contract is confirmed"
+                                 : "Proposed program · Details may change until your contract is confirmed")
               : "Confirmed program",
     ]));
     const chips = [
@@ -942,7 +946,13 @@
           V.scheduleDraft ? draftScheduleLine() : null,
           rotationSchedule(V.rotation, { draft: V.scheduleDraft }),
         ], "a-rot"));
-        (V.days || []).forEach(function (d) { add(sec("THE EXPERIENCES", "What happens at each stop", [stationCards(d)])); });
+        const multiDays = (V.days || []).length > 1;
+        add(sec("THE EXPERIENCES", "What happens at each stop", (V.days || []).map(function (d) {
+          return el("div", { class: multiDays ? "stop-day" : "" }, [
+            multiDays ? el("h3", { class: "stop-day-title" }, ["Day " + d.dayNumber + (d.title ? ": " + d.title : "")]) : null,
+            stationCards(d),
+          ]);
+        })));
       } else if (V.scheduleFormat === "pending") {
         add(sec("FULL SCHEDULE", "Schedule being finalized", [el("div", { class: "pending-panel" }, [el("p", {}, [V.pendingNote || "Exact times will follow."])])]
           .concat((V.days || []).map(stationCards))));
@@ -1019,13 +1029,13 @@
       add(sec("GET READY", "Before the trip", [has(V.classroomPrep) ? list(V.classroomPrep) : null]));
     }
 
-    function isDraftLabel(txt) { return isDraft ? "Draft schedule: " + txt.toLowerCase() : txt; }
+    function isDraftLabel(txt) { return V.scheduleDraft ? "Draft schedule: " + txt.toLowerCase() : txt; }
 
     pageRoot.appendChild(main);
     pageRoot.appendChild(el("footer", { id: "site-footer" }, [
-      "Reef Environmental Education Foundation · P.O. Box 370246, Key Largo, FL 33037 · 305-852-0030 · ",
+      "Reef Environmental Education Foundation · P.O. Box 370246, Key Largo, FL 33037 · " + REEF_FOOTER_PHONE + " · ",
       el("a", { href: "https://www.reef.org" }, ["www.REEF.org"]),
-      el("span", { class: "tag" }, [(V.title || "") + " · " + (V.statusLabel || "Draft") + " " + (V.version || "") + (V.lastUpdated ? " · Updated " + V.lastUpdated : "")]),
+      el("span", { class: "tag" }, [(V.title || "") + " · " + (V.statusLabel || "Proposal") + " " + (V.version || "") + (V.lastUpdated ? " · Updated " + V.lastUpdated : "")]),
     ]));
 
     // Same stale-version rule as the main proposal page (see
@@ -1337,7 +1347,21 @@
     return grid;
   }
 
+  // rot.locations = [{name, address, color}] (2026-11-05): the colour key for where each
+  // cohort is. Optional; rotations without it render exactly as before.
+  function rotationLocations(rot) {
+    if (!(rot.locations || []).length) return null;
+    return el("ul", { class: "rot-legend rot-locations", "aria-label": "Locations" }, rot.locations.map(function (l) {
+      return el("li", {}, [
+        el("span", { class: "rot-swatch rot-c" + ((l.color || 0) % 6) }),
+        el("span", { class: "lg-name" }, [l.name]),
+        l.address ? el("span", { class: "lg-loc" }, [l.address]) : null,
+      ]);
+    }));
+  }
+
   function rotationLegend(rot, M) {
+    if ((rot.locations || []).length) return rotationLocations(rot);
     return el("ul", { class: "rot-legend", "aria-label": "Activities and locations" }, (rot.stations || []).map(function (st) {
       const s = M.stations[st.id];
       return el("li", {}, [
@@ -1809,10 +1833,6 @@
       if (PD.scheduleDraft) s.appendChild(el("div", { class: "container draft-wrap" }, [draftBanner(true)]));
       s.appendChild(el("div", { class: "container block" }, [ctaModule()]));
       s.appendChild(el("div", { class: "container block" }, [
-        el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["WELCOME"]), el("h2", {}, ["A note from your REEF contact"])]),
-        el("div", { class: "prose" }, PD.welcome.body.map(function (p) { return el("p", {}, [p]); }).concat(PD.welcome.signOff ? [el("p", { class: "signoff" }, [PD.welcome.signOff])] : [])),
-      ]));
-      s.appendChild(el("div", { class: "container block" }, [
         el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["AT A GLANCE"]), el("h2", {}, ["Your " + programWord + ", at a glance"])]),
         el("div", { class: "glance-grid" }, PD.glance.map(function (g) {
           return el("div", { class: "glance-cell" + (g.wide ? " is-wide" : "") }, [el("div", { class: "k" }, [g.k]), el("div", { class: "v" }, [g.v])]);
@@ -1827,10 +1847,11 @@
           el("div", { class: "contact-body" }, [
             el("div", { class: "contact-name" }, [placeholder(PD.reefContact.name, "REEF Team")]),
             el("div", { class: "contact-role" }, [PD.reefContact.role || ""]),
-            // Skip the blurb when it would repeat the welcome note verbatim
-            // (2026-09-28: the same sentence appeared twice on Overview).
-            (PD.reefContact.welcomeLine && (PD.welcome.body || []).indexOf(PD.reefContact.welcomeLine) === -1)
-              ? el("div", { class: "contact-blurb" }, [PD.reefContact.welcomeLine]) : null,
+            // 2026-11-05: the REEF contact's note appears here, once. It is the same
+            // text as PD.welcome.body (no separate welcome block, no second blurb).
+            (PD.welcome.body || []).length ? el("div", { class: "contact-note" }, [
+              el("div", { class: "contact-note-title" }, ["A note from your REEF Contact"]),
+            ].concat(PD.welcome.body.map(function (p) { return el("p", { class: "contact-blurb" }, [p]); }))) : null,
             el("div", { class: "contact-links" }, [
               el("a", { href: "mailto:" + (PD.reefContact.email || "explorers@REEF.org") }, [PD.reefContact.email || "explorers@REEF.org"]),
               el("span", { style: "color:var(--p-slate-soft)" }, [PD.reefContact.phone || ""]),
@@ -1929,7 +1950,7 @@
       let h1, lede;
       if (fmt === "rotation" && PD.rotation) {
         h1 = PD.rotation.heading || "One Coordinated Schedule";
-        lede = "Where each cohort will be, and when" + (PD.hours ? ", from " + PD.rotation.startLabel + " to " + PD.rotation.endLabel : "") + ".";
+        lede = "Where each cohort will be, and when" + (PD.hours && !(PD.rotation.days || []).length ? ", from " + PD.rotation.startLabel + " to " + PD.rotation.endLabel : "") + ".";
       } else if (fmt === "pending") {
         h1 = "Your schedule is being finalized";
         lede = "The experiences below are part of your program. Exact times will follow.";
@@ -1948,13 +1969,18 @@
           PD.rotation.intro ? el("p", { class: "rot-intro" }, [PD.rotation.intro]) : null,
           rotationSchedule(PD.rotation, { draft: PD.scheduleDraft }),
         ]));
-        PD.days.forEach(function (day) {
-          s.appendChild(el("div", { class: "container block" }, [
-            el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["THE EXPERIENCES"]), el("h2", {}, ["What students will do at each stop"])]),
+        // One stops section (2026-11-05). A multi-day
+        // program used to repeat this heading once per day; days are now sub-headed.
+        const multi = PD.days.length > 1;
+        s.appendChild(el("div", { class: "container block" }, [
+          el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["THE EXPERIENCES"]), el("h2", {}, ["What students will do at each stop"])]),
+        ].concat(PD.days.map(function (day) {
+          return el("div", { class: multi ? "stop-day" : "" }, [
+            multi ? el("h3", { class: "stop-day-title" }, ["Day " + day.dayNumber + (day.title ? ": " + day.title : "")]) : null,
             stationCards(day),
             outcomesBox(day),
-          ]));
-        });
+          ]);
+        }))));
       } else if (fmt === "pending") {
         s.appendChild(el("div", { class: "container block" }, [
           el("div", { class: "pending-panel" }, [
@@ -2152,7 +2178,7 @@
     });
 
     pageRoot.appendChild(el("footer", { id: "site-footer" }, [
-      "Reef Environmental Education Foundation · P.O. Box 370246, Key Largo, FL 33037 · 305-852-0030 · ",
+      "Reef Environmental Education Foundation · P.O. Box 370246, Key Largo, FL 33037 · " + REEF_FOOTER_PHONE + " · ",
       el("a", { href: "https://www.reef.org" }, ["www.REEF.org"]),
       el("span", { class: "tag" }, ["Explore. Discover. Make a Difference."]),
     ]));
@@ -2251,12 +2277,12 @@
         el("div", { class: "eyebrow" }, ["REEF OCEAN EXPLORERS"]),
         el("div", {}, [
           el("a", { href: "mailto:" + (c.reefEmail || "info@REEF.org") }, [c.reefEmail || "info@REEF.org"]),
-          " · " + (c.reefPhone || "305-852-0030"),
+          " · " + (c.reefPhone || REEF_FOOTER_PHONE),
         ]),
       ]),
     ]));
     mount("site-footer", el("div", { class: "site-footer" }, [
-      "Reef Environmental Education Foundation · P.O. Box 370246, Key Largo, FL 33037 · 305-852-0030 · ",
+      "Reef Environmental Education Foundation · P.O. Box 370246, Key Largo, FL 33037 · " + REEF_FOOTER_PHONE + " · ",
       el("a", { href: "https://www.reef.org" }, ["www.REEF.org"]),
       " · Explore. Discover. Make a Difference.",
     ]));

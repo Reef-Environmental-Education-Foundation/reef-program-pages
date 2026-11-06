@@ -639,7 +639,7 @@ class MultiDayRotation(unittest.TestCase):
     def test_days_cards_and_hours(self):
         got = self.load()
         self.assertEqual(len(got["days"]), 2)
-        self.assertEqual(got["programHours"], "9:00 AM – 5:00 PM")
+        self.assertEqual(got["programHours"], "Day 1: 9:30 AM – 5:00 PM; Day 2: 9:30 AM – 5:00 PM")
         titles = lambda d: [b["title"] for b in got["days"][d]["blocks"]]  # noqa: E731
         self.assertIn("Beach Time & Rinse-Off", titles(0))
         self.assertIn("Beach Time & Rinse-Off", titles(1))

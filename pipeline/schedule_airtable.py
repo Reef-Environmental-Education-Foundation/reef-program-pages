@@ -376,6 +376,48 @@ def _fmt_program_hours(start, end):
     return f"{clock(start)} – {clock(end)}"
 
 
+# Rows that are logistics, not "hands-on experiences" (2026-11-06): beach / showers /
+# check-in / free time. They stay on the schedule and in the day cards but are not
+# counted. A whole-group "Night Activity" / "Evening Activity" is a real activity.
+NOT_AN_ACTIVITY_RE = re.compile(r"(?i)\b(beach|showers?|rinse|check-?in|field time|free time)\b")
+NIGHT_ACTIVITY_RE = re.compile(r"(?i)^\s*(night|evening) activity")
+
+
+def counts_as_activity(block_type, name, label=""):
+    text = f"{name} {label}"
+    if block_type == "Activity":
+        return not NOT_AN_ACTIVITY_RE.search(text)
+    if block_type == "Whole-Group Block":
+        return bool(NIGHT_ACTIVITY_RE.search(name or ""))
+    return False
+
+
+def per_day_program_hours(items):
+    """'Day 1: 10:30 AM – 9:00 PM; Day 2: 8:30 AM – 6:15 PM' for a multi-day program, from
+    the rows. A day starts at its first non-meal block and ends at its Departure row, else
+    at its last non-meal block's end (so a night activity is included)."""
+    days = sorted({it["day"] for it in items})
+    parts = []
+    for n in days:
+        rows = [it for it in items if it["day"] == n]
+        body = [it for it in rows if it["block_type"] in ("Activity", "Whole-Group Block")]
+        if not body:
+            continue
+        start = min(it["start"] for it in body)
+        dep = [it for it in rows if it["block_type"] == "Departure"]
+        end = max(it["start"] for it in dep) if dep else max((it["end"] or it["start"]) for it in body)
+        parts.append(f"Day {n}: {clock(start)} – {clock(end)}")
+    return "; ".join(parts)
+
+
+def _location_group(location, groups):
+    low = (location or "").lower()
+    for g in groups:
+        if any(m.lower() in low for m in g.get("match") or [g["name"]]):
+            return g
+    return None
+
+
 def schedule_from_rows(booking, rows, json_itin=None, log=print):
     """Builds the load_itinerary() dict from Airtable rows.
 
@@ -427,8 +469,12 @@ def schedule_from_rows(booking, rows, json_itin=None, log=print):
         end_time = max(it["end"] for it in body if it["end"])
         departure_time = end_time
     program_hours = _fmt_program_hours(arrival_time, departure_time)
+    # Customer-facing hours chip: per day for a multi-day program (2026-11-06) so a night
+    # activity is included; the {{program_hours}} token in prose keeps the overall span.
+    rotating = any(it["cohort"] for it in items) and not (booking.get("rotation_setting") or "").strip().lower().startswith("no")
+    hours_display = (per_day_program_hours(items) if total_days > 1 and rotating else "") or program_hours
     declared = booking.get("schedule_program_hours")
-    if declared and re.sub(r"[\s–—-]+", "", declared) != re.sub(r"[\s–—-]+", "", program_hours):
+    if total_days == 1 and declared and re.sub(r"[\s–—-]+", "", declared) != re.sub(r"[\s–—-]+", "", program_hours):
         log(f"WARNING: {rid}: Airtable 'Program Hours (from schedule)' is {declared!r} but the rows "
             f"compute {program_hours!r}; using the computed value.")
 
@@ -440,6 +486,7 @@ def schedule_from_rows(booking, rows, json_itin=None, log=print):
             by_key[k] = {"items": [], "key": k}
             order.append(k)
         by_key[k]["items"].append(it)
+    location_groups = (json_itin or {}).get("locations") or []
     stn_list, used_ids = [], set()
     for idx, k in enumerate(order):
         first = by_key[k]["items"][0]
@@ -449,13 +496,17 @@ def schedule_from_rows(booking, rows, json_itin=None, log=print):
                                 "give each Itinerary Activity a distinct Station Label")
         used_ids.add(sid)
         by_key[k]["id"] = sid
+        loc = next((i["location"] for i in by_key[k]["items"] if i["location"]), "")
+        grp = _location_group(loc, location_groups)
         stn_list.append({
             "id": sid,
             "name": first["name"],
             "short": first["short"] or _abbrev(first["name"]),
-            "location": next((i["location"] for i in by_key[k]["items"] if i["location"]), ""),
+            "location": loc,
             "type": STATION_TYPE_BY_BLOCK_TYPE[first["block_type"]],
-            "color": idx % 6,
+            # A location legend (itinerary JSON "locations") colours stations by where they are.
+            "color": grp["color"] % 6 if grp else idx % 6,
+            "countsAsActivity": counts_as_activity(first["block_type"], first["name"], first["label"]),
         })
 
     # ---- durations per station label (all cohorts)
@@ -466,7 +517,7 @@ def schedule_from_rows(booking, rows, json_itin=None, log=print):
             continue
         ds = {minutes(i["end"]) - minutes(i["start"]) for i in by_key[k]["items"] if i["end"]}
         durations_all[label] = ds
-    exp_ids = {s["id"] for s in stn_list if s["type"] == "experience"}
+    exp_ids = {s["id"] for s in stn_list if s["countsAsActivity"]}
     durations_listed = []
     for k in order:
         if by_key[k]["id"] in exp_ids:
@@ -556,6 +607,9 @@ def schedule_from_rows(booking, rows, json_itin=None, log=print):
             "assignments": assignments,
             "notes": [ln.strip() for ln in (booking.get("schedule_notes") or "").splitlines() if ln.strip()],
         }
+        if location_groups:
+            rotation["locations"] = [{k: g[k] for k in ("name", "address", "color") if k in g}
+                                     for g in location_groups]
         if shared:
             rotation["shared"] = shared
         if departure:
@@ -594,7 +648,7 @@ def schedule_from_rows(booking, rows, json_itin=None, log=print):
         "summary": (json_itin or {}).get("summary"),
         "location": (json_itin or {}).get("location"),
         "audiences": (json_itin or {}).get("audiences"),
-        "programHours": program_hours,
+        "programHours": hours_display,
         "scheduleSource": "airtable",
     }
     result = apply_tokens(result, ctx, where=f"{rid}: ")
