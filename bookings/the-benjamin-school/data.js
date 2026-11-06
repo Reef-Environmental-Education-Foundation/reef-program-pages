@@ -632,9 +632,7 @@ window.BOOKING_DATA = {
       "Travel to and from the Florida Keys and ground transportation during your program",
       "Snacks, beverages, and personal expenses"
     ],
-    "optional": [
-      "Seine netting for fish identification"
-    ],
+    "optional": [],
     "photos": {
       "overview": "photos/overview.jpeg",
       "experience": "photos/experience.png",
@@ -679,8 +677,7 @@ window.BOOKING_DATA = {
       "whatCouldChange": [
         "Changes to your student or chaperone count",
         "A different date or program hours",
-        "Adding or removing activities",
-        "Adding an optional item (seine netting for fish identification)"
+        "Adding or removing activities"
       ]
     },
     "share": {

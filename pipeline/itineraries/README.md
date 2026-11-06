@@ -40,6 +40,8 @@ activity cards whose times are derived from the matrix.
 | `shared` | Optional whole-group blocks, such as arrival and welcome |
 | `departure` | Optional `{time, label, note}` |
 | `notes` | Customer-relevant logistics only |
+| `locations` | Optional `[{name, address, color}]` (2026-11-05). When present the legend shows these colour-keyed locations instead of one row per activity |
+| `programHours` | Optional top-level string for the Overview "Program Hours" tile (multi-day rotations whose overall window is not the real hours) |
 | `heading`, `intro` | Optional customer copy above the matrix |
 
 In `days[].blocks`, reference a station with `"station": "<id>"` instead of typing a
@@ -159,3 +161,15 @@ Defaults when omitted: learning objectives = the day's "Students will" lines;
 cohort assignment table = one blank row per rotation cohort (a printable
 planning sheet); family schedule = derived from the rotation (start, lunch
 window, end), so it can never disagree with the matrix.
+
+
+## Standing rules added 2026-11-05
+
+* The Overview shows one standard "A note from your REEF Contact" inside the contact card
+  (`REEF_CONTACT_NOTE` in the generator). Do not add a per-booking welcome blurb.
+* The REEF contact's phone shows `ext.` from the EPO Personnel `Extension` field, default 1005
+  (`REEF_CONTACT_EXTENSION_DEFAULT`); a blank field omits it.
+* The banned fish-netting activity (see `FORBIDDEN_COPY_RE`) never appears customer-facing. `publish_support.assert_no_forbidden_copy` fails the
+  run (nothing published, previews included) if generated pages, audience views or
+  INTERNAL-PREVIEW.html mention it, and `test_copy_rules.py` scans the repo and every generated page.
+* A booking with Schedule Items > 0 reads its schedule from Airtable and ignores `rotation` here.

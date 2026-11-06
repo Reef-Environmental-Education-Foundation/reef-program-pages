@@ -243,6 +243,28 @@ PROGRAM_WORDS_BY_BOOKING_TYPE = {
 }
 DEFAULT_PROGRAM_WORDS = ("Program", "program")
 
+# Overview note from the REEF contact (Martha, 2026-11-05). One standard note for every
+# proposal; it replaces the per-person "Proposal Welcome Line" so the contact is never
+# introduced twice on the Overview.
+REEF_CONTACT_NOTE = (
+    "Hi! We are so excited to welcome you all to REEF, this personalized website is a place "
+    "for you to understand what comes with your REEF Booking! Feel free to call with any "
+    "questions or changes and I would be happy to walk you through it.")
+
+# Staff contact phone extension. Read from the EPO Personnel "Extension" field when that
+# field exists on the record; otherwise this default. A blank value omits "ext." entirely.
+# (Open question 2026-11-05: confirm 1005 is right for every REEF contact.)
+REEF_CONTACT_EXTENSION_DEFAULT = "1005"
+
+
+def contact_phone(phone, ext):
+    """'305-852-0030', '1005' -> '305-852-0030 ext. 1005'. A blank extension (or no
+    phone) leaves the number untouched, so this can never print a dangling 'ext.'."""
+    phone = (phone or "").strip()
+    ext = re.sub(r"\D", "", str(ext or ""))
+    return f"{phone} ext. {ext}" if phone and ext else phone
+
+
 # ---- Static proposal copy (no Airtable source) -------------------------
 # The proposal's "why REEF works" pillars and its educator-team section
 # have no backing Airtable fields, so per Martha's direction they are
@@ -651,6 +673,8 @@ def fetch_booking_data(record_id):
             "email": reef_email(p.get("Email", "")),
             "phone": p.get("Phone", ""),
             "welcome_line": p.get("Proposal Welcome Line", ""),
+            # Field absent -> default; field present but blank -> no extension.
+            "extension": p["Extension"] if "Extension" in p else REEF_CONTACT_EXTENSION_DEFAULT,
         }
 
     schedule = fetch_schedule_rows(record_id)
@@ -854,6 +878,7 @@ def _read_itinerary_json(record_id, required=True):
         "scheduleFormat": raw.get("scheduleFormat"),
         "summary": raw.get("summary"),
         "location": raw.get("location"),
+        "programHours": raw.get("programHours"),
         # Approve & Share audience content (2026-09-28) -- see audience_views.py
         # and the "audiences" section of itineraries/README.md.
         "audiences": raw.get("audiences"),
@@ -1198,10 +1223,8 @@ def build_proposal_data(b, photos=None):
 
     reef = b["reef_contact"]
     reef_first = (reef.get("name") or "").split(" ")[0] or "Your REEF contact"
-    # QA walkthrough (2026-09-09): the contact's own welcome_line is the
-    # personal note; the Program Type description is only a fallback.
-    welcome_body = [reef.get("welcome_line")] if reef.get("welcome_line") else (
-        [pt.get("description")] if pt.get("description") else [])
+    # 2026-11-05: every proposal shows the same standard contact note.
+    welcome_body = [REEF_CONTACT_NOTE]
 
     contact_label = CONTACT_LABEL_BY_ORG_TYPE.get(b.get("org_type"), "Group Contact")
     contact_line = ", ".join(x for x in [b["contact_name"], b["contact_role"]] if x)
@@ -1330,9 +1353,10 @@ def build_proposal_data(b, photos=None):
                 "name": reef.get("name", ""),
                 "role": reef.get("title", ""),
                 "photo": None,
-                "welcomeLine": reef.get("welcome_line", ""),
+                # The Overview shows REEF_CONTACT_NOTE once (welcome.body); no second blurb.
+                "welcomeLine": "",
                 "email": reef.get("email", ""),
-                "phone": reef.get("phone", ""),
+                "phone": contact_phone(reef.get("phone", ""), reef.get("extension", REEF_CONTACT_EXTENSION_DEFAULT)),
             },
             "welcome": {
                 "body": welcome_body,
@@ -1499,7 +1523,8 @@ def build_confirmed_page_data(b):
             "reefEducatorName": b["reef_contact"].get("name", ""),
             "reefEducatorTitle": b["reef_contact"].get("title", ""),
             "reefEducatorWelcomeLine": b["reef_contact"].get("welcome_line", ""),
-            "reefPhone": b["reef_contact"].get("phone", ""),
+            "reefPhone": contact_phone(b["reef_contact"].get("phone", ""),
+                                       b["reef_contact"].get("extension", REEF_CONTACT_EXTENSION_DEFAULT)),
             "reefEmail": b["reef_contact"].get("email", ""),
         },
         "hero": {
@@ -2141,6 +2166,9 @@ def main():
     # Never publish a literal {{token}}, on the Airtable path or the JSON path.
     schedule_airtable.assert_no_tokens(page_data, "booking page")
     schedule_airtable.assert_no_tokens(view_data, "audience views")
+    # Forbidden copy (see publish_support.FORBIDDEN_COPY_RE) never reaches a customer, whatever the school asked for.
+    publish_support.assert_no_forbidden_copy(page_data, "booking page")
+    publish_support.assert_no_forbidden_copy(view_data, "audience views")
     write_share_views(booking_dir, view_data, b["org_name"])
 
     with open(booking_dir / "data.js", "w") as f:
@@ -2187,6 +2215,7 @@ def main():
     if preview:
         preview_html = build_preview_html(page_data, booking_dir, page_title, preview_reasons,
                                           views=view_data)
+        publish_support.assert_no_forbidden_copy(preview_html.read_text(), "INTERNAL-PREVIEW.html")
         attachments = [preview_html] + ([contract_path] if contract_url else [])
         create_review_task(b, page_url, contract_url,
                            preview_reasons=preview_reasons, attachments=attachments)

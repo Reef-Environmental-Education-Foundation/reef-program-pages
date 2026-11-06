@@ -209,9 +209,7 @@ window.BOOKING_DATA = {
       "Travel to and from the Florida Keys and ground transportation during your program",
       "Snacks, beverages, and personal expenses"
     ],
-    "optional": [
-      "Seine netting for fish identification"
-    ],
+    "optional": [],
     "paymentTerms": [
       "A $5,506.62 deposit holds your group's date and is due Nov 18, 2026.",
       "Payment 2 of $8,259.93 is due Nov 18, 2026.",

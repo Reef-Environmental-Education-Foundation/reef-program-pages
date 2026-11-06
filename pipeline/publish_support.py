@@ -34,6 +34,29 @@ RECORD_ID_RE = re.compile(r"^rec[A-Za-z0-9]{14}$")
 # resolve). The scan runs over generated files only, never over render.js.
 BAD_TEXT_RE = re.compile(r"\bundefined\b|\bNaN\b|\$\{|\{\{")
 
+# Customer-facing copy must never mention seine netting / seining (Martha, 2026-11-05),
+# even when a school asked for it. Case-insensitive; also catches "Seine".
+FORBIDDEN_COPY_RE = re.compile(r"(?i)\bsein(?:e|es|ed|ing)\b")
+
+
+class ForbiddenCopy(Exception):
+    """Generated customer-facing output contains copy REEF never publishes."""
+
+
+def assert_no_forbidden_copy(payload, where):
+    """Fails the run (nothing published) if `payload` (a str or any JSON-able
+    structure) mentions seine netting. Applied to the page data, the audience views,
+    INTERNAL-PREVIEW.html and, in validate_build, every generated file."""
+    text = payload if isinstance(payload, str) else json.dumps(payload, ensure_ascii=False)
+    hit = FORBIDDEN_COPY_RE.search(text)
+    if hit:
+        ctx = text[max(0, hit.start() - 40):hit.end() + 40].replace("\n", " ")
+        raise ForbiddenCopy(
+            f"{where} mentions {hit.group(0)!r} ({ctx!r}). REEF does not offer seine netting, so it "
+            "must not appear anywhere customer-facing. Remove it from the booking's Airtable fields "
+            "(Optional Add-Ons, What's Included, Schedule items) or the itinerary file; nothing was published.")
+
+
 PROPOSAL_REQUIRED = ("meta", "group", "dates", "roadmap", "cta", "reefContact",
                      "welcome", "glance", "days", "included", "pricing")
 
@@ -89,6 +112,10 @@ def validate_build(booking_dir, is_proposal):
         hit = BAD_TEXT_RE.search(path.read_text())
         if hit:
             problems.append(f"{path.relative_to(booking_dir)} contains {hit.group(0)!r}")
+        seine = FORBIDDEN_COPY_RE.search(path.read_text())
+        if seine:
+            problems.append(f"{path.relative_to(booking_dir)} mentions {seine.group(0)!r} "
+                            "(seine netting must never appear customer-facing)")
     return problems
 
 
