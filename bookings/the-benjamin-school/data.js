@@ -11,7 +11,7 @@ window.BOOKING_DATA = {
   "proposal": {
     "meta": {
       "bookingId": "recXmG8ySdXrgmj85",
-      "proposalVersion": "v2",
+      "proposalVersion": "v3",
       "proposalDate": "",
       "programTypeLabel": "Expedition",
       "programWord": "Expedition"
@@ -177,10 +177,24 @@ window.BOOKING_DATA = {
           "day": 1
         },
         {
+          "cohort": "C",
+          "station": "lunch",
+          "start": "12:00",
+          "end": "12:30",
+          "day": 1
+        },
+        {
           "cohort": "A",
           "station": "lunch",
           "start": "12:15",
           "end": "12:45",
+          "day": 1
+        },
+        {
+          "cohort": "B",
+          "station": "lunch",
+          "start": "12:30",
+          "end": "13:00",
           "day": 1
         },
         {
@@ -581,7 +595,7 @@ window.BOOKING_DATA = {
             "tag": "Break",
             "title": "Lunch at REEF",
             "description": "Lunch at REEF's Ocean Exploration Center, arranged by your school.",
-            "when": "Cohort A: 12:15\u201312:45 PM",
+            "when": "Cohort C: 12:00\u201312:30 PM \u00b7 Cohort A: 12:15\u201312:45 PM \u00b7 Cohort B: 12:30\u20131:00 PM",
             "color": 1,
             "location": "REEF Ocean Exploration Center"
           },
@@ -805,7 +819,7 @@ window.BOOKING_DATA = {
     "share": {
       "status": "proposal",
       "statusLabel": "Proposal",
-      "version": "v2",
+      "version": "v3",
       "lastUpdated": "Nov 6, 2026",
       "needs": [
         {

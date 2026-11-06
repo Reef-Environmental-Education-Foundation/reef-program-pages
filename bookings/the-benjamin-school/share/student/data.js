@@ -8,7 +8,7 @@ window.BOOKING_DATA = {
   "view": {
     "status": "proposal",
     "statusLabel": "Proposal",
-    "version": "v2",
+    "version": "v3",
     "lastUpdated": "Nov 6, 2026",
     "orgName": "The Benjamin School",
     "dateLine": "April 16\u201317, 2027",

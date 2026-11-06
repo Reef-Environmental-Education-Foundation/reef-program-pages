@@ -8,7 +8,7 @@ window.BOOKING_DATA = {
   "view": {
     "status": "proposal",
     "statusLabel": "Proposal",
-    "version": "v2",
+    "version": "v3",
     "lastUpdated": "Nov 6, 2026",
     "orgName": "The Benjamin School",
     "dateLine": "April 16\u201317, 2027",
@@ -106,6 +106,10 @@ window.BOOKING_DATA = {
             "name": "Fish ID"
           },
           {
+            "time": "Day 1 12:30-13:00",
+            "name": "Lunch"
+          },
+          {
             "time": "Day 1 13:00-15:00",
             "name": "Kayak"
           },
@@ -137,6 +141,10 @@ window.BOOKING_DATA = {
           {
             "time": "Day 1 10:30-12:00",
             "name": "MOTE"
+          },
+          {
+            "time": "Day 1 12:00-12:30",
+            "name": "Lunch"
           },
           {
             "time": "Day 1 12:30-14:30",
@@ -175,7 +183,7 @@ window.BOOKING_DATA = {
         "label": "Program begins. Students work in 3 small groups (cohorts) that rotate between activities."
       },
       {
-        "time": "12:00 PM\u201312:45 PM",
+        "time": "12:00 PM\u20131:00 PM",
         "label": "Picnic lunch. Each cohort has its own lunch time in this window."
       },
       {
