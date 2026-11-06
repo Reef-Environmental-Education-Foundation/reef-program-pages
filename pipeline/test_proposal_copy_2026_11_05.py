@@ -102,7 +102,7 @@ class HoursCountAndLegendTest(unittest.TestCase):
 
     def test_only_real_activities_are_counted(self):
         import schedule_airtable as sa
-        yes = [("Activity", "Mangrove Kayak Tour"), ("Activity", "Lionfish Lesson & Dissection"),
+        yes = [("Activity", "Ecology Hike & Beach Time"), ("Activity", "Mangrove Kayak Tour"), ("Activity", "Lionfish Lesson & Dissection"),
                ("Whole-Group Block", "Night Activity: Human Impact Skits")]
         no = [("Activity", "Beach Time & Snorkel Check-In"), ("Activity", "Showers & Field Time"),
               ("Meal / Break", "Lunch at REEF"), ("Whole-Group Block", "Beach Time & Rinse-Off")]
