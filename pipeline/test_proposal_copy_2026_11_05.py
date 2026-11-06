@@ -88,6 +88,45 @@ class BenjaminItineraryTest(unittest.TestCase):
         self.assertIn("school arranges", lg["transportation"].lower())
 
 
+class HoursCountAndLegendTest(unittest.TestCase):
+    def item(self, day, bt, start, end=None, name="x"):
+        return {"day": day, "block_type": bt, "start": start, "end": end or "", "name": name}
+
+    def test_per_day_hours_include_night_activity_and_skip_meals(self):
+        import schedule_airtable as sa
+        items = [self.item(1, "Activity", "10:30", "12:00"), self.item(1, "Meal / Break", "07:00", "08:00"),
+                 self.item(1, "Whole-Group Block", "20:00", "21:00"),
+                 self.item(2, "Meal / Break", "07:00", "08:00"), self.item(2, "Activity", "08:30", "10:30"),
+                 self.item(2, "Departure", "18:15")]
+        self.assertEqual(sa.per_day_program_hours(items), "Day 1: 10:30 AM – 9:00 PM; Day 2: 8:30 AM – 6:15 PM")
+
+    def test_only_real_activities_are_counted(self):
+        import schedule_airtable as sa
+        yes = [("Activity", "Mangrove Kayak Tour"), ("Activity", "Lionfish Lesson & Dissection"),
+               ("Whole-Group Block", "Night Activity: Human Impact Skits")]
+        no = [("Activity", "Beach Time & Snorkel Check-In"), ("Activity", "Showers & Field Time"),
+              ("Meal / Break", "Lunch at REEF"), ("Whole-Group Block", "Beach Time & Rinse-Off")]
+        for bt, name in yes:
+            self.assertTrue(sa.counts_as_activity(bt, name), name)
+        for bt, name in no:
+            self.assertFalse(sa.counts_as_activity(bt, name), name)
+
+    def test_location_legend_colours_stations_by_location(self):
+        import schedule_airtable as sa
+        groups = [{"name": "Pennekamp Coral Reef State Park", "color": 5, "match": ["Pennekamp"]},
+                  {"name": "MOTE Coral Nursery", "color": 3, "match": ["MOTE"]}]
+        self.assertEqual(sa._location_group("Pennekamp mangrove trails", groups)["color"], 5)
+        self.assertEqual(sa._location_group("MOTE Coral Nursery", groups)["color"], 3)
+        self.assertIsNone(sa._location_group("Somewhere else", groups))
+
+    def test_benjamin_json_has_the_four_legend_locations_with_addresses(self):
+        raw = json.loads((REPO / "pipeline" / "itineraries" / f"{BENJAMIN}.json").read_text())
+        locs = {l["name"]: l["address"] for l in raw["locations"]}
+        self.assertEqual(locs["REEF Ocean Exploration Center"], "98380 Overseas Hwy, Key Largo, FL 33037")
+        self.assertEqual(locs["Pennekamp Coral Reef State Park"], "102601 Overseas Hwy, Key Largo, FL 33037")
+        self.assertEqual(locs["MOTE Coral Nursery"], "103800 Overseas Hwy, Key Largo, FL 33037")
+
+
 class RenderOnceTest(unittest.TestCase):
     def test_stops_heading_is_written_once_in_each_renderer(self):
         js = (REPO / "assets" / "render.js").read_text()

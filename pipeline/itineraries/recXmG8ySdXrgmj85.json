@@ -3,6 +3,41 @@
  "scheduleFormat": "rotation",
  "sourceNote": "The rotation schedule lives in Airtable (Schedule Items) and is the only schedule source; this file supplies the summary, day titles, audiences and location. Updated 2026-11-06 after the Schedule Items were rewritten for the two-day, three-cohort schedule (Day 1 night activity: Human Impact Skits, 8:00 PM, Holiday Inn event space). Internal only; never rendered.",
  "location": "Key Largo, Florida",
+ "locations": [
+  {
+   "name": "REEF Ocean Exploration Center",
+   "address": "98380 Overseas Hwy, Key Largo, FL 33037",
+   "color": 1,
+   "match": [
+    "REEF",
+    "Ocean Exploration"
+   ]
+  },
+  {
+   "name": "Pennekamp Coral Reef State Park",
+   "address": "102601 Overseas Hwy, Key Largo, FL 33037",
+   "color": 5,
+   "match": [
+    "Pennekamp"
+   ]
+  },
+  {
+   "name": "MOTE Coral Nursery",
+   "address": "103800 Overseas Hwy, Key Largo, FL 33037",
+   "color": 3,
+   "match": [
+    "MOTE"
+   ]
+  },
+  {
+   "name": "Holiday Inn event space",
+   "address": "Meals and night activity",
+   "color": 4,
+   "match": [
+    "Holiday Inn"
+   ]
+  }
+ ],
  "summary": "A two-day marine science program for 90 students in Key Largo, organized into three cohorts that rotate through fish identification, a lionfish lesson, kayaking, snorkeling, an ecology hike and a coral nursery visit at REEF's Ocean Exploration Center, the MOTE Coral Nursery and Pennekamp Coral Reef State Park, with a whole-group night activity on Day 1.",
  "days": [
   {

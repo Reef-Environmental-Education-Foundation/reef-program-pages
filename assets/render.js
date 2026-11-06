@@ -1949,7 +1949,7 @@
       let h1, lede;
       if (fmt === "rotation" && PD.rotation) {
         h1 = PD.rotation.heading || "One Coordinated Schedule";
-        lede = "Where each cohort will be, and when" + (PD.hours ? ", from " + PD.rotation.startLabel + " to " + PD.rotation.endLabel : "") + ".";
+        lede = "Where each cohort will be, and when" + (PD.hours && !(PD.rotation.days || []).length ? ", from " + PD.rotation.startLabel + " to " + PD.rotation.endLabel : "") + ".";
       } else if (fmt === "pending") {
         h1 = "Your schedule is being finalized";
         lede = "The experiences below are part of your program. Exact times will follow.";

@@ -879,6 +879,7 @@ def _read_itinerary_json(record_id, required=True):
         "summary": raw.get("summary"),
         "location": raw.get("location"),
         "programHours": raw.get("programHours"),
+        "locations": raw.get("locations"),
         # Approve & Share audience content (2026-09-28) -- see audience_views.py
         # and the "audiences" section of itineraries/README.md.
         "audiences": raw.get("audiences"),
@@ -1180,7 +1181,8 @@ def build_proposal_data(b, photos=None):
     if rot:
         hours = itin.get("programHours") or clock_range(rot["startTime"], rot["endTime"])
         times = station_times(rot)
-        experiences = [s["name"] for s in rot["stations"] if s.get("type", "experience") == "experience"]
+        experiences = [s["name"] for s in rot["stations"]
+                       if s.get("countsAsActivity", s.get("type", "experience") == "experience")]
         times_by_day = {d["day"]: station_times(rot, day=d["day"]) for d in rot.get("days") or []}
         n_cohorts = len(rot["cohorts"])
         rot.setdefault("heading", f"{number_word(n_cohorts)} Cohorts, One Coordinated Day"
