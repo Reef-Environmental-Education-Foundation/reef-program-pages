@@ -1222,6 +1222,14 @@
   // descriptions stay below the matrix. Data shape: see ROTATION
   // SCHEMA in pipeline/generate_booking_package.py.
   // ================================================================
+  // Matrix gap handling (Martha, 2026-11-07). The schedule graphic never shows idle or hatched
+  // cells. A gap up to ROT_GAP_FILL_MINUTES between two blocks of one cohort is closed by
+  // visually extending the earlier block (its printed times are unchanged); a longer gap shows
+  // one neutral block labelled ROT_SETTLE_LABEL with no time. Both are configurable per
+  // rotation (rot.gapFillMinutes, rot.settleLabel); the generator writes its defaults into the data.
+  const ROT_GAP_FILL_MINUTES = 60;
+  const ROT_SETTLE_LABEL = "Settle in and freshen up";
+
   function tmin(hhmm) { const p = String(hhmm).split(":"); return (+p[0]) * 60 + (+p[1]); }
   function clockLabel(m, withSuffix) {
     const h = Math.floor(m / 60), mm = m % 60;
@@ -1233,13 +1241,21 @@
     return sa === ea ? clockLabel(s) + "–" + clockLabel(e, true) : clockLabel(s, true) + "–" + clockLabel(e, true);
   }
 
-  function rotationModel(rot) {
+  function rotationModel(rot, opts) {
+    const lastDay = !(opts && opts.lastDay === false);
     const slot = rot.slotMinutes || 15;
     const start = tmin(rot.startTime), end = tmin(rot.endTime);
+    const fill = (rot.gapFillMinutes === undefined || rot.gapFillMinutes === null) ? ROT_GAP_FILL_MINUTES : rot.gapFillMinutes;
+    const settleLabel = rot.settleLabel || ROT_SETTLE_LABEL;
     const stations = {};
     (rot.stations || []).forEach(function (st, i) {
       stations[st.id] = Object.assign({ color: i % 6 }, st);
     });
+    function settle(s0, e0, next) {
+      // styled like the meal / lodging block that follows; neutral when there is none
+      const like = next && next.st && (next.st.type === "meal" || next.st.type === "shared") ? next.st.color : null;
+      return { s: s0, e: e0, vs: s0, ve: e0, settle: true, label: settleLabel, color: like };
+    }
     const cohorts = (rot.cohorts || []).map(function (c) {
       const items = [];
       (rot.assignments || []).forEach(function (a) {
@@ -1249,15 +1265,26 @@
         items.push({ s: tmin(a.start), e: tmin(a.end), st: stations[a.station], shared: true });
       });
       items.sort(function (x, y) { return x.s - y.s; });
-      // Fill gaps with transition time so the row always reads start-to-end.
+      // Close every gap so the row reads start-to-end with no dead time. vs / ve are the
+      // visual span; s / e stay the real times (the only ones ever printed).
       const filled = [];
-      let cursor = start;
+      let cursor = start, prev = null;
       items.forEach(function (it) {
-        if (it.s > cursor) filled.push({ s: cursor, e: it.s, gap: true });
+        it.vs = it.s; it.ve = it.e;
+        const gap = it.s - cursor;
+        if (gap > 0) {
+          if (gap <= fill) { if (prev) prev.ve = it.s; else it.vs = cursor; }
+          else filled.push(settle(cursor, it.s, it));
+        }
         filled.push(it);
+        prev = it;
         cursor = Math.max(cursor, it.e);
       });
-      if (cursor < end) filled.push({ s: cursor, e: end, gap: true });
+      // After the last block: nothing on the last day (departure); earlier days follow the same rule.
+      if (cursor < end && !lastDay) {
+        if (end - cursor <= fill && prev) prev.ve = end;
+        else filled.push(settle(cursor, end, null));
+      }
       return { c: c, items: filled };
     });
     const span = end - start;
@@ -1271,13 +1298,18 @@
   }
 
   function rotationCellContent(it, compact) {
-    if (it.gap) return [el("span", { class: "rc-gap-label" }, [(it.e - it.s) >= 45 ? "Transition" : ""])];
-    const name = compact ? (it.st.short || it.st.name) : ((it.e - it.s) >= 60 ? it.st.name : (it.st.short || it.st.name));
+    if (it.settle) return [el("span", { class: "rc-name" }, [it.label])];
+    const name = compact ? (it.st.short || it.st.name) : (((it.ve || it.e) - (it.vs || it.s)) >= 60 ? it.st.name : (it.st.short || it.st.name));
     return [
       el("span", { class: "rc-name" }, [name]),
       el("span", { class: "rc-time mono" }, [rangeLabel(it.s, it.e)]),
-      (!compact && it.st.location && (it.e - it.s) >= 60) ? el("span", { class: "rc-loc" }, [it.st.location]) : null,
+      (!compact && it.st.location && ((it.ve || it.e) - (it.vs || it.s)) >= 60) ? el("span", { class: "rc-loc" }, [it.st.location]) : null,
     ];
+  }
+
+  function rotationCellClass(it) {
+    if (it.settle) return "rot-cell rot-settle " + (it.color === null || it.color === undefined ? "rot-neutral" : "rot-c" + (it.color % 6));
+    return "rot-cell rot-c" + (it.st.color % 6);
   }
 
   function rotationDesktop(rot, M) {
@@ -1300,9 +1332,9 @@
         cohortSizeText(rot, row.c) ? el("span", { class: "rl-size" }, [cohortSizeText(rot, row.c)]) : null,
       ]));
       row.items.forEach(function (it) {
-        const a = (it.s - M.start) / M.slot + 2, b = (it.e - M.start) / M.slot + 2;
-        const cls = (it.gap ? "rot-cell rot-gap" : "rot-cell rot-c" + (it.st.color % 6)) + ((it.e - it.s) <= 30 ? " is-narrow" : "");
-        grid.appendChild(el("div", { class: cls, style: "grid-row:" + gr + ";grid-column:" + a + " / " + b + ";" }, rotationCellContent(it, (it.e - it.s) <= 30)));
+        const a = (it.vs - M.start) / M.slot + 2, b = (it.ve - M.start) / M.slot + 2;
+        const cls = rotationCellClass(it) + ((it.ve - it.vs) <= 30 ? " is-narrow" : "");
+        grid.appendChild(el("div", { class: cls, style: "grid-row:" + gr + ";grid-column:" + a + " / " + b + ";" }, rotationCellContent(it, (it.ve - it.vs) <= 30)));
       });
     });
     if (hasDep) {
@@ -1333,9 +1365,8 @@
     }
     M.cohorts.forEach(function (row, ci) {
       row.items.forEach(function (it) {
-        const a = (it.s - M.start) / M.slot + 2, b = (it.e - M.start) / M.slot + 2;
-        const cls = it.gap ? "rot-cell rot-gap" : "rot-cell rot-c" + (it.st.color % 6);
-        grid.appendChild(el("div", { class: cls, style: "grid-column:" + (ci + 2) + ";grid-row:" + a + " / " + b + ";" }, rotationCellContent(it, true)));
+        const a = (it.vs - M.start) / M.slot + 2, b = (it.ve - M.start) / M.slot + 2;
+        grid.appendChild(el("div", { class: rotationCellClass(it), style: "grid-column:" + (ci + 2) + ";grid-row:" + a + " / " + b + ";" }, rotationCellContent(it, true)));
       });
     });
     if (hasDep) {
@@ -1384,7 +1415,7 @@
     M.cohorts.forEach(function (row) {
       wrap.appendChild(el("div", { class: "rot-list-col" }, [
         el("h4", {}, [row.c.label + (cohortSizeText(rot, row.c) ? " · " + cohortSizeText(rot, row.c) : "")]),
-        el("ul", {}, row.items.filter(function (it) { return !it.gap; }).map(function (it) {
+        el("ul", {}, row.items.filter(function (it) { return !it.settle; }).map(function (it) {
           return el("li", {}, [el("span", { class: "mono" }, [rangeLabel(it.s, it.e)]), " ", it.st.name + (it.st.location ? " (" + it.st.location + ")" : "")]);
         }).concat(rot.departure ? [el("li", {}, [el("span", { class: "mono" }, [clockLabel(tmin(rot.departure.time), true)]), " ", rot.departure.label || "Departure"])] : [])),
       ]));
@@ -1427,7 +1458,7 @@
     const draft = !!(opts && opts.draft);
     const parts = rot.days.map(function (d) {
       const dr = dayRotation(rot, d);
-      return { d: d, rot: dr, M: rotationModel(dr) };
+      return { d: d, rot: dr, M: rotationModel(dr, { lastDay: d.day === rot.days[rot.days.length - 1].day }) };
     });
     const list = el("details", { class: "rot-list" }, [el("summary", {}, ["View the schedule as a list by cohort"])]);
     if (draft) list.appendChild(draftScheduleLine());

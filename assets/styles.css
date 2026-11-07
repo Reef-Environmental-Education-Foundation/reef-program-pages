@@ -1028,7 +1028,7 @@ li{margin:0;}
   --rot-3-bg:#FFF4C2; --rot-3-edge:#C9A600; --rot-3-ink:#4F4000;
   --rot-4-bg:#E9E1F5; --rot-4-edge:#7B5EA7; --rot-4-ink:#3F2A66;
   --rot-5-bg:#DDEFD9; --rot-5-edge:#4F9A45; --rot-5-ink:#25531F;
-  --rot-gap-a:#EEF2F5; --rot-gap-b:#F7F9FA;
+  
   --rot-label:108px; --rot-dep:74px; --rot-time:58px; --rot-slot-h:22px;
 }
 @media (prefers-color-scheme: dark){
@@ -1039,7 +1039,6 @@ li{margin:0;}
     --rot-3-bg:rgba(201,166,0,.22);  --rot-3-edge:#E3C43A; --rot-3-ink:#FFF1B8;
     --rot-4-bg:rgba(123,94,167,.28); --rot-4-edge:#A88BD4; --rot-4-ink:#EBE1FA;
     --rot-5-bg:rgba(79,154,69,.26);  --rot-5-edge:#7CC271; --rot-5-ink:#DDF2D9;
-    --rot-gap-a:#152A42; --rot-gap-b:#11233A;
   }
 }
 :root[data-theme="dark"] .proposal-shell{
@@ -1049,7 +1048,6 @@ li{margin:0;}
   --rot-3-bg:rgba(201,166,0,.22);  --rot-3-edge:#E3C43A; --rot-3-ink:#FFF1B8;
   --rot-4-bg:rgba(123,94,167,.28); --rot-4-edge:#A88BD4; --rot-4-ink:#EBE1FA;
   --rot-5-bg:rgba(79,154,69,.26);  --rot-5-edge:#7CC271; --rot-5-ink:#DDF2D9;
-  --rot-gap-a:#152A42; --rot-gap-b:#11233A;
 }
 .proposal-shell .rot-c0{--c-bg:var(--rot-0-bg);--c-edge:var(--rot-0-edge);--c-ink:var(--rot-0-ink);}
 .proposal-shell .rot-c1{--c-bg:var(--rot-1-bg);--c-edge:var(--rot-1-edge);--c-ink:var(--rot-1-ink);}
@@ -1076,11 +1074,10 @@ li{margin:0;}
 .proposal-shell .rc-name{font-weight:800;font-size:12.5px;line-height:1.2;}
 .proposal-shell .rc-time{font-size:11px;font-weight:600;line-height:1.25;opacity:.92;}
 .proposal-shell .rc-loc{font-size:10.5px;line-height:1.25;opacity:.85;}
-.proposal-shell .rot-gap{
-  background:repeating-linear-gradient(135deg,var(--rot-gap-a) 0 6px,var(--rot-gap-b) 6px 12px);
-  border-left:none;color:var(--p-slate-soft);align-items:center;padding:4px 2px;
-}
-.proposal-shell .rc-gap-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;writing-mode:horizontal-tb;}
+/* 2026-11-07: no hatched / idle cells. A long gap shows a "settle in" block that borrows the
+   colour of the meal / lodging block after it (rot-cN), or this neutral fill when there is none. */
+.proposal-shell .rot-neutral{--c-bg:#EEF2F5;--c-edge:#9AA8B5;--c-ink:#33414E;}
+.proposal-shell .rot-settle .rc-name{font-weight:600;}
 .proposal-shell .rot-dep{
   border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;
   background:var(--navy-deep);color:#fff;padding:6px;
@@ -1123,7 +1120,6 @@ li{margin:0;}
   .proposal-shell .rl-kicker{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--p-slate-soft);}
   .proposal-shell .rot-vtick{font-size:10.5px;font-weight:700;color:var(--p-slate);border-top:1px solid var(--p-hairline-strong);padding:2px 4px 0 0;line-height:1.2;}
   .proposal-shell .rot-cell{min-height:0;padding:4px 6px;border-left:none;border-top:4px solid var(--c-edge);justify-content:flex-start;}
-  .proposal-shell .rot-gap{border-top:none;justify-content:center;}
   .proposal-shell .rc-name{font-size:12px;}
   .proposal-shell .rc-time{font-size:10px;}
   .proposal-shell .rot-dep-row{padding:8px;}
@@ -1264,7 +1260,7 @@ li{margin:0;}
     --p-bg:#fff;--p-paper:#fff;--p-paper-raised:#f6f6f2;--p-ink:#111;--p-slate:#333;--p-slate-soft:#555;--p-hairline:#ccc;--p-hairline-strong:#aaa;--p-shadow:none;}
   .audience-shell .no-print,.audience-shell .a-top-actions{display:none !important;}
   .audience-shell #topbar{position:static;background:#0F2A4E !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-  .audience-shell .a-hero,.audience-shell .a-status-ribbon,.audience-shell .rot-cell,.audience-shell .rot-dep,.audience-shell .rot-gap,.audience-shell .share-status{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .audience-shell .a-hero,.audience-shell .a-status-ribbon,.audience-shell .rot-cell,.audience-shell .rot-dep,.audience-shell .share-status{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .audience-shell .a-hero{padding:18px 0 14px;}
   .audience-shell .a-sec{padding-top:14px;padding-bottom:14px;break-inside:auto;}
   .audience-shell .block-head,.audience-shell .station-card,.audience-shell .included-card,.audience-shell .pillar-card,.audience-shell .rot-frame,.audience-shell tr{break-inside:avoid;}
@@ -1316,3 +1312,8 @@ li{margin:0;}
 .proposal-shell .stop-day:first-of-type{margin-top:8px;}
 .proposal-shell .stop-day-title{margin:0 0 10px;font-size:18px;}
 .proposal-shell .rot-locations{margin-bottom:4px;}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .proposal-shell .rot-neutral{--c-bg:#152A42;--c-edge:#6B7F93;--c-ink:#D5DEE8;}
+}
+:root[data-theme="dark"] .proposal-shell .rot-neutral{--c-bg:#152A42;--c-edge:#6B7F93;--c-ink:#D5DEE8;}

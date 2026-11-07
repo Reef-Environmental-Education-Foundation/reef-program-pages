@@ -251,6 +251,13 @@ REEF_CONTACT_NOTE = (
     "for you to understand what comes with your REEF Booking! Feel free to call with any "
     "questions or changes and I would be happy to walk you through it.")
 
+# Rotation matrix gap handling (Martha, 2026-11-07), rendering only. A gap up to this many minutes
+# between two blocks of one cohort is closed by visually extending the earlier block; a longer gap
+# shows one neutral block with the label below (no time printed). Written into every rotation's
+# data as gapFillMinutes / settleLabel; an itinerary file's rotation may override either.
+ROTATION_GAP_FILL_MINUTES = 60
+ROTATION_SETTLE_LABEL = "Settle in and freshen up"
+
 # Staff contact phone extension. Read from the EPO Personnel "Extension" field when that
 # field exists on the record; otherwise this default. A blank value omits "ext." entirely.
 # (Open question 2026-11-05: confirm 1005 is right for every REEF contact.)
@@ -1187,6 +1194,8 @@ def build_proposal_data(b, photos=None, school_facing=False):
         n_cohorts = len(rot["cohorts"])
         rot.setdefault("heading", f"{number_word(n_cohorts)} Cohorts, One Coordinated Day"
                        if n_days == 1 else f"{number_word(n_cohorts)} Cohorts, One Coordinated Schedule")
+        rot.setdefault("gapFillMinutes", ROTATION_GAP_FILL_MINUTES)
+        rot.setdefault("settleLabel", ROTATION_SETTLE_LABEL)
         rot["startLabel"] = clock(rot["startTime"])
         rot["endLabel"] = clock(rot["endTime"])
         for d in days:
