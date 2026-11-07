@@ -9,7 +9,7 @@ window.BOOKING_DATA = {
     "status": "proposal",
     "statusLabel": "Proposal",
     "version": "v4",
-    "lastUpdated": "Nov 6, 2026",
+    "lastUpdated": "Nov 7, 2026",
     "orgName": "The Benjamin School",
     "dateLine": "April 16\u201317, 2027",
     "hours": "Day 1: 10:30 AM \u2013 9:00 PM; Day 2: 8:30 AM \u2013 6:15 PM",
@@ -427,6 +427,8 @@ window.BOOKING_DATA = {
           }
         }
       ],
+      "gapFillMinutes": 60,
+      "settleLabel": "Settle in and freshen up",
       "startLabel": "7:00 AM",
       "endLabel": "9:00 PM"
     },
