@@ -39,6 +39,7 @@ class CopyRulesTest(unittest.TestCase):
             for text in texts(data):
                 self.assertNotRegex(text, r"(?i)houseboat|ocean first|check(s|ed)?[- ](in|out)|lodging|settle into", rid)
                 self.assertNotRegex(text, r"(?i)fill in|\[[A-Z /]+\]", rid)
+            self.assertNotRegex(" ".join(texts(data)), r"(?i)\bhike\b", rid)   # only the priced guided kayak tour (Martha, 2026-11-09)
             blocks = [b for d in data["days"] for b in d["blocks"]]
             self.assertTrue(any(b["title"] == KAYAK_NAME for b in blocks), rid)
             self.assertTrue(all(d["outcomesNote"] and "planning times" in d["outcomesNote"] for d in data["days"]), rid)
