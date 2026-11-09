@@ -6,16 +6,16 @@ window.BOOKING_DATA = {
     "sampleFlag": false
   },
   "view": {
-    "status": "draft",
-    "statusLabel": "Draft",
-    "version": "v1",
-    "lastUpdated": "Oct 30, 2026",
+    "status": "proposal",
+    "statusLabel": "Proposal",
+    "version": "v2",
+    "lastUpdated": "Nov 9, 2026",
     "orgName": "Thomas Jefferson High School for Science and Technology (TJHSST)",
     "dateLine": "January 29 \u2013 February 1, 2027",
     "hours": null,
     "programName": "Florida Keys Ocean Explorers Expedition",
     "summary": "A four-day marine science program for 18 students and 2 chaperones in Key Largo, combining classroom learning with two coral reef snorkels and fish surveys.",
-    "scheduleDraft": true,
+    "scheduleDraft": false,
     "view": "administrator",
     "purpose": "A four-day marine science program for 18 students and 2 chaperones in Key Largo, combining classroom learning with two coral reef snorkels and fish surveys.",
     "value": [
@@ -132,32 +132,32 @@ window.BOOKING_DATA = {
       }
     ],
     "pricing": {
-      "total": "$14,081.55",
-      "perStudent": "$782.31",
+      "total": "$11,562.60",
+      "perStudent": "$642.37",
       "chaperones": "All 2 chaperones are complimentary.",
       "note": "Estimated total. REEF sends a revised proposal if anything that affects price changes."
     },
     "included": [
       "Four days of REEF-led marine science programming for your students and chaperones, covering citizen science and the Volunteer Fish Survey Project, Florida Keys ecology, invasive species (including a lionfish lesson and dissection), and endangered species",
       "Two coral reef boat snorkels with fish surveys, including snorkel gear",
+      "One guided kayak tour of the mangroves at John Pennekamp Coral Reef State Park, led by experienced guides, including kayaks and park entrance",
       "Instructional materials and REEF survey supplies for every student",
-      "Lodging at Ocean First's on-the-water houseboats in Key Largo (three houseboats for three nights), subject to availability",
       "A follow-up lesson using the survey data your students collect"
     ],
     "notIncluded": [
-      "Meals (see optional add-ons); the houseboats include kitchenettes and a grocery store is nearby",
+      "Lodging (arranged and paid directly by your school; REEF can share recommendations)",
+      "Meals (see optional add-ons)",
       "Travel to and from the Florida Keys and ground transportation during your program",
       "Snacks, beverages, and personal expenses"
     ],
     "optional": [
-      "Breakfast and lunch at the Hideout restaurant at Ocean First",
-      "Group dinners (or arrange your own, such as ordering in)",
-      "Pennekamp State Park kayaking tour"
+      "Optional REEF-coordinated meals during scheduled program hours: lunch at $10 per person and dinner at $12 per person (meal details confirmed after the contract is signed)"
     ],
     "paymentTerms": [
-      "A $500.00 deposit holds your group's date.",
-      "Payment 2 of $6,790.77 is due Oct 30, 2026.",
-      "The final payment of $6,790.77 is due Oct 31, 2026.",
+      "A $11,562.60 deposit holds your group's date and is due Nov 23, 2026.",
+      "The agreement guarantees $10,277.87 of program cost for a minimum of 16 paid spaces.",
+      "Payment dates are provisional until the agreement date is set.",
+      "The final payment is due 90 days before the program.",
       "A 10% late fee applies to payments more than 14 days past due."
     ],
     "cancellationTerms": [
@@ -179,7 +179,7 @@ window.BOOKING_DATA = {
       "name": "Rose Kelly",
       "role": "Education Coordinator",
       "email": "rose@REEF.org",
-      "phone": "305-852-0030"
+      "phone": "305-852-0030 ext. 1005"
     },
     "title": "Administrator Approval Summary",
     "audienceLabel": "School or organization leadership",

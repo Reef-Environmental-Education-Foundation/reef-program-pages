@@ -6,16 +6,16 @@ window.BOOKING_DATA = {
     "sampleFlag": false
   },
   "view": {
-    "status": "draft",
-    "statusLabel": "Draft",
-    "version": "v1",
-    "lastUpdated": "Oct 30, 2026",
+    "status": "proposal",
+    "statusLabel": "Proposal",
+    "version": "v2",
+    "lastUpdated": "Nov 9, 2026",
     "orgName": "Thomas Jefferson High School for Science and Technology (TJHSST)",
     "dateLine": "January 29 \u2013 February 1, 2027",
     "hours": null,
     "programName": "Florida Keys Ocean Explorers Expedition",
     "summary": "A four-day marine science program for 18 students and 2 chaperones in Key Largo, combining classroom learning with two coral reef snorkels and fish surveys.",
-    "scheduleDraft": true,
+    "scheduleDraft": false,
     "view": "educator",
     "objectives": [
       "Learn what REEF is and how citizen scientists protect reefs.",
@@ -191,9 +191,9 @@ window.BOOKING_DATA = {
       "name": "Rose Kelly",
       "role": "Education Coordinator",
       "email": "rose@REEF.org",
-      "phone": "305-852-0030"
+      "phone": "305-852-0030 ext. 1005"
     },
-    "title": "Draft Educator Plan",
+    "title": "Educator Plan",
     "audienceLabel": "Teachers and program staff",
     "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/thomas-jefferson-high-school-for-science-and-technology-tjhsst/share/educator/"
   }
