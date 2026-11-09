@@ -599,6 +599,12 @@ def max_complimentary_chaperones(students, threshold):
     return c
 
 
+def uses_legacy_chaperone_wording(b):
+    """Legacy payment-wording bookings and Completed bookings keep the 1-per-9-paid
+    chaperone sentence; everything else uses 1 free per 10 total participants."""
+    return b.get("record_id") in LEGACY_PAYMENT_WORDING_IDS or (b.get("status") or "") == "Completed"
+
+
 def chaperone_policy(b):
     """Plain-language explanation of the complimentary chaperone count,
     computed from the same rule as the Bookings '# Free Chaperones' formula
@@ -613,16 +619,22 @@ def chaperone_policy(b):
         lines.append(f"One chaperone space is complimentary for every 15 students. With {s} students, "
                      f"your group can bring up to {cap} chaperone{'s' if cap != 1 else ''} at no charge.")
     else:
-        # Policy (Martha, 2026-10-30): one complimentary chaperone for every 9
-        # PAID participants (9 paid + 1 free = 1 per 10 total). Airtable's
+        # Policy (Martha, 2026-11-09): one complimentary chaperone space per 10 TOTAL
+        # participants (students + chaperones), whole spaces only. Airtable's
         # "# Free Chaperones" = MIN(chaperones, FLOOR((students + chaperones) / 10))
         # is the source of truth: every count on the page comes from that field
-        # and "# Billable Chaperones", never from total people / 9.
+        # and "# Billable Chaperones". Legacy (Ben Gamla, Hanover) and Completed
+        # bookings keep the earlier "every 9 paid participants" wording (9 paid + 1 free).
         billable = b["billable_chaperones"] if b.get("billable_chaperones") is not None else max(c - free, 0)
         cap = max_complimentary_chaperones(s, b["free_chap_threshold"])
-        lines.append(f"One chaperone space is complimentary for every 9 paid participants. Your group of "
-                     f"{s} students and {c} chaperones includes {free} complimentary chaperone "
-                     f"space{'s' if free != 1 else ''}.")
+        plural = "s" if free != 1 else ""
+        if uses_legacy_chaperone_wording(b):
+            rule = "One chaperone space is complimentary for every 9 paid participants."
+        else:
+            rule = (f"One chaperone space is complimentary for every {b['free_chap_threshold']} total participants "
+                    f"(students and chaperones), in whole spaces only.")
+        lines.append(f"{rule} Your group of {s} students and {c} chaperones includes {free} complimentary "
+                     f"chaperone space{plural}.")
         if cap >= c:
             lines.append(f"With {s} students, you can bring up to {cap} chaperones before any chaperone is billed.")
         elif billable:

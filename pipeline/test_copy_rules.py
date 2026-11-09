@@ -31,6 +31,14 @@ class CopyRulesTest(unittest.TestCase):
             for text in texts(json.loads(path.read_text())):
                 self.assertNotRegex(text, r"(?i)\bseine", f"{path.name}: {text[:60]}")
 
+    def test_tjhsst_has_no_lodging_or_unfilled_placeholder(self):
+        """REEF does not include or book lodging in 2027; a [..FILL IN..] marker must
+        never reach a customer page (it may live in sourceNote only)."""
+        data = json.loads((ITINERARIES / "rechXL7mCZJTGNofS.json").read_text())
+        for text in texts(data):
+            self.assertNotRegex(text, r"(?i)houseboat|ocean first|check(s|ed)?[- ](in|out)|lodging|settle into")
+            self.assertNotRegex(text, r"(?i)fill in|\[[A-Z /]+\]")
+
     def test_kayak_titles_use_the_standard_name(self):
         for path in sorted(ITINERARIES.glob("rec*.json")):
             data = json.loads(path.read_text())
