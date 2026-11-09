@@ -449,6 +449,9 @@ def fetch_schedule_rows(record_id):
 SLUG_OVERRIDES = {
     "recP88dd2wk5XdHU3": "hanover-high-school-2-day",
     "reciijikzFlFdq3Qr": "hanover-high-school-4-day",
+    # TJHSST 3-day option (2026-11-09). The 4-day record (rechXL7mCZJTGNofS) deliberately keeps
+    # the org slug, so its already-live URL does not change.
+    "recWsjgw9VBY53vA4": "thomas-jefferson-high-school-for-science-and-technology-tjhsst-3-day",
 }
 
 
