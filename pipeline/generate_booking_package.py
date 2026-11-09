@@ -2057,15 +2057,24 @@ def build_share_views(b, page_data, is_proposal, page_url, school_facing=False):
     return {k: audience_views.view_page_data(v, sample) for k, v in views.items()}
 
 
-def cache_busted(shell_html, data_js_path):
-    """Point the shell's data.js at data.js?v=<content hash>. GitHub Pages and browsers
-    cache the plain URL for minutes, so a republish could keep showing the old data.js
-    (ZZZ scenario test, 2026-11-02). A new publish with new content changes the hash,
-    so the page always fetches the matching file. The data.js must already be written."""
+def cache_busted(shell_html, data_js_path, assets_dir=None):
+    """Version the files a generated page loads: data.js?v=<hash of data.js>, and
+    assets/render.js and assets/styles.css with a hash of each file. GitHub Pages and
+    browsers cache plain URLs for minutes, so a republish (or a render.js change) could
+    keep showing old files (ZZZ scenario test, 2026-11-02). New content gives a new URL.
+    The data.js must already be written."""
     import hashlib
-    digest = hashlib.sha256(Path(data_js_path).read_bytes()).hexdigest()[:12]
-    return shell_html.replace('<script src="data.js"></script>',
-                              f'<script src="data.js?v={digest}"></script>')
+    assets_dir = Path(assets_dir or Path(__file__).parent.parent / "assets")
+
+    def digest(path):
+        return hashlib.sha256(Path(path).read_bytes()).hexdigest()[:12]
+
+    out = shell_html.replace('<script src="data.js"></script>',
+                             f'<script src="data.js?v={digest(data_js_path)}"></script>')
+    for name in ("render.js", "styles.css"):
+        if (assets_dir / name).exists():
+            out = out.replace(f'assets/{name}"', f'assets/{name}?v={digest(assets_dir / name)}"')
+    return out
 
 
 def write_share_views(booking_dir, view_data, org_name):
