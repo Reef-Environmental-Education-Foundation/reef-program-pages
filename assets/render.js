@@ -2082,6 +2082,17 @@
           pr.estimatedTotalNote ? el("p", { class: "price-total-note", html: pr.estimatedTotalNote }) : null,
         ]));
       }
+      // Optional meals + school-paid expenses (2027). Absent unless the proposal includes meals.
+      if (pr.mealsOutside && pr.mealsOutside.text) {
+        const mo = pr.mealsOutside;
+        s.appendChild(el("div", { class: "container block", id: "meals-outside" }, [
+          el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, ["MEALS & OUTSIDE EXPENSES"])]),
+          el("div", {}, String(mo.text).split(/\n{2,}/).map(function (para) {
+            return el("p", { class: "price-ratio-note", style: "white-space:pre-line;" }, [para.trim()]);
+          })),
+          mo.totalPayable ? el("p", { class: "price-total-note" }, [el("strong", {}, [mo.totalPayableLabel + ": " + mo.totalPayable])]) : null,
+        ]));
+      }
       const cp = pr.chaperonePolicy;
       if (cp || pr.ratioNote || (pr.conditions || []).length) {
         s.appendChild(el("div", { class: "container block" }, [

@@ -642,6 +642,28 @@ def chaperone_policy(b):
     return headline, lines
 
 
+# 2027 meals (added 2026-11-09). Only the two CUSTOMER-FACING Bookings fields are ever
+# requested from Airtable. Internal meal fields (vendor cost, margin, combined margin,
+# review counts, deadlines, open items) and lodging fields (access code, contacts) are
+# deliberately absent, so they cannot reach a public data.js. test_meals_proposal.py
+# fails if any internal ID is added here.
+MEALS_PROPOSAL_TEXT_FIELD = "fldRbZteXnW5l4v4X"   # Proposal - Meals & Outside Expenses (auto)
+MEALS_TOTAL_PAYABLE_FIELD = "fldihGwsEvNsqIRaU"   # Total Payable to REEF (incl. selected meals)
+MEALS_CUSTOMER_FIELD_IDS = (MEALS_PROPOSAL_TEXT_FIELD, MEALS_TOTAL_PAYABLE_FIELD)
+
+
+def fetch_meals_proposal_fields(record_id):
+    """Returns {"meals_proposal_text": str, "meals_total_payable": number|None}.
+    Blank text (no meals included) means the proposal renders exactly as before."""
+    rec = airtable_list_by_ids(BOOKINGS_BASE, BOOKINGS_TABLE, [record_id], MEALS_CUSTOMER_FIELD_IDS)[record_id]
+    f = rec.get("fields", {})
+    text = f.get(MEALS_PROPOSAL_TEXT_FIELD)
+    text = text.strip() if isinstance(text, str) else ""
+    total = f.get(MEALS_TOTAL_PAYABLE_FIELD)
+    return {"meals_proposal_text": text,
+            "meals_total_payable": total if isinstance(total, (int, float)) and not isinstance(total, bool) else None}
+
+
 def fetch_booking_data(record_id):
     """Pulls the Bookings record + its linked REEF Personnel contact and
     normalizes them into one plain dict. Every value here traces to a
@@ -685,9 +707,11 @@ def fetch_booking_data(record_id):
         }
 
     schedule = fetch_schedule_rows(record_id)
+    meals = fetch_meals_proposal_fields(record_id)
 
     return {
         **schedule,
+        **meals,
         "record_id": record_id,
         "org_name": f.get("Organization Name", ""),
         "contact_name": f.get("Primary Contact Name", ""),
@@ -1148,6 +1172,20 @@ def summary_count_is_stale(summary, students):
     return stale
 
 
+def meals_pricing_block(b):
+    """{"mealsOutside": {...}} for the proposal Pricing section, or {} when no meals are
+    included. The text is REEF's own customer-facing Airtable field. The total is shown only
+    when it is present, and Total Package Price / deposit / guarantee are never touched."""
+    text = (b.get("meals_proposal_text") or "").strip()
+    if not text:
+        return {}
+    block = {"text": text}
+    if b.get("meals_total_payable") is not None:
+        block["totalPayableLabel"] = "Total payable to REEF (including selected meals)"
+        block["totalPayable"] = money(b["meals_total_payable"])
+    return {"mealsOutside": block}
+
+
 def build_proposal_data(b, photos=None, school_facing=False):
     """Builds the docType "proposal" shape -- the advanced six-section
     customer proposal experience in assets/render.js. Parallel to
@@ -1415,6 +1453,9 @@ def build_proposal_data(b, photos=None, school_facing=False):
                 # behind this rate"), from Bookings "Proposal — Assumptions".
                 "assumptions": split_items(b["proposal_assumptions"]),
                 "whatCouldChange": what_could_change,
+                # Only present when meals are included, so bookings without meals
+                # produce exactly the same payload as before.
+                **meals_pricing_block(b),
             },
         },
     }
