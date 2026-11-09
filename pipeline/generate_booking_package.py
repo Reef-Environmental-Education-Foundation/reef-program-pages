@@ -1610,6 +1610,32 @@ def insert_watermark_banner(doc):
     run.font.color.rgb = docx.shared.RGBColor(0xB2, 0x1D, 0x1D)
 
 
+def contract_payment_lines(b):
+    """(deposit, payment 2, final) lines for the contract. Bookings with agreement terms
+    (agreement_payment_terms) use the Agreement deposit and Payment 2, and the final
+    payment is the balance of the total: total - deposit - Payment 2. The template has no
+    guarantee or true-up wording, so none is added and no guaranteed amount is stated.
+    Ben Gamla and Hanover (LEGACY_PAYMENT_WORDING_IDS) keep the older fields."""
+    ap = agreement_payment_terms(b)
+    if not ap:
+        pay2 = pay_final = None
+        if b["payment2_due_date"]:
+            pay2 = f"{money(b['payment2_amount'])} by {date_pretty(b['payment2_due_date'])} (Payment 2)"
+        if b["final_due_date"]:
+            pay_final = f"{money(b['final_amount'])} by {date_pretty(b['final_due_date'])} (Final Payment)"
+        return f"{money(b['deposit_due_now'])} to secure group space", pay2, pay_final
+    from decimal import Decimal
+    cents = lambda v: Decimal(str(v or 0)).quantize(Decimal("0.01"))  # noqa: E731
+    total, deposit, payment2 = cents(b["total_package_price"]), cents(ap["deposit"]), cents(ap["payment2"])
+    final = total - deposit - payment2
+    if final <= 0:
+        raise ValueError(f"The Agreement deposit and Payment 2 ({deposit + payment2}) leave no balance "
+                         f"of the total ({total}) for the final payment; check the Agreement fields.")
+    pay2 = f"{money(float(payment2))} by {ap['payment2_due']} (Payment 2)" if ap["payment2_due"] and payment2 else None
+    pay_final = f"{money(float(final))} by {ap['final_due']} (Final Payment)" if ap["final_due"] else None
+    return f"{money(float(deposit))} to secure group space", pay2, pay_final
+
+
 def build_contract(b, out_path):
     """Same merge logic proven in gen_contract.py 2026-09-03, now driven
     by live-fetched values instead of a hardcoded dict. This does not
@@ -1644,17 +1670,12 @@ def build_contract(b, out_path):
         "Program Rate Per Person (90): $272",
         f"Program Rate Per Person ({b['students'] + b['chaperones']}): {money(round(b['price_per_paid_space']))}",
     )
-    replace_exact(doc, "$1000 to secure group space", f"{money(b['deposit_due_now'])} to secure group space")
-    if b["payment2_due_date"]:
-        replace_exact(
-            doc, "$11,755 by 8/18/2025 (Half after 1000)",
-            f"{money(b['payment2_amount'])} by {date_pretty(b['payment2_due_date'])} (Payment 2)",
-        )
-    if b["final_due_date"]:
-        replace_exact(
-            doc, "$11,755 by 1/16/2026 (Final Payment)",
-            f"{money(b['final_amount'])} by {date_pretty(b['final_due_date'])} (Final Payment)",
-        )
+    deposit_line, payment2_line, final_line = contract_payment_lines(b)
+    replace_exact(doc, "$1000 to secure group space", deposit_line)
+    if payment2_line:
+        replace_exact(doc, "$11,755 by 8/18/2025 (Half after 1000)", payment2_line)
+    if final_line:
+        replace_exact(doc, "$11,755 by 1/16/2026 (Final Payment)", final_line)
     replace_exact(doc, "Print Name\tRose Kelly", f"Print Name\t{b['reef_contact'].get('name', '')}")
 
     doc.save(out_path)

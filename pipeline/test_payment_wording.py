@@ -28,6 +28,11 @@ class AgreementTermsTest(unittest.TestCase):
         self.assertIsNone(g.agreement_payment_terms(booking(min_guaranteed_spaces=None)))
         self.assertIsNone(g.agreement_payment_terms(booking(deposit_amount_agreement=None)))
 
+    def test_the_pin_list_is_exactly_ben_gamla_and_both_hanover_bookings(self):
+        # Martha, 2026-11-02: these three stay on the old wording even though Minimum
+        # Guaranteed Paid Spaces is set on them. Changing this list needs her decision.
+        self.assertEqual(g.LEGACY_PAYMENT_WORDING_IDS, {BEN_GAMLA, HANOVER_2, HANOVER_4})
+
     def test_ben_gamla_and_hanover_stay_on_the_old_wording(self):
         for rec in (BEN_GAMLA, HANOVER_2, HANOVER_4):
             self.assertIsNone(g.agreement_payment_terms(booking(record_id=rec)), rec)
@@ -63,6 +68,30 @@ class WordingTest(unittest.TestCase):
         old = g.build_payment_schedule(booking(record_id=BEN_GAMLA))
         self.assertEqual(old["items"][0]["label"], "Deposit (due now)")
         self.assertEqual(old["items"][1]["amount"], "$12,977.80")
+
+
+class ContractLinesTest(unittest.TestCase):
+    """Option B (Martha, 2026-11-02): the contract uses the Agreement terms; the final
+    payment is the balance of the total; no guarantee wording."""
+
+    def test_zzz_scenario_booking(self):
+        dep, p2, final = g.contract_payment_lines(booking())
+        self.assertEqual(dep, "$5,391.12 to secure group space")
+        self.assertEqual(p2, "$8,086.68 by Nov 16, 2026 (Payment 2)")
+        self.assertEqual(final, "$13,477.80 by Feb 9, 2027 (Final Payment)")
+        for line in (dep, p2, final):
+            self.assertNotIn("guarantee", line.lower())
+
+    def test_pinned_bookings_keep_the_old_fields(self):
+        for rec in (BEN_GAMLA, HANOVER_2, HANOVER_4):
+            dep, p2, final = g.contract_payment_lines(booking(record_id=rec))
+            self.assertEqual(dep, "$1,000.00 to secure group space", rec)
+            self.assertEqual(p2, "$12,977.80 by Dec 1, 2026 (Payment 2)", rec)
+            self.assertEqual(final, "$12,977.80 by Feb 9, 2027 (Final Payment)", rec)
+
+    def test_a_deposit_and_payment_2_that_exceed_the_total_fail_loudly(self):
+        with self.assertRaises(ValueError):
+            g.contract_payment_lines(booking(deposit_amount_agreement=20000, payment2_amount_agreement=10000))
 
 
 if __name__ == "__main__":
