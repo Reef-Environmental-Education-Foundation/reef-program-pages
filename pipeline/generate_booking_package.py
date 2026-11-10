@@ -138,12 +138,46 @@ PRETRIP_WINDOW_DAYS = 120
 LEGACY_PAYMENT_WORDING_IDS = {"recqb6DGaeJRpymL2", "recP88dd2wk5XdHU3", "reciijikzFlFdq3Qr"}
 
 
+def is_signed(b):
+    """The agreement is signed (Agreement/Contract Status = Signed). Drives the signed-state wording."""
+    return (b.get("agreement_contract_status") or "") == "Signed"
+
+
+# Bookings whose page must not show the contact's job title as a grade level (Martha, 2026-11-10).
+HIDE_GRADE_LEVEL_IDS = {"recqb6DGaeJRpymL2"}
+
+
+def grade_level_chip(b):
+    """Grade level for the hero chip, from the real Student Grade Level field only; never a contact's
+    title. None hides the chip."""
+    if b.get("record_id") in HIDE_GRADE_LEVEL_IDS:
+        return None
+    return b.get("student_grade_level") or None
+
+
+def deposit_received(b):
+    return (b.get("deposit_payment_status") or "") in ("Deposit Received", "Paid in Full")
+
+
+def dates_chip(b):
+    """(label, note) for the hero Dates chip. 'Confirmed' only after the deposit is received
+    (vocabulary rule, Drop A plan section G); a booking with a signed agreement but no deposit yet is
+    'Dates held' with the deposit due date."""
+    if b.get("status") not in ("Confirmed", "In Progress", "Completed") and not is_signed(b):
+        return "Proposed", None
+    if deposit_received(b):
+        return "Dates confirmed", None
+    due = b.get("deposit_due_agreement")
+    return "Dates held", (f"Deposit due {date_pretty(due)}" if due else "Deposit due")
+
+
 def agreement_payment_terms(b, money_fn=None, date_fn=None):
     """None when this booking keeps the old payment wording, else the agreement terms
     ({deposit, deposit_due, payment2, payment2_due, final_due, guaranteed_cost,
     min_spaces, provisional}). Applies only when Agreement Date or Minimum Guaranteed
     Paid Spaces is set and the agreement deposit amount exists."""
-    if b.get("record_id") in LEGACY_PAYMENT_WORDING_IDS:
+    # A signed agreement always shows the Agreement fields; the legacy pin is for unsigned bookings only.
+    if b.get("record_id") in LEGACY_PAYMENT_WORDING_IDS and not is_signed(b):
         return None
     if not (b.get("agreement_date") or b.get("min_guaranteed_spaces")):
         return None
@@ -154,7 +188,10 @@ def agreement_payment_terms(b, money_fn=None, date_fn=None):
     return {"deposit": b.get("deposit_amount_agreement"), "deposit_due": d(b.get("deposit_due_agreement")),
             "payment2": b.get("payment2_amount_agreement"), "payment2_due": d(b.get("payment2_due_agreement")),
             "final_due": d(b.get("final_due_date")),
+            "final": b.get("final_amount_agreement"),
             "guaranteed_cost": b.get("guaranteed_cost_agreement"), "min_spaces": b.get("min_guaranteed_spaces"),
+            "lock_date": d(b.get("guarantee_lock_date")),
+            "signed": is_signed(b),
             "provisional": not b.get("agreement_date")}
 
 
@@ -502,11 +539,23 @@ class SlugCollision(Exception):
 def published_booking_id(slug, bookings_dir=None):
     """The Airtable record ID of the page already published at bookings/<slug>/,
     or None when nothing is published there (or its data.js has no bookingId)."""
-    data_js = (bookings_dir or BOOKINGS_OUT_DIR) / slug / "data.js"
+    folder = (bookings_dir or BOOKINGS_OUT_DIR) / slug
+    data_js = folder / "data.js"
     if not data_js.exists():
         return None
-    match = re.search(r'"bookingId":\s*"(rec[A-Za-z0-9]+)"', data_js.read_text())
-    return match.group(1) if match else None
+    # Proposal pages carry "bookingId"; a pre-trip (confirmed) page carries "generatedFrom" and its
+    # version.json has the bookingId. Without these a published pre-trip page was invisible to the guard.
+    match = re.search(r'"(?:bookingId|generatedFrom)":\s*"(rec[A-Za-z0-9]+)"', data_js.read_text())
+    if match:
+        return match.group(1)
+    marker = folder / "version.json"
+    if marker.exists():
+        try:
+            rid = json.loads(marker.read_text()).get("bookingId")
+            return rid if isinstance(rid, str) and rid.startswith("rec") else None
+        except ValueError:
+            return None
+    return None
 
 
 def check_slug_available(slug, record_id, bookings_dir=None):
@@ -545,7 +594,11 @@ def is_test_org(org_name):
 
 
 def money(n):
-    return f"${n:,.2f}"
+    """Dollars to the cent, halves rounded UP (the signed contract's rounding): 179.595 -> $179.60.
+    Python's float formatting would give $179.59."""
+    from decimal import Decimal, ROUND_HALF_UP
+    d = Decimal(repr(round(float(n), 6))).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return f"${d:,.2f}"
 
 
 def date_pretty(iso):
@@ -783,6 +836,8 @@ def fetch_booking_data(record_id):
         "deposit_due_agreement": f.get("Deposit Due (Agreement)"),
         "payment2_amount_agreement": f.get("Payment 2 Amount (Agreement)"),
         "payment2_due_agreement": f.get("Payment 2 Due (Agreement)"),
+        "final_amount_agreement": f.get("Final Payment Amount (Agreement)"),
+        "student_grade_level": f.get("Student Grade Level"),
         "min_guaranteed_spaces": f.get("Minimum Guaranteed Paid Spaces"),
         "guaranteed_cost_agreement": f.get("Guaranteed Program Cost (Agreement)"),
         "contract_tier": f.get("Contract Tier"),
@@ -1357,7 +1412,7 @@ def build_proposal_data(b, photos=None, school_facing=False):
                 "contactLabel": contact_label,
                 "contactLine": contact_line,
                 # Kept for older render.js builds; the chip now uses contactLabel/contactLine.
-                "gradeLevel": b["contact_role"],
+                "gradeLevel": grade_level_chip(b),
                 "students": students,
                 "chaperones": chaperones,
             },
@@ -1449,24 +1504,37 @@ def build_proposal_data(b, photos=None, school_facing=False):
 
 # ---------------------------------------------------------------- Confirmed page
 
+def signed_first_step(b):
+    d1, d2 = b.get("deposit_due_agreement"), b.get("payment2_due_agreement")
+    if d1 and d2 and d1[:10] == d2[:10]:
+        return f"Your agreement is signed. Your deposit and Payment 2 are due {date_pretty(d1)} (see the payment schedule above)."
+    if d1 and d2:
+        return (f"Your agreement is signed. Your deposit is due {date_pretty(d1)} and Payment 2 is due "
+                f"{date_pretty(d2)} (see the payment schedule above).")
+    return "Your agreement is signed. See the payment schedule above for what is due and when."
+
+
 def build_payment_schedule(b):
     ap = agreement_payment_terms(b)
     if ap:
         payment_schedule = {
-            "tier": b["payment_tier"],
+            # The old tier label ("$500 deposit + 2 payments") is not the signed terms: omitted once signed.
+            "tier": "" if ap["signed"] else b["payment_tier"],
             "items": [
                 {"label": "Deposit", "amount": money(ap["deposit"]), "dueDate": ap["deposit_due"] or None},
                 {"label": "Payment 2", "amount": money(ap["payment2"]) if ap["payment2"] else None,
                  "dueDate": ap["payment2_due"] or None},
-                {"label": "Final Payment", "amount": None, "dueDate": ap["final_due"] or None},
+                {"label": "Final Payment", "amount": money(ap["final"]) if ap.get("final") else None,
+                 "dueDate": ap["final_due"] or None},
             ],
             "total": money(b["total_package_price"]),
-            "note": "From the agreement fields. The final payment is the balance under the agreement."
+            "note": ("From your signed agreement." if ap["signed"] else
+                     "From the agreement fields. The final payment is the balance under the agreement.")
                     + (" Dates are provisional until the agreement date is set." if ap["provisional"] else ""),
         }
     else:
         payment_schedule = {
-            "tier": b["payment_tier"],
+            "tier": "" if is_signed(b) else b["payment_tier"],
             "items": [
                 {"label": "Deposit (due now)", "amount": money(b["deposit_due_now"]), "dueDate": None},
                 {"label": "Payment 2", "amount": money(b["payment2_amount"]),
@@ -1550,14 +1618,12 @@ def build_confirmed_page_data(b):
             "track": "Expedition",
             "groupName": b["org_name"],
             "schoolOrg": b["org_name"],
-            "gradeLevel": b["contact_role"],
+            "gradeLevel": grade_level_chip(b),
             "groupSize": f"{b['students']} Students / {b['chaperones']} Chaperones",
             "location": itin.get("location") or CUSTOMER_LOCATION.get(b["location"], b["location"])
                         or "REEF Campus, Key Largo",
-            "dates": {
-                "label": "Confirmed" if b["status"] == "Confirmed" else "Proposed",
-                "range": f"{date_pretty(b['arrival_date'])} - {date_pretty(b['departure_date'])}",
-            },
+            "dates": dict(zip(("label", "note"), dates_chip(b)),
+                          range=f"{date_pretty(b['arrival_date'])} - {date_pretty(b['departure_date'])}"),
         },
         "contacts": {
             "educatorName": b["contact_name"],
@@ -1581,7 +1647,7 @@ def build_confirmed_page_data(b):
         "paymentSchedule": payment_schedule,
         "nextSteps": {
             "items": [
-                "Review and sign your agreement once it's sent (see above).",
+                signed_first_step(b) if is_signed(b) else "Review and sign your agreement once it's sent (see above).",
                 "Return your group's signed waivers and health/medical forms.",
                 "Confirm final headcount with your REEF educator at least 2 weeks before arrival.",
                 "Reach out any time with questions before your Expedition.",
