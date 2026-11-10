@@ -130,6 +130,21 @@ STAGE_COMPLETED = "Completed"
 PRETRIP_WINDOW_DAYS = 120
 
 
+# School-facing REEF contact email on Get Ready and signed-agreement pages (Martha, 2026-11-10): the shared
+# explorers@ inbox, lowercase, instead of a staff member's own address. Rose Kelly stays the named contact.
+REEF_PUBLIC_EMAIL = "explorers@reef.org"
+
+
+def apply_public_contact_email(b):
+    """Swap the REEF contact's email for the shared inbox on Get Ready / signed bookings. Returns True if applied."""
+    if b.get("reef_contact") is None:
+        return False
+    if (b.get("agreement_contract_status") or "") == "Signed" or derive_stage(b) == STAGE_GET_READY:
+        b["reef_contact"] = dict(b["reef_contact"], email=REEF_PUBLIC_EMAIL)
+        return True
+    return False
+
+
 # Payment wording (Martha, 2026-11-02). Bookings with agreement terms show the Agreement
 # fields (20% deposit etc.) on the administrator view and the confirmed page. The
 # contract builder still reads the older Deposit Due Now / Payment 2 / Final fields
@@ -1647,9 +1662,11 @@ def build_confirmed_page_data(b):
             "eyebrowTag": "Florida Keys Marine Science Expedition",
             "headline": "From Student to Scientist in Key Largo",
             "promise": "Turn the ocean into your classroom. Your students won't just study marine science \u2014 they become part of it.",
-            "imageUrl": "../../assets/photos/hero-reef-shark.jpg",
-            "imageCredit": "Photo: Jeffrey Haines / REEF",
+            # The old hero-reef-shark.jpg was never committed (a broken image); use the REEF photo set.
+            "imageUrl": "../../assets/photos/overview.jpg",
         },
+        "photos": {"welcome": audience_views.PHOTOS["experience"], "next": audience_views.PHOTOS["included"]},
+        "finalReminders": {"questionsEmail": (b.get("reef_contact") or {}).get("email") or "info@REEF.org"},
         "actionNeeded": action_needed,
         "agreement": agreement,
         "paymentSchedule": payment_schedule,
@@ -2194,6 +2211,8 @@ def main():
     record_id = sys.argv[1]
 
     b = fetch_booking_data(record_id)
+    if apply_public_contact_email(b):
+        print(f"REEF contact email on school-facing pages: {REEF_PUBLIC_EMAIL}")
 
     # Checked before anything is written: a cancelled booking has no
     # designed page behavior yet, and the pre-trip branch below would

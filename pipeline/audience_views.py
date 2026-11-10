@@ -232,7 +232,7 @@ SIGNED_COOLING_OFF = ("Cooling-off period (Section 3): if the program start date
                       "after the Agreement Date, with a full refund and no cancellation fee.")
 SIGNED_COUNT_LINE = ("Reductions in participant count are governed by the guarantee in Section 7 and are not partial "
                      "cancellations.")
-SIGNED_NOTICE_LINE = "Cancellation notices must be in writing to explorers@REEF.org."
+SIGNED_NOTICE_LINE = "Cancellation notices must be in writing to explorers@reef.org."
 
 
 def signed_cancellation_lines(ap, money):
@@ -252,6 +252,23 @@ def signed_cancellation_lines(ap, money):
         lines.append(f"Cancellation received {when.lower()}: {owed}.")
     lines += [SIGNED_COOLING_OFF, SIGNED_COUNT_LINE, SIGNED_NOTICE_LINE]
     return lines
+
+
+# REEF-owned program photos already in the repo (the same four the proposal pages use, resized copies in
+# assets/photos/). Only these exist: there is no fish-ID, lionfish, glass-bottom-boat, ecology, endangered-species
+# or park photo in the repo, so those sections get none. Alt text describes the scene, never a person.
+PHOTOS = {
+    "overview": {"file": "overview.jpg", "pos": "50% 38%",
+                 "alt": "A participant in a snorkel mask and blue snorkel in clear turquoise water, holding a fish survey clipboard at a boat ladder."},
+    "days": {"file": "days.jpg", "pos": "50% 30%",
+             "alt": "A participant in a snorkel mask sits on the edge of a boat deck above open blue water, holding a fish identification card."},
+    "experience": {"file": "experience.jpg", "pos": "50% 40%",
+                   "alt": "Two smiling participants hold up fish prints they made during a REEF art and fish-ID activity."},
+    "included": {"file": "included.jpg", "pos": "50% 35%",
+                 "alt": "A participant on a boat records fish sightings on a survey slate, with a REEF fish identification card hanging from the neck."},
+}
+# One banner per audience page (Get Ready stage only).
+VIEW_PHOTO = {"administrator": "overview", "educator": "days", "family": "experience", "student": "included"}
 
 
 def _signed_payment_lines(ap, money):
@@ -334,6 +351,7 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on, school
         "statusLabel": status_label,
         "version": version,
         "lastUpdated": generated_on,
+        "photo": None,          # filled per view below at the Get Ready stage
         "orgName": pd["group"]["orgName"],
         "dateLine": pd["dates"]["range"],
         "hours": pd.get("hours"),
@@ -468,6 +486,9 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on, school
     })
 
     views = {k: v for k, v in views.items() if k in enabled}
+    if b.get("get_ready"):      # Get Ready pages carry one photo banner each
+        for k, v in views.items():
+            v["photo"] = dict(PHOTOS[VIEW_PHOTO[k]])
     # Get Ready stage: per-view checklist, built by get_ready.views_payload (money in the
     # administrator payload only). Attached before the leak check below.
     for k, v in views.items():
