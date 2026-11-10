@@ -6,18 +6,18 @@ window.BOOKING_DATA = {
     "sampleFlag": false
   },
   "view": {
-    "status": "draft",
-    "statusLabel": "Draft",
-    "version": "v2",
-    "lastUpdated": "Oct 30, 2026",
+    "status": "confirmed",
+    "statusLabel": "Confirmed",
+    "version": "v3",
+    "lastUpdated": "Nov 10, 2026",
     "orgName": "Ben Gamla Charter School",
     "dateLine": "March 17, 2027",
     "hours": "9:00 AM \u2013 5:00 PM",
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A one-day marine science Expedition for 66 students, organized into four cohorts rotating through five hands-on experiences at John Pennekamp Coral Reef State Park, Key Largo.",
-    "scheduleDraft": true,
+    "summary": "A one-day marine science Expedition for 67 students, organized into four cohorts rotating through five hands-on experiences at John Pennekamp Coral Reef State Park, Key Largo.",
+    "scheduleDraft": false,
     "view": "administrator",
-    "purpose": "A one-day marine science Expedition for 66 students, organized into four cohorts rotating through five hands-on experiences at John Pennekamp Coral Reef State Park, Key Largo.",
+    "purpose": "A one-day marine science Expedition for 67 students, organized into four cohorts rotating through five hands-on experiences at John Pennekamp Coral Reef State Park, Key Largo.",
     "value": [
       {
         "title": "Real citizen science, not a demo",
@@ -35,7 +35,7 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Group Size",
-        "v": "66 students + 10 chaperones"
+        "v": "67 students + 10 chaperones"
       },
       {
         "k": "Program Hours",
@@ -52,7 +52,7 @@ window.BOOKING_DATA = {
       }
     ],
     "counts": {
-      "students": 66,
+      "students": 67,
       "chaperones": 10
     },
     "scheduleFormat": "rotation",
@@ -214,13 +214,13 @@ window.BOOKING_DATA = {
       }
     ],
     "pricing": {
-      "total": "$12,411.00",
-      "perStudent": "$179.87",
+      "total": "$12,571.65",
+      "perStudent": "$179.59",
       "chaperones": "7 of your 10 chaperones are complimentary.",
       "note": "Estimated total. REEF sends a revised proposal if anything that affects price changes."
     },
     "included": [
-      "Glass-bottom boat tour admission for all 66 students and 10 chaperones, including the boat gratuity",
+      "Glass-bottom boat tour admission for all 67 students and 10 chaperones, including the boat gratuity",
       "REEF-led programming: citizen science and fish identification training, and the lionfish lesson and dissection",
       "REEF-led afternoon programs on marine ecology and endangered species",
       "Instructional materials and REEF survey supplies for every student",
@@ -235,8 +235,8 @@ window.BOOKING_DATA = {
     "optional": [],
     "paymentTerms": [
       "A $500.00 deposit holds your group's date.",
-      "Payment 2 of $5,955.50 is due Oct 30, 2026.",
-      "The final payment of $5,955.50 is due Dec 17, 2026.",
+      "Payment 2 of $6,035.82 is due Nov 10, 2026.",
+      "The final payment of $6,285.82 is due Dec 17, 2026.",
       "A 10% late fee applies to payments more than 14 days past due."
     ],
     "cancellationTerms": [
@@ -246,13 +246,7 @@ window.BOOKING_DATA = {
       "This schedule also applies if group size decreases by 50% or more. Cancellations must be made in writing."
     ],
     "termsNote": "These are REEF's standard terms. Your contract states the final terms for your group, including any vendor-specific changes.",
-    "outstanding": [
-      "Final student and chaperone headcount",
-      "Exact cohort sizes and which students are in each cohort",
-      "Teacher and chaperone assignments for each cohort",
-      "Final activity order and timing (this is a planning schedule)",
-      "Whether any programs can move to the REEF campus (this depends on transportation between the park and campus, which is still being explored and is not confirmed)"
-    ],
+    "outstanding": [],
     "decisionMakers": [
       {
         "name": "",
@@ -280,7 +274,192 @@ window.BOOKING_DATA = {
       "name": "Rose Kelly",
       "role": "Education Coordinator",
       "email": "rose@REEF.org",
-      "phone": "305-852-0030"
+      "phone": "305-852-0030 ext. 1005"
+    },
+    "getReady": {
+      "asOf": "2026-11-10",
+      "provisional": false,
+      "deadlines": [
+        {
+          "label": "Guarantee lock",
+          "date": "2026-12-17",
+          "provisional": false
+        },
+        {
+          "label": "Final roster due",
+          "date": "2027-02-15",
+          "provisional": false
+        },
+        {
+          "label": "Deposit due",
+          "date": "2026-11-23",
+          "provisional": false
+        },
+        {
+          "label": "Second payment due",
+          "date": "2026-11-23",
+          "provisional": false
+        },
+        {
+          "label": "Final payment due",
+          "date": "2026-12-17",
+          "provisional": false
+        },
+        {
+          "label": "Program date",
+          "date": "2027-03-17",
+          "provisional": false
+        }
+      ],
+      "groups": [
+        {
+          "group": "REEF",
+          "items": [
+            {
+              "key": "confirm_boat_times",
+              "title": "REEF confirms the boat departure times",
+              "due": null,
+              "done": false,
+              "doneOn": null,
+              "template": false,
+              "provisional": false
+            },
+            {
+              "key": "send_agreement",
+              "title": "REEF sends the agreement",
+              "due": null,
+              "done": false,
+              "doneOn": null,
+              "template": false,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "group": "School administrator",
+          "items": [
+            {
+              "key": "sign_agreement",
+              "title": "Review and sign the agreement",
+              "due": null,
+              "done": false,
+              "doneOn": null,
+              "template": false,
+              "provisional": false,
+              "detail": "REEF sends the agreement; signing starts the payment schedule."
+            },
+            {
+              "key": "deposit",
+              "title": "Pay the deposit",
+              "due": "2026-11-23",
+              "done": false,
+              "doneOn": null,
+              "template": false,
+              "provisional": false,
+              "money": "$2,514.33"
+            },
+            {
+              "key": "payment2",
+              "title": "Second payment",
+              "due": "2026-11-23",
+              "done": false,
+              "doneOn": null,
+              "template": false,
+              "provisional": false,
+              "money": "$3,771.50"
+            },
+            {
+              "key": "guarantee",
+              "title": "Confirm the final paid count (guarantee lock)",
+              "due": "2026-12-17",
+              "done": false,
+              "doneOn": null,
+              "template": false,
+              "provisional": false,
+              "detail": "Minimum guaranteed paid spaces: 57."
+            },
+            {
+              "key": "final_payment",
+              "title": "Final payment",
+              "due": "2026-12-17",
+              "done": false,
+              "doneOn": null,
+              "template": false,
+              "provisional": false,
+              "detail": "Amount: the balance under the signed agreement (not shown until the agreement exists)."
+            },
+            {
+              "key": "chaperones",
+              "title": "Confirm the chaperone count",
+              "due": "2026-12-17",
+              "done": false,
+              "doneOn": null,
+              "template": false,
+              "provisional": false,
+              "detail": "The chaperone count changes the total: confirm it before the guarantee lock."
+            }
+          ]
+        },
+        {
+          "group": "Teacher to families",
+          "items": [
+            {
+              "key": "share_family_page",
+              "title": "Share the family information page with families",
+              "due": "2027-02-15",
+              "done": false,
+              "doneOn": null,
+              "template": true,
+              "provisional": false,
+              "detail": "Use the Family view of the proposal."
+            },
+            {
+              "key": "collect_forms",
+              "title": "Collect signed forms and waivers",
+              "due": "2027-02-15",
+              "done": false,
+              "doneOn": null,
+              "template": false,
+              "provisional": false,
+              "detail": "Liability, medical, conduct and media forms are due with the final roster."
+            },
+            {
+              "key": "final_roster",
+              "title": "Send REEF the final roster",
+              "due": "2027-02-15",
+              "done": false,
+              "doneOn": null,
+              "template": false,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "group": "Students and families",
+          "items": [
+            {
+              "key": "return_forms",
+              "title": "Return signed forms to your teacher",
+              "due": "2027-02-15",
+              "done": false,
+              "doneOn": null,
+              "template": true,
+              "provisional": false,
+              "detail": "Waiver links come from REEF; none are on this page yet."
+            },
+            {
+              "key": "bring_lunch",
+              "title": "Pack a lunch for the program day",
+              "due": "2027-03-17",
+              "done": false,
+              "doneOn": null,
+              "template": true,
+              "provisional": false,
+              "detail": "Lunch is not provided."
+            }
+          ]
+        }
+      ]
     },
     "title": "Administrator Approval Summary",
     "audienceLabel": "Ben Gamla school leadership",

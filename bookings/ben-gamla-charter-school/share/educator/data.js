@@ -6,16 +6,16 @@ window.BOOKING_DATA = {
     "sampleFlag": false
   },
   "view": {
-    "status": "draft",
-    "statusLabel": "Draft",
-    "version": "v2",
-    "lastUpdated": "Oct 30, 2026",
+    "status": "confirmed",
+    "statusLabel": "Confirmed",
+    "version": "v3",
+    "lastUpdated": "Nov 10, 2026",
     "orgName": "Ben Gamla Charter School",
     "dateLine": "March 17, 2027",
     "hours": "9:00 AM \u2013 5:00 PM",
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A one-day marine science Expedition for 66 students, organized into four cohorts rotating through five hands-on experiences at John Pennekamp Coral Reef State Park, Key Largo.",
-    "scheduleDraft": true,
+    "summary": "A one-day marine science Expedition for 67 students, organized into four cohorts rotating through five hands-on experiences at John Pennekamp Coral Reef State Park, Key Largo.",
+    "scheduleDraft": false,
     "view": "educator",
     "objectives": [
       "Observe living coral reef habitat and marine life from the glass-bottom boat.",
@@ -61,7 +61,8 @@ window.BOOKING_DATA = {
           "short": "Fish ID",
           "location": "Pennekamp",
           "type": "experience",
-          "color": 0
+          "color": 0,
+          "countsAsActivity": true
         },
         {
           "id": "lionfish",
@@ -69,7 +70,8 @@ window.BOOKING_DATA = {
           "short": "Lionfish",
           "location": "Pennekamp",
           "type": "experience",
-          "color": 1
+          "color": 1,
+          "countsAsActivity": true
         },
         {
           "id": "boat-tour",
@@ -77,7 +79,8 @@ window.BOOKING_DATA = {
           "short": "Boat Tour",
           "location": "Park marina",
           "type": "experience",
-          "color": 2
+          "color": 2,
+          "countsAsActivity": true
         },
         {
           "id": "lunch",
@@ -85,7 +88,8 @@ window.BOOKING_DATA = {
           "short": "Lunch",
           "location": "Park picnic area",
           "type": "meal",
-          "color": 3
+          "color": 3,
+          "countsAsActivity": false
         },
         {
           "id": "ecology",
@@ -93,7 +97,8 @@ window.BOOKING_DATA = {
           "short": "Ecology",
           "location": "Pennekamp",
           "type": "experience",
-          "color": 4
+          "color": 4,
+          "countsAsActivity": true
         },
         {
           "id": "species",
@@ -101,7 +106,8 @@ window.BOOKING_DATA = {
           "short": "Species",
           "location": "Pennekamp",
           "type": "experience",
-          "color": 5
+          "color": 5,
+          "countsAsActivity": true
         }
       ],
       "assignments": [
@@ -261,6 +267,8 @@ window.BOOKING_DATA = {
         "label": "Departure",
         "note": "The program day ends at 5:00 PM, when buses return to pick up students. The final half hour is flexible time for wrap-up."
       },
+      "gapFillMinutes": 60,
+      "settleLabel": "Settle in and freshen up",
       "startLabel": "9:00 AM",
       "endLabel": "5:00 PM"
     },
@@ -391,26 +399,111 @@ window.BOOKING_DATA = {
       "An adult chaperone must accompany student groups with participants under 18."
     ],
     "counts": {
-      "students": 66,
+      "students": 67,
       "chaperones": 10
     },
     "resources": [
       "Learn about REEF's Volunteer Fish Survey Project and fish identification resources at www.REEF.org."
     ],
-    "remaining": [
-      "Final student and chaperone headcount",
-      "Exact cohort sizes and which students are in each cohort",
-      "Teacher and chaperone assignments for each cohort",
-      "Final activity order and timing (this is a planning schedule)",
-      "Whether any programs can move to the REEF campus (this depends on transportation between the park and campus, which is still being explored and is not confirmed)"
-    ],
+    "remaining": [],
     "reefContact": {
       "name": "Rose Kelly",
       "role": "Education Coordinator",
       "email": "rose@REEF.org",
-      "phone": "305-852-0030"
+      "phone": "305-852-0030 ext. 1005"
     },
-    "title": "Draft Educator Plan",
+    "getReady": {
+      "asOf": "2026-11-10",
+      "provisional": false,
+      "deadlines": [
+        {
+          "label": "Final roster due",
+          "date": "2027-02-15",
+          "provisional": false
+        },
+        {
+          "label": "Program date",
+          "date": "2027-03-17",
+          "provisional": false
+        }
+      ],
+      "groups": [
+        {
+          "group": "REEF",
+          "items": [
+            {
+              "key": "confirm_boat_times",
+              "title": "REEF confirms the boat departure times",
+              "due": null,
+              "done": false,
+              "doneOn": null,
+              "template": false,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "group": "Teacher to families",
+          "items": [
+            {
+              "key": "share_family_page",
+              "title": "Share the family information page with families",
+              "due": "2027-02-15",
+              "done": false,
+              "doneOn": null,
+              "template": true,
+              "provisional": false,
+              "detail": "Use the Family view of the proposal."
+            },
+            {
+              "key": "collect_forms",
+              "title": "Collect signed forms and waivers",
+              "due": "2027-02-15",
+              "done": false,
+              "doneOn": null,
+              "template": false,
+              "provisional": false,
+              "detail": "Liability, medical, conduct and media forms are due with the final roster."
+            },
+            {
+              "key": "final_roster",
+              "title": "Send REEF the final roster",
+              "due": "2027-02-15",
+              "done": false,
+              "doneOn": null,
+              "template": false,
+              "provisional": false
+            }
+          ]
+        },
+        {
+          "group": "Students and families",
+          "items": [
+            {
+              "key": "return_forms",
+              "title": "Return signed forms to your teacher",
+              "due": "2027-02-15",
+              "done": false,
+              "doneOn": null,
+              "template": true,
+              "provisional": false,
+              "detail": "Waiver links come from REEF; none are on this page yet."
+            },
+            {
+              "key": "bring_lunch",
+              "title": "Pack a lunch for the program day",
+              "due": "2027-03-17",
+              "done": false,
+              "doneOn": null,
+              "template": true,
+              "provisional": false,
+              "detail": "Lunch is not provided."
+            }
+          ]
+        }
+      ]
+    },
+    "title": "Educator Plan",
     "audienceLabel": "Ben Gamla teachers and program staff",
     "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/ben-gamla-charter-school/share/educator/"
   }

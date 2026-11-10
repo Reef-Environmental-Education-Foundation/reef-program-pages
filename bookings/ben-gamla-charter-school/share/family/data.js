@@ -6,16 +6,16 @@ window.BOOKING_DATA = {
     "sampleFlag": false
   },
   "view": {
-    "status": "draft",
-    "statusLabel": "Draft",
-    "version": "v2",
-    "lastUpdated": "Oct 30, 2026",
+    "status": "confirmed",
+    "statusLabel": "Confirmed",
+    "version": "v3",
+    "lastUpdated": "Nov 10, 2026",
     "orgName": "Ben Gamla Charter School",
     "dateLine": "March 17, 2027",
     "hours": "9:00 AM \u2013 5:00 PM",
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A one-day marine science Expedition for 66 students, organized into four cohorts rotating through five hands-on experiences at John Pennekamp Coral Reef State Park, Key Largo.",
-    "scheduleDraft": true,
+    "summary": "A one-day marine science Expedition for 67 students, organized into four cohorts rotating through five hands-on experiences at John Pennekamp Coral Reef State Park, Key Largo.",
+    "scheduleDraft": false,
     "view": "family",
     "location": "John Pennekamp Coral Reef State Park, Key Largo",
     "intro": "Students will spend a day with REEF educators, working in small groups that rotate through hands-on marine science experiences. This is a draft planning schedule; REEF will confirm final timing and locations.",
@@ -77,6 +77,49 @@ window.BOOKING_DATA = {
     "fundraising": null,
     "aboutReef": "REEF (Reef Environmental Education Foundation) is a marine conservation nonprofit based in Key Largo, Florida. Since 1990, REEF has trained volunteer divers and snorkelers to identify and survey fish through the Volunteer Fish Survey Project, building one of the world's largest marine life databases. REEF educators bring that same hands-on, science-first approach to every student program.",
     "contactInstructions": "Questions about the day? Please contact your child's school.",
+    "getReady": {
+      "asOf": "2026-11-10",
+      "provisional": false,
+      "deadlines": [
+        {
+          "label": "Return signed forms by",
+          "date": "2027-02-15",
+          "provisional": false
+        },
+        {
+          "label": "Program date",
+          "date": "2027-03-17",
+          "provisional": false
+        }
+      ],
+      "groups": [
+        {
+          "group": "Students and families",
+          "items": [
+            {
+              "key": "return_forms",
+              "title": "Return signed forms to your teacher",
+              "due": "2027-02-15",
+              "done": false,
+              "doneOn": null,
+              "template": true,
+              "provisional": false,
+              "detail": "Waiver links come from REEF; none are on this page yet."
+            },
+            {
+              "key": "bring_lunch",
+              "title": "Pack a lunch for the program day",
+              "due": "2027-03-17",
+              "done": false,
+              "doneOn": null,
+              "template": true,
+              "provisional": false,
+              "detail": "Lunch is not provided."
+            }
+          ]
+        }
+      ]
+    },
     "title": "Family & Chaperone Overview",
     "audienceLabel": "Ben Gamla parents, guardians and chaperones",
     "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/ben-gamla-charter-school/share/family/"
