@@ -2304,16 +2304,21 @@ def main():
             page_url=page_url, message="")
 
 
-if __name__ == "__main__":
+def cli():
+    """Entry point: run main(); on any error write a `failed` result for the workflow's
+    last step (it writes the failure onto the Bookings record) and re-raise. The previous
+    page stays live because nothing is copied into bookings/ before validation passes."""
     try:
         main()
     except SystemExit:
         raise
     except Exception as exc:
-        # The workflow's last step reads this to write the failure onto the
-        # Bookings record; the previous page stays live because nothing was
-        # copied into bookings/.
         publish_support.write_result(
-            RESULT_FILE, status="failed", record_id=sys.argv[1] if len(sys.argv) > 1 else "",
+            RESULT_FILE or os.environ.get("RESULT_FILE", ""), status="failed",
+            record_id=sys.argv[1] if len(sys.argv) > 1 else "",
             message=f"{type(exc).__name__}: {exc}"[:3500])
         raise
+
+
+if __name__ == "__main__":
+    cli()
