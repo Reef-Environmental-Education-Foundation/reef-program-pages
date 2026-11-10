@@ -2,7 +2,8 @@
 
 Free-chaperone copy must come from Airtable's "# Free Chaperones" /
 "# Billable Chaperones" (rule: MIN(chaperones, FLOOR((students + chaperones) / 10)),
-i.e. one complimentary chaperone per 9 paid participants), never total people / 9."""
+i.e. one complimentary chaperone per 10 total participants, whole spaces only), never
+total people / 9. Legacy (Ben Gamla, Hanover) and Completed bookings keep the 1-per-9-paid sentence."""
 import re
 import unittest
 
@@ -37,13 +38,27 @@ class ChaperonePolicyTest(unittest.TestCase):
             text = " ".join([headline] + lines)
             self.assertEqual(headline, f"{free} of your {c} chaperones are complimentary.")
             self.assertIn(f"includes {free} complimentary chaperone space", text)
-            self.assertIn("every 9 paid participants", text)
+            self.assertIn("every 10 total participants (students and chaperones), in whole spaces only", text)
+            self.assertNotIn("9 paid", text)
             # never the old total_people / 9 count, and never the old wording
             self.assertNotIn("earns", text)
             self.assertNotIn("people in your group", text)
             self.assertNotRegex(text, r"per-10|per 10")
             if billable:
                 self.assertIn(f"The other {billable} chaperone", text)
+
+    def test_legacy_and_completed_keep_one_per_nine(self):
+        for extra in ({"record_id": "recqb6DGaeJRpymL2"}, {"record_id": "recP88dd2wk5XdHU3"},
+                      {"record_id": "recNEW", "status": "Completed"}):
+            b = dict(booking(66, 10, 7, 3), **extra)
+            text = " ".join(g.chaperone_policy(b)[1])
+            self.assertIn("every 9 paid participants", text)
+            self.assertIn("includes 7 complimentary chaperone spaces", text)
+
+    def test_tjhsst_totals_unchanged(self):
+        headline, lines = g.chaperone_policy(dict(booking(18, 2, 2, 0), record_id="rechXL7mCZJTGNofS"))
+        self.assertEqual(headline, "All 2 chaperones are complimentary.")
+        self.assertIn("includes 2 complimentary chaperone spaces", " ".join(lines))
 
     def test_ben_gamla_is_not_eight(self):
         headline, lines = g.chaperone_policy(booking(66, 10, 7, 3))

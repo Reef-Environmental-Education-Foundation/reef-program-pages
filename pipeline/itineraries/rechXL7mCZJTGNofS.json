@@ -1,53 +1,53 @@
 {
   "schemaVersion": 2,
   "scheduleFormat": "standard",
-  "sourceNote": "DRAFT 2026-10-12 for Rose's review. Copied from the Hanover 4-day structure. TJHSST, Jan 29 – Feb 1, 2027, 18 students + 2 chaperones, high school. Times are placeholders; transportation unpriced. Internal only; never rendered.",
+  "sourceNote": "Built 2026-11-09 from Rose's TJHSST graphics (via Martha). No times were given: planning times follow Rose's standard Hanover/Ben Gamla slots, flagged on each day via outcomesNote. REEF includes no lodging and no meals: meals shown as on your own. 18 students + 2 chaperones. Day 4 uses the neutral title 'Mangroves and Departure' until Rose confirms the repeated 'One Big Reef: Ecology' title. Mangrove hike alternative removed from client copy until Rose decides (only the priced guided kayak tour is shown). Internal only; never rendered. 4-day option, Jan 29-Feb 1, 2027. Separate Bookings record from the 3-day option.",
   "location": "Key Largo, Florida",
-  "summary": "A four-day marine science program for 18 students and 2 chaperones in Key Largo, combining classroom learning with two coral reef snorkels and fish surveys.",
+  "summary": "A four-day marine science program for 18 students and 2 chaperones in Key Largo, combining classroom learning, two-stop reef snorkels with fish surveys, and a guided mangrove tour at Pennekamp.",
   "days": [
     {
       "dayNumber": 1,
       "totalDays": 4,
-      "title": "What Is REEF?",
-      "theme": "Arrive in Key Largo, settle into your houseboats, and start learning how citizen scientists protect reefs.",
+      "title": "Become a Citizen Scientist",
+      "theme": "Arrive at REEF and learn how citizen scientists record the fish of the Florida Keys.",
       "blocks": [
         {
           "time": "1:00 PM–2:00 PM",
           "tag": "Arrival",
-          "title": "Arrival & Welcome",
-          "description": "Your group arrives in Key Largo and checks in to the Ocean First houseboats. REEF educators welcome the group and preview the days ahead."
+          "title": "Arrival at REEF",
+          "description": "Your group arrives at the REEF campus in Key Largo. REEF educators welcome the group and preview the days ahead."
         },
         {
-          "time": "2:15 PM–3:30 PM",
+          "time": "2:15 PM–5:00 PM",
           "tag": "Citizen Science",
-          "title": "Citizen Science & the Volunteer Fish Survey Project",
-          "description": "Students learn how REEF's volunteer divers and snorkelers record the fish they see, and why that data matters to scientists and reef managers. They practice the survey method they will use on the reef."
+          "title": "Citizen Science Introduction",
+          "description": "At the REEF campus, students learn how REEF's citizen scientists identify and record the fish of the Florida Keys and how those fish are adapted to life on the reef. They try a mock fish survey and make a Gyotaku fish print."
         },
         {
-          "time": "3:45 PM–5:00 PM",
-          "tag": "Fish ID",
-          "title": "Caribbean Fish Identification",
-          "description": "A hands-on introduction to identifying common Caribbean reef fish by family, body shape, color, and behavior, building the skills students use on their reef snorkel."
+          "time": "Evening",
+          "tag": "Break",
+          "title": "Dinner (on your own)",
+          "description": "Dinner is not included in this proposal. Your group arranges dinner on its own."
         }
       ],
       "studentsWill": [
         "Learn what REEF is and how citizen scientists protect reefs.",
-        "Understand how REEF fish survey data is collected and used.",
-        "Begin identifying common Caribbean reef fish."
+        "Practice a fish survey and learn how Florida Keys fish are adapted to the reef.",
+        "Make a Gyotaku fish print."
       ],
-      "outcomesNote": null
+      "outcomesNote": "Times are planning times. Boat times are confirmed once your dates are set."
     },
     {
       "dayNumber": 2,
       "totalDays": 4,
-      "title": "Become a Citizen Scientist",
-      "theme": "Take your survey skills to the reef, then investigate an invasive species up close.",
+      "title": "Level Up Your Fish ID",
+      "theme": "Snorkel two reef sites, investigate lionfish, and learn about the species that need protection.",
       "blocks": [
         {
           "time": "9:00 AM–1:00 PM",
           "tag": "Field Experience",
-          "title": "Reef Snorkel & Fish Surveys",
-          "description": "Students board a boat to a Key Largo coral reef and snorkel to explore marine ecology firsthand: how corals, fish, and other reef organisms depend on each other. They record the fish they find using the survey method they learned. Boat times are confirmed once your dates are set."
+          "title": "Two-Stop Reef Snorkel & Fish Surveys",
+          "description": "Students board a boat to two Key Largo coral reef sites and snorkel, recording the fish they find with the Volunteer Fish Survey Project (VFSP) method. Snorkel gear is included. Boat times are confirmed once your dates are set."
         },
         {
           "time": "1:00 PM–2:15 PM",
@@ -60,32 +60,44 @@
           "tag": "Hands-On Lab",
           "title": "Invasive Species: Lionfish Lesson & Dissection",
           "description": "Students investigate invasive lionfish through a guided dissection, looking at anatomy and adaptations and learning why lionfish are a conservation challenge for Florida Keys reefs."
+        },
+        {
+          "time": "4:15 PM–5:15 PM",
+          "tag": "Conservation",
+          "title": "Grouper Moon: Endangered Species Lesson & Role Play",
+          "description": "Students learn about Nassau grouper and other threatened and endangered marine species of the Florida Keys, why they are at risk, and what people are doing to protect them. A role play puts students in the shoes of the people who decide how to protect them."
+        },
+        {
+          "time": "Evening",
+          "tag": "Break",
+          "title": "Dinner (on your own)",
+          "description": "Dinner is not included in this proposal. Your group arranges dinner on its own."
         }
       ],
       "studentsWill": [
-        "Snorkel a Key Largo coral reef and record the fish they find.",
-        "See how corals, fish, and other reef organisms depend on each other.",
-        "Investigate invasive lionfish through a guided dissection."
+        "Snorkel two Key Largo reef sites and record the fish they find.",
+        "Investigate invasive lionfish through a guided dissection.",
+        "Learn why Nassau grouper and other species need protection."
       ],
-      "outcomesNote": null
+      "outcomesNote": "Times are planning times. Boat times are confirmed once your dates are set."
     },
     {
       "dayNumber": 3,
       "totalDays": 4,
-      "title": "One Big Reef: Coral Reef Ecology",
-      "theme": "Study how a coral reef works, meet the species that need protection, and return to the water for a second survey.",
+      "title": "One Big Reef: Ecology",
+      "theme": "Study how a reef ecosystem fits together, test your fish ID, and return to the water.",
       "blocks": [
         {
           "time": "9:00 AM–10:30 AM",
           "tag": "Marine Ecology",
-          "title": "Coral Reef Ecology",
-          "description": "A Florida Keys coral lesson on how reefs are built, how the organisms on them depend on each other, and how coral restoration helps reefs recover."
+          "title": "Florida Keys Ecology & Mangrove Making",
+          "description": "A Florida Keys ecology lesson on how reefs, seagrass and mangroves connect and depend on each other, followed by a hands-on mangrove-making activity."
         },
         {
           "time": "10:45 AM–12:15 PM",
-          "tag": "Conservation",
-          "title": "Endangered Species of the Florida Keys",
-          "description": "Students learn which marine species in the Keys are threatened or endangered, such as sea turtles and staghorn and elkhorn corals, why they are at risk, and what people are doing to protect them."
+          "tag": "Fish ID",
+          "title": "Level 2 Fish ID Exam",
+          "description": "Students review Caribbean fish identification and take the Level 2 exam toward becoming a REEF Level 2 surveyor."
         },
         {
           "time": "12:15 PM–1:30 PM",
@@ -96,48 +108,47 @@
         {
           "time": "1:30 PM–5:00 PM",
           "tag": "Field Experience",
-          "title": "Reef Snorkel & Fish Surveys",
-          "description": "Students return to the reef to apply what they learned about coral ecology and endangered species, and record a second set of fish surveys. Boat times are confirmed once your dates are set."
+          "title": "Two-Stop Reef Snorkel & Fish Surveys",
+          "description": "Students board a boat to two Key Largo coral reef sites and snorkel, recording the fish they find with the Volunteer Fish Survey Project (VFSP) method. Snorkel gear is included. Boat times are confirmed once your dates are set."
+        },
+        {
+          "time": "Evening",
+          "tag": "Break",
+          "title": "Dinner (on your own)",
+          "description": "Dinner is not included in this proposal. Your group arranges dinner on its own."
         }
       ],
       "studentsWill": [
-        "Explain how coral reefs function as connected ecosystems.",
-        "Identify threatened and endangered species of the Florida Keys and the actions protecting them.",
+        "Explain how reefs, seagrass and mangroves depend on each other.",
+        "Take the Level 2 fish ID exam.",
         "Record a second set of reef fish surveys."
       ],
-      "outcomesNote": null
+      "outcomesNote": "Times are planning times. Boat times are confirmed once your dates are set."
     },
     {
       "dayNumber": 4,
       "totalDays": 4,
-      "title": "Advanced Citizen Scientists",
-      "theme": "Level up your fish ID skills and explore where marine science can take you.",
+      "title": "Mangroves and Departure",
+      "theme": "Explore the mangroves of Pennekamp, then head home.",
       "blocks": [
         {
-          "time": "9:00 AM–10:15 AM",
-          "tag": "Careers",
-          "title": "Careers in Marine Science",
-          "description": "Students hear how people build careers in marine science and conservation, and have time to ask questions about the paths they could take."
-        },
-        {
-          "time": "10:30 AM–12:00 PM",
-          "tag": "Fish ID",
-          "title": "Level 2 Fish ID Review & Exam",
-          "description": "Students review Caribbean fish identification and take the Level 2 exam toward becoming a REEF Level 2 surveyor."
+          "time": "9:00 AM–11:30 AM",
+          "tag": "Field Experience",
+          "title": "Kayaking at Pennekamp (Mangrove Tour)",
+          "description": "A guided REEF tropical ecology tour of the mangroves at John Pennekamp Coral Reef State Park, with kayaks and park entrance included."
         },
         {
           "time": "12:00 PM",
           "tag": "Departure",
           "title": "Departure",
-          "description": "Your group checks out and departs. Lunch is not included in this proposal."
+          "description": "Your group departs. Lunch is not included in this proposal."
         }
       ],
       "studentsWill": [
-        "Explore career paths in marine science and conservation.",
-        "Review and apply advanced Caribbean fish identification skills.",
-        "Take the exam toward REEF Level 2 surveyor status."
+        "Explore a mangrove ecosystem on a guided tour.",
+        "Connect the week's surveys to coral reef and mangrove conservation."
       ],
-      "outcomesNote": null
+      "outcomesNote": "Times are planning times. Boat times are confirmed once your dates are set."
     }
   ]
 }

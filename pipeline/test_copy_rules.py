@@ -31,6 +31,20 @@ class CopyRulesTest(unittest.TestCase):
             for text in texts(json.loads(path.read_text())):
                 self.assertNotRegex(text, r"(?i)\bseine", f"{path.name}: {text[:60]}")
 
+    def test_tjhsst_has_no_lodging_or_unfilled_placeholder(self):
+        """REEF does not include or book lodging in 2027; a [..FILL IN..] marker must
+        never reach a customer page (it may live in sourceNote only)."""
+        for rid in ("rechXL7mCZJTGNofS", "recWsjgw9VBY53vA4"):
+            data = json.loads((ITINERARIES / f"{rid}.json").read_text())
+            for text in texts(data):
+                self.assertNotRegex(text, r"(?i)houseboat|ocean first|check(s|ed)?[- ](in|out)|lodging|settle into", rid)
+                self.assertNotRegex(text, r"(?i)fill in|\[[A-Z /]+\]", rid)
+            self.assertNotRegex(" ".join(texts(data)), r"(?i)\bhike\b", rid)   # only the priced guided kayak tour (Martha, 2026-11-09)
+            blocks = [b for d in data["days"] for b in d["blocks"]]
+            self.assertTrue(any(b["title"] == KAYAK_NAME for b in blocks), rid)
+            self.assertTrue(all(d["outcomesNote"] and "planning times" in d["outcomesNote"] for d in data["days"]), rid)
+            self.assertEqual(len(data["days"]), 4 if rid.startswith("rech") else 3, rid)
+
     def test_kayak_titles_use_the_standard_name(self):
         for path in sorted(ITINERARIES.glob("rec*.json")):
             data = json.loads(path.read_text())
