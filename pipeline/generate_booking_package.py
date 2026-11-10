@@ -608,6 +608,40 @@ def uses_legacy_chaperone_wording(b):
     return b.get("record_id") in LEGACY_PAYMENT_WORDING_IDS or (b.get("status") or "") == "Completed"
 
 
+# Optional meal add-ons (2027 Meals & Lodging Guidelines, Martha 2026-11-10): REEF offers optional meal
+# packages during program hours only. An itinerary marks such a meal "Lunch (optional add-on)" /
+# "Dinner (optional add-on)"; everything else is "(on your own)". These rates match the Airtable
+# "Proposal — Optional" line ("lunch at $10 per person and dinner at $12 per person"). The note
+# below is copy only: it never feeds estimatedTotal or any Airtable-driven number.
+MEAL_ADDON_MARKER = "(optional add-on)"
+MEAL_ADDON_RATES = {"Lunch": 10, "Dinner": 12}
+
+
+def meal_add_on_note(days, students, chaperones):
+    """Pricing & Details 'Meal add-on' note, or None when no meal in the itinerary is an optional
+    add-on. The group-size example is illustrative only."""
+    kinds = []
+    for d in days:
+        for blk in d.get("blocks", []):
+            title = blk.get("title") or ""
+            for kind in MEAL_ADDON_RATES:
+                if title == f"{kind} {MEAL_ADDON_MARKER}" and kind not in kinds:
+                    kinds.append(kind)
+    if not kinds:
+        return None
+    rates = " and ".join(f"{k.lower()} is ${MEAL_ADDON_RATES[k]} per person" for k in kinds)
+    lines = [f"REEF can coordinate the meals marked \"optional add-on\" in your Day by Day: {rates}. "
+             "Meals outside program hours are arranged by your group.",
+             "Meals are not included in your estimated total. Adding one would come to you as a revised proposal."]
+    group_size = (students or 0) + (chaperones or 0)
+    if group_size:
+        who = f"{group_size} ({students} students and {chaperones} chaperones)" if chaperones else f"{group_size} students"
+        ex = "; ".join(f"one {k.lower()} for a group of {who} is about ${MEAL_ADDON_RATES[k] * group_size:,}"
+                       for k in kinds)
+        lines.append(f"Example only: {ex}.")
+    return {"heading": "Meal add-on", "lines": lines}
+
+
 def chaperone_policy(b):
     """Plain-language explanation of the complimentary chaperone count,
     computed from the same rule as the Bookings '# Free Chaperones' formula
@@ -1271,6 +1305,7 @@ def build_proposal_data(b, photos=None, school_facing=False):
 
     policy_headline, policy_lines = chaperone_policy(b)
     total = money(b["total_package_price"])
+    meal_note = meal_add_on_note(days, students, chaperones)
 
     what_could_change = [
         "Changes to your student or chaperone count",
@@ -1421,6 +1456,7 @@ def build_proposal_data(b, photos=None, school_facing=False):
                     "unit": "chaperone spaces at no charge",
                 },
                 "chaperonePolicy": {"headline": policy_headline, "lines": policy_lines},
+                **({"mealAddOn": meal_note} if meal_note else {}),
                 "estimatedTotal": total,
                 "estimatedTotalNote": (f"<strong>{total}</strong> is your estimated total, based on the "
                                        "details below. It includes REEF's program fees and every item "

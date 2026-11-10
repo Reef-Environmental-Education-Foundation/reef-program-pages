@@ -2082,6 +2082,13 @@
           pr.estimatedTotalNote ? el("p", { class: "price-total-note", html: pr.estimatedTotalNote }) : null,
         ]));
       }
+      // Optional meal add-on note (copy only; never part of the estimated total).
+      if (pr.mealAddOn && (pr.mealAddOn.lines || []).length) {
+        s.appendChild(el("div", { class: "container block", id: "meal-add-on" }, [
+          el("div", { class: "block-head" }, [el("div", { class: "rule" }), el("span", { class: "eyebrow" }, [String(pr.mealAddOn.heading || "Meal add-on").toUpperCase()])]),
+          el("div", {}, pr.mealAddOn.lines.map(function (line) { return el("p", { class: "price-ratio-note" }, [line]); })),
+        ]));
+      }
       const cp = pr.chaperonePolicy;
       if (cp || pr.ratioNote || (pr.conditions || []).length) {
         s.appendChild(el("div", { class: "container block" }, [
