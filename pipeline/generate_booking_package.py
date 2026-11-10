@@ -1994,9 +1994,10 @@ def create_review_task(b, page_url, contract_url, preview_reasons=None, attachme
 # index.html is rewritten on every publish: the 2026-09-09 QA walkthrough
 # added this tag by hand to bookings/zzz-test-org-riverside-academy-proposal-qa/
 # and the very next regeneration silently stripped it back out.
-TEST_PAGE_ROBOTS_META = (
+NOINDEX_META = (
     '<meta name="robots" content="noindex, nofollow">\n'
 )
+TEST_PAGE_ROBOTS_META = NOINDEX_META  # old name, kept for the preview shell and tests
 
 BOOKING_PAGE_SHELL_TEMPLATE = """<!doctype html>
 <html lang="en">
@@ -2249,9 +2250,10 @@ def main():
     with open(booking_dir / "index.html", "w") as f:
         f.write(cache_busted(BOOKING_PAGE_SHELL_TEMPLATE.format(
             title=page_title,
-            # Real bookings get no robots meta at all (unchanged behavior);
-            # only test/QA records are excluded from search.
-            robots=TEST_PAGE_ROBOTS_META if is_test_org(b["org_name"]) else "",
+            # Every generated booking page is kept out of search results
+            # (real schools and test/QA records alike). The share pages get
+            # the same tag from SHARE_PAGE_SHELL_TEMPLATE.
+            robots=NOINDEX_META,
         ), booking_dir / "data.js"))
     print(f"Wrote {booking_dir / 'index.html'}")
 
