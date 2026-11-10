@@ -11,6 +11,9 @@ Environment:
   COMMIT_OUTCOME       steps.commit.outcome
   DEPLOY_OUTCOME       steps.deploy.outcome   ("skipped" when nothing was pushed)
   PUSHED               steps.commit.outputs.pushed ("false" = nothing changed)
+  SMOKE_OUTCOME        conclusion of deploy.yml's smoke-check job ("failure" adds a
+                       message line; the result stays Success). Anything else is ignored.
+  DEPLOY_RUN_URL       URL of that deploy run, whose summary holds the details
   AIRTABLE_WRITE_KEY   token with data.records:write on the Bookings base
   GITHUB_*             set by Actions (run URL)
 """
@@ -77,7 +80,9 @@ def main(env=None):
                          env.get("DEPLOY_OUTCOME", ""), env.get("PUSHED", "true"))
     if message:
         result = dict(result, message=message)
-    fields = ps.writeback_fields(result, ok, ps.run_url(env))
+    fields = ps.writeback_fields(result, ok, ps.run_url(env),
+                                 smoke_failed=env.get("SMOKE_OUTCOME") == "failure",
+                                 smoke_run_url=env.get("DEPLOY_RUN_URL", ""))
     try:
         patch_record(record_id, fields, key)
         print(f"Wrote publish result to {record_id}: {fields[ps.F_PUBLISH_RESULT]}")

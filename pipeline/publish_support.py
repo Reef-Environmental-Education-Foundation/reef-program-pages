@@ -198,7 +198,10 @@ def write_result(path, **result):
     os.replace(tmp, path)
 
 
-def writeback_fields(result, ok, actions_run_url="", now=None):
+SMOKE_FAILED_LINE = "Published, but the programs.reef.org check failed. See the run summary:"
+
+
+def writeback_fields(result, ok, actions_run_url="", now=None, smoke_failed=False, smoke_run_url=""):
     """Bookings fields (by field ID) to write after a run.
 
     ok       True only when the page was generated, committed AND deployed.
@@ -206,6 +209,9 @@ def writeback_fields(result, ok, actions_run_url="", now=None):
     On failure: result and error text only; the published version and
     timestamp keep pointing at what is still live.
     Publish Requested is cleared either way.
+    smoke_failed  the post-deploy programs.reef.org check failed AFTER a good
+    publish. It is its own signal: the result stays Success and the message
+    gains one extra line; it never turns a published page into a failure.
     """
     fields = {F_PUBLISH_REQUESTED: False}
     if ok:
@@ -216,6 +222,9 @@ def writeback_fields(result, ok, actions_run_url="", now=None):
         fields[F_PUBLISH_MESSAGE] = (
             f"Published. Actions run: {actions_run_url or '(unknown)'}\n"
             f"Live page: {result.get('page_url', '(unknown)')}")
+        if smoke_failed:
+            fields[F_PUBLISH_MESSAGE] += (
+                "\n" + SMOKE_FAILED_LINE + (f" {smoke_run_url}" if smoke_run_url else ""))
     else:
         fields[F_PUBLISH_RESULT] = RESULT_FAILED
         msg = result.get("message") or "The publish run did not complete; see the Actions run log."
