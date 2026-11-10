@@ -120,6 +120,15 @@ jobs:
           echo "Watching deploy run $id"
           gh run watch "$id" --exit-status
 
+      # Fetches the DEPLOYED page with a cache-busting query string and confirms the main
+      # page, the administrator view and version.json all serve what was just published.
+      # On a mismatch the run turns red and the Airtable Last Publish Message says so;
+      # the publish itself is not undone.
+      - name: Verify the live page matches
+        id: verify
+        if: steps.deploy.outcome == 'success'
+        run: python pipeline/verify_live.py
+
       # Always runs, success or failure. Never fails the workflow.
       - name: Record the result on the Bookings record
         if: always()

@@ -160,6 +160,9 @@ def validate_build(booking_dir, is_proposal, contact_names=None):
     elif not (data.get("days") or (data.get("proposal") or {}).get("days")):
         problems.append("the page has no days")
 
+    if is_proposal:
+        problems.extend(check_page_consistency(booking_dir))
+
     scanned = [index_html, data_js] + sorted((booking_dir / "share").glob("*/data.js")) \
         + sorted((booking_dir / "share").glob("*/index.html"))
     for path in scanned:
@@ -179,6 +182,61 @@ def validate_build(booking_dir, is_proposal, contact_names=None):
             except (ValueError, OSError):
                 continue
             problems += [f"{path.relative_to(booking_dir)}: internal wording {h}" for h in hits[:5]]
+    return problems
+
+
+def _version_number(value):
+    digits = "".join(ch for ch in str(value if value is not None else "") if ch.isdigit())
+    return int(digits) if digits else None
+
+
+def _load_json_js(path):
+    try:
+        return parse_data_js(Path(path).read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def check_page_consistency(booking_dir):
+    """Problems where the pieces of ONE published booking disagree: the main proposal
+    page, its four share views and version.json must all carry the same proposal
+    version, and the main page and the administrator view the same estimated total
+    and student count. (Scenario test 2026-11-02: the main page showed v2 while the
+    administrator view showed v5.) Pieces that do not exist are skipped."""
+    booking_dir = Path(booking_dir)
+    main = _load_json_js(booking_dir / "data.js")
+    pd = (main or {}).get("proposal") or {}
+    if not pd:
+        return []
+    problems = []
+    page_version = _version_number((pd.get("meta") or {}).get("proposalVersion"))
+    for view_dir in sorted((booking_dir / "share").glob("*/")):
+        view = (_load_json_js(view_dir / "data.js") or {}).get("view") or {}
+        if not view:
+            continue
+        v = _version_number(view.get("version"))
+        if page_version is not None and v is not None and v != page_version:
+            problems.append(f"share/{view_dir.name} says v{v} but the main page says v{page_version}")
+        if view_dir.name == "administrator":
+            total = (pd.get("pricing") or {}).get("estimatedTotal")
+            vt = (view.get("pricing") or {}).get("total")
+            if total and vt and total != vt:
+                problems.append(f"administrator total {vt} differs from the main page total {total}")
+            students = (pd.get("group") or {}).get("students")
+            vs = (view.get("counts") or {}).get("students")
+            if students is not None and vs is not None and students != vs:
+                problems.append(f"administrator shows {vs} students but the main page shows {students}")
+    marker = None
+    if (booking_dir / "version.json").exists():
+        marker = _load_json_js(booking_dir / "version.json")
+        if marker is None:
+            problems.append("version.json does not parse")
+    if marker and page_version is not None:
+        mv = _version_number(marker.get("currentVersion"))
+        # A marker NEWER than the page is the designed "being updated" state (Airtable moved
+        # on, render.js shows the banner). A marker OLDER than the page is never right.
+        if mv is not None and mv < page_version:
+            problems.append(f"version.json says v{mv} but the main page says v{page_version}")
     return problems
 
 
@@ -216,6 +274,8 @@ def writeback_fields(result, ok, actions_run_url="", now=None):
         fields[F_PUBLISH_MESSAGE] = (
             f"Published. Actions run: {actions_run_url or '(unknown)'}\n"
             f"Live page: {result.get('page_url', '(unknown)')}")
+        if result.get("live_check_warning"):
+            fields[F_PUBLISH_MESSAGE] += "\nWARNING: " + str(result["live_check_warning"])[:1500]
     else:
         fields[F_PUBLISH_RESULT] = RESULT_FAILED
         msg = result.get("message") or "The publish run did not complete; see the Actions run log."
