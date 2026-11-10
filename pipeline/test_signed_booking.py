@@ -6,10 +6,14 @@ Martha, 2026-11-10 (Ben Gamla)."""
 import json
 import re
 import unittest
+from datetime import date
 from pathlib import Path
 
 from pipeline import generate_booking_package as g
+from pipeline import get_ready as gr
 import audience_views as av
+
+REPO = Path(__file__).parent.parent
 
 BEN_GAMLA = "recqb6DGaeJRpymL2"
 FORBIDDEN = ("$500", "10% late fee", "Approve Program", "once it's sent", "once it’s sent",
@@ -116,6 +120,89 @@ class RenderSourceTest(unittest.TestCase):
         src = (Path(__file__).parent / "audience_views.py").read_text()
         self.assertIn('"enabled": adm.get("approval", True) and not signed', src)
         self.assertIn('"agreementSigned": signed', src)
+
+
+class RemovedZzzPublishTest(unittest.TestCase):
+    """Martha, 2026-11-10: the ZZZ Riverside test page (rec4YP9ruVPOD90US) is not published and not linked."""
+
+    def test_riverside_test_page_is_gone_and_unlinked(self):
+        self.assertFalse((REPO / "bookings" / "zzz-test-org-riverside-academy-proposal-qa").exists())
+        self.assertNotIn("zzz-test-org-riverside", (REPO / "index.html").read_text())
+        for d in (REPO / "bookings").iterdir():
+            vm = d / "version.json"
+            if vm.exists():
+                self.assertNotEqual(json.loads(vm.read_text()).get("bookingId"), "rec4YP9ruVPOD90US", d.name)
+
+
+class SignedCancellationTest(unittest.TestCase):
+    def lines(self, **kw):
+        b = booking(**kw)
+        return av.signed_cancellation_lines(g.agreement_payment_terms(b), g.money)
+
+    def test_section_10_text_and_numbers_are_exact(self):
+        text = " | ".join(self.lines())
+        for want in ("the greater of (a) the percentage of the Guaranteed Program Cost below, or (b) REEF's nonrecoverable "
+                     "costs incurred through the cancellation date, but never more than 100% of the Guaranteed Program Cost",
+                     "more than 180 days before the program start: the deposit",
+                     "121 to 180 days before the program start: 35%",
+                     "91 to 120 days before the program start: 50%",
+                     "61 to 90 days before the program start: 75%",
+                     "60 days or fewer before the program start: 100%", "(no refund)",
+                     "Cooling-off period (Section 3)", "within 7 days after the Agreement Date",
+                     "guarantee in Section 7 and are not partial cancellations",
+                     "in writing to explorers@REEF.org"):
+            self.assertIn(want, text)
+
+    def test_dollar_figures_come_from_the_agreement_cost_or_are_left_out(self):
+        text = " | ".join(self.lines())
+        self.assertIn("$3,582.92", text)        # 35% of $10,236.92
+        self.assertIn("$10,236.92", text)       # 100%
+        no_cost = " | ".join(av.signed_cancellation_lines({"guaranteed_cost": None}, g.money))
+        self.assertNotIn("$", no_cost)
+        self.assertIn("35% of the Guaranteed Program Cost.", no_cost)
+
+    def test_unsigned_keeps_the_standard_cancellation_terms(self):
+        d = av.load_defaults()
+        self.assertIn("$100 per day of scheduled programming", " ".join(d["cancellationTerms"]))
+
+
+class SignedCleanupTest(unittest.TestCase):
+    TODAY = date(2026, 11, 10)
+
+    def items(self, **kw):
+        b = booking(arrival_date="2027-03-17", final_roster_due="2027-02-15", **kw)
+        state = {"sign_agreement": {"done": True, "doneOn": "2026-11-09"}}
+        return {i["key"]: i for i in gr.build_checklist(b, self.TODAY, state)}
+
+    def test_final_payment_shows_the_agreement_amount(self):
+        it = self.items()["final_payment"]
+        self.assertEqual(it["money"], "$6,285.82")
+        self.assertNotIn("balance under the signed agreement", it["detail"])
+
+    def test_unsigned_final_payment_wording_is_unchanged(self):
+        it = self.items(agreement_contract_status="Sent", final_amount_agreement=None)["final_payment"]
+        self.assertIn("balance under the signed agreement", it["detail"])
+
+    def test_sign_item_says_when_it_was_signed(self):
+        self.assertEqual(self.items()["sign_agreement"]["detail"], "Signed on Nov 9, 2026.")
+
+    def test_template_tags_only_in_internal_mode(self):
+        b = booking(arrival_date="2027-03-17", final_roster_due="2027-02-15")
+        school = gr.views_payload(b, self.TODAY, school_facing=True)
+        internal = gr.views_payload(b, self.TODAY, school_facing=False)
+        flags = lambda p: [i["template"] for v in p.values() for g_ in v["groups"] for i in g_["items"]]  # noqa: E731
+        self.assertFalse(any(flags(school)))
+        self.assertTrue(any(flags(internal)))
+
+    def test_headcount_step_uses_the_booking_dates(self):
+        step = g.signed_headcount_step(booking(final_roster_due="2027-02-15T00:00:00.000Z"))
+        self.assertEqual(step, "Confirm your final participant count by Dec 17, 2026 (guarantee lock) and send the "
+                               "final roster by Feb 15, 2027.")
+        self.assertNotIn("2 weeks", step)
+
+    def test_admin_page_title_for_signed_bookings(self):
+        src = (Path(__file__).parent / "audience_views.py").read_text()
+        self.assertEqual(src.count('"Administrator Summary"'), 2)       # share card + the page itself
 
 
 if __name__ == "__main__":
