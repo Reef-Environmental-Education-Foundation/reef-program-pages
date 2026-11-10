@@ -10,6 +10,11 @@ window.BOOKING_DATA = {
     "statusLabel": "Agreement signed",
     "version": "v3",
     "lastUpdated": "Nov 10, 2026",
+    "photo": {
+      "file": "overview.jpg",
+      "pos": "50% 38%",
+      "alt": "A participant in a snorkel mask and blue snorkel in clear turquoise water, holding a fish survey clipboard at a boat ladder."
+    },
     "orgName": "Ben Gamla Charter School",
     "dateLine": "March 17, 2027",
     "hours": "9:00 AM \u2013 5:00 PM",
@@ -249,7 +254,7 @@ window.BOOKING_DATA = {
       "Cancellation received 60 days or fewer before the program start: 100% of the Guaranteed Program Cost ($10,236.92) (no refund).",
       "Cooling-off period (Section 3): if the program start date is more than 180 days after the Agreement Date, the Group may cancel for any reason by written notice received within 7 days after the Agreement Date, with a full refund and no cancellation fee.",
       "Reductions in participant count are governed by the guarantee in Section 7 and are not partial cancellations.",
-      "Cancellation notices must be in writing to explorers@REEF.org."
+      "Cancellation notices must be in writing to explorers@reef.org."
     ],
     "termsNote": "These payment terms are from your signed agreement. Your agreement controls if anything here differs.",
     "outstanding": [],
@@ -275,12 +280,12 @@ window.BOOKING_DATA = {
       "enabled": false,
       "bookingId": "recqb6DGaeJRpymL2",
       "webhookUrl": null,
-      "emailTo": "rose@REEF.org"
+      "emailTo": "explorers@reef.org"
     },
     "reefContact": {
       "name": "Rose Kelly",
       "role": "Education Coordinator",
-      "email": "rose@REEF.org",
+      "email": "explorers@reef.org",
       "phone": "305-852-0030 ext. 1005"
     },
     "getReady": {

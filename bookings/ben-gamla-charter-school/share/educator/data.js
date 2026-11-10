@@ -10,6 +10,11 @@ window.BOOKING_DATA = {
     "statusLabel": "Agreement signed",
     "version": "v3",
     "lastUpdated": "Nov 10, 2026",
+    "photo": {
+      "file": "days.jpg",
+      "pos": "50% 30%",
+      "alt": "A participant in a snorkel mask sits on the edge of a boat deck above open blue water, holding a fish identification card."
+    },
     "orgName": "Ben Gamla Charter School",
     "dateLine": "March 17, 2027",
     "hours": "9:00 AM \u2013 5:00 PM",
@@ -409,7 +414,7 @@ window.BOOKING_DATA = {
     "reefContact": {
       "name": "Rose Kelly",
       "role": "Education Coordinator",
-      "email": "rose@REEF.org",
+      "email": "explorers@reef.org",
       "phone": "305-852-0030 ext. 1005"
     },
     "getReady": {

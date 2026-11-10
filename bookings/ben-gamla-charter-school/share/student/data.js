@@ -10,6 +10,11 @@ window.BOOKING_DATA = {
     "statusLabel": "Agreement signed",
     "version": "v3",
     "lastUpdated": "Nov 10, 2026",
+    "photo": {
+      "file": "included.jpg",
+      "pos": "50% 35%",
+      "alt": "A participant on a boat records fish sightings on a survey slate, with a REEF fish identification card hanging from the neck."
+    },
     "orgName": "Ben Gamla Charter School",
     "dateLine": "March 17, 2027",
     "hours": "9:00 AM \u2013 5:00 PM",

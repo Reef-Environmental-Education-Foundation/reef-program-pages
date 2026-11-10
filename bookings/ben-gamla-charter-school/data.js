@@ -28,15 +28,29 @@ window.BOOKING_DATA = {
     "reefEducatorTitle": "Education Coordinator",
     "reefEducatorWelcomeLine": "Rose has been building your group's itinerary and is your direct point of contact through booking.",
     "reefPhone": "305-852-0030 ext. 1005",
-    "reefEmail": "rose@REEF.org"
+    "reefEmail": "explorers@reef.org"
   },
   "hero": {
     "kicker": "OCEAN EXPLORERS\nEXPEDITION PACKET",
     "eyebrowTag": "Florida Keys Marine Science Expedition",
     "headline": "From Student to Scientist in Key Largo",
     "promise": "Turn the ocean into your classroom. Your students won't just study marine science \u2014 they become part of it.",
-    "imageUrl": "../../assets/photos/hero-reef-shark.jpg",
-    "imageCredit": "Photo: Jeffrey Haines / REEF"
+    "imageUrl": "../../assets/photos/overview.jpg"
+  },
+  "photos": {
+    "welcome": {
+      "file": "experience.jpg",
+      "pos": "50% 40%",
+      "alt": "Two smiling participants hold up fish prints they made during a REEF art and fish-ID activity."
+    },
+    "next": {
+      "file": "included.jpg",
+      "pos": "50% 35%",
+      "alt": "A participant on a boat records fish sightings on a survey slate, with a REEF fish identification card hanging from the neck."
+    }
+  },
+  "finalReminders": {
+    "questionsEmail": "explorers@reef.org"
   },
   "actionNeeded": {
     "show": false
