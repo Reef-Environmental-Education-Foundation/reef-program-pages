@@ -214,7 +214,14 @@ ASANA_API_ROOT = "https://app.asana.com/api/1.0"
 ASANA_OXP_PROJECT_GID = "1208312572861835"        # "OXP New Reservation Workflow"
 ASANA_FACILITY_PROJECT_GID = "1210526829539105"   # "Facility Rental New Reservation Workflow"
 ASANA_REVIEWER_GID = "1209845394372396"           # Rose Kelly
-PAGES_BASE_URL = "https://reef-environmental-education-foundation.github.io/reef-program-pages"
+# Public base URL written into every school-facing link (share-page "Copy link"
+# values, the Asana review task, the Last Publish Message). Defaults to the
+# github.io address. The publish workflow passes the repo variable
+# PAGES_BASE_URL (Settings > Secrets and variables > Actions > Variables), so
+# the switch to https://programs.reef.org needs no code change. An empty or
+# unset variable keeps the default.
+DEFAULT_PAGES_BASE_URL = "https://reef-environmental-education-foundation.github.io/reef-program-pages"
+PAGES_BASE_URL = (os.environ.get("PAGES_BASE_URL", "").strip() or DEFAULT_PAGES_BASE_URL).rstrip("/")
 
 # Approved-to-Share lock (Martha, 2026-09-25) -- see module docstring.
 # Values must match the Bookings "Approved to Share - Stage" single-select
