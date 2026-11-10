@@ -39,9 +39,22 @@ class StageTest(unittest.TestCase):
     def test_completed(self):
         self.assertEqual(stage(status="Completed", arrival_date="2026-01-01"), "Completed")
 
-    def test_signed_agreement_does_not_skip_ahead_of_status(self):
-        # Contracted + Signed is still "Agreement pending" until Status becomes Confirmed
-        self.assertEqual(stage(status="Contracted", agreement_contract_status="Signed"), "Agreement pending")
+    def test_signed_agreement_is_get_ready_without_window(self):
+        # Martha, 2026-11-10: Signed + Confirmed/Contracted/In Progress = Get Ready, however far out
+        self.assertEqual(stage(status="Confirmed", agreement_contract_status="Signed", arrival_date="2027-03-17"), "Get Ready")  # 127 days
+        self.assertEqual(stage(status="Contracted", agreement_contract_status="Signed"), "Get Ready")
+        self.assertEqual(stage(status="In Progress", agreement_contract_status="Signed", arrival_date="2028-01-01"), "Get Ready")
+        self.assertEqual(stage(status="Confirmed", agreement_contract_status="Signed", arrival_date=None), "Get Ready")
+
+    def test_signed_does_not_override_other_statuses(self):
+        self.assertNotEqual(stage(status="Cancelled", agreement_contract_status="Signed"), "Get Ready")
+        self.assertEqual(stage(status="Completed", agreement_contract_status="Signed"), "Completed")
+        self.assertEqual(stage(status="Verbal Yes", agreement_contract_status="Signed"), "Accepted")
+
+    def test_not_signed_keeps_window_rule(self):
+        self.assertEqual(stage(status="Confirmed", agreement_contract_status="Sent", arrival_date="2027-03-17"), "Confirmed")
+        self.assertEqual(stage(status="Confirmed", agreement_contract_status=None, arrival_date="2027-03-17"), "Confirmed")
+        self.assertEqual(stage(status="Confirmed", arrival_date="2027-02-09"), "Get Ready")  # 100 days
 
 
 if __name__ == "__main__":
