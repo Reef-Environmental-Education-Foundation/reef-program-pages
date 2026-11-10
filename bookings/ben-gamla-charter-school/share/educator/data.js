@@ -451,9 +451,9 @@ window.BOOKING_DATA = {
               "due": "2027-02-15",
               "done": false,
               "doneOn": null,
-              "template": true,
+              "template": false,
               "provisional": false,
-              "detail": "Use the Family view of the proposal."
+              "detail": "Use the Family view of this page."
             },
             {
               "key": "collect_forms",
@@ -485,7 +485,7 @@ window.BOOKING_DATA = {
               "due": "2027-02-15",
               "done": false,
               "doneOn": null,
-              "template": true,
+              "template": false,
               "provisional": false,
               "detail": "Waiver links come from REEF; none are on this page yet."
             },
@@ -495,7 +495,7 @@ window.BOOKING_DATA = {
               "due": "2027-03-17",
               "done": false,
               "doneOn": null,
-              "template": true,
+              "template": false,
               "provisional": false,
               "detail": "Lunch is not provided."
             }

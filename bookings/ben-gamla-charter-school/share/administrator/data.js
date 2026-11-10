@@ -217,7 +217,7 @@ window.BOOKING_DATA = {
       "total": "$12,571.65",
       "perStudent": "$179.60",
       "chaperones": "7 of your 10 chaperones are complimentary.",
-      "note": "Estimated total. REEF sends a revised proposal if anything that affects price changes."
+      "note": "Program total as of your signed agreement. Your agreement controls final billing."
     },
     "included": [
       "Glass-bottom boat tour admission for all 67 students and 10 chaperones, including the boat gratuity",
@@ -240,7 +240,17 @@ window.BOOKING_DATA = {
       "Minimum guarantee: 57 paid spaces (85%), locked Dec 17, 2026, for a guaranteed program cost of $10,236.92.",
       "A flat $100 late fee applies if a payment is not received within 14 days after its due date."
     ],
-    "cancellationTerms": [],
+    "cancellationTerms": [
+      "If the Group cancels, the Group owes the greater of (a) the percentage of the Guaranteed Program Cost below, or (b) REEF's nonrecoverable costs incurred through the cancellation date, but never more than 100% of the Guaranteed Program Cost. Anything paid above what is owed is refunded.",
+      "Cancellation received more than 180 days before the program start: the deposit.",
+      "Cancellation received 121 to 180 days before the program start: 35% of the Guaranteed Program Cost ($3,582.92).",
+      "Cancellation received 91 to 120 days before the program start: 50% of the Guaranteed Program Cost ($5,118.46).",
+      "Cancellation received 61 to 90 days before the program start: 75% of the Guaranteed Program Cost ($7,677.69).",
+      "Cancellation received 60 days or fewer before the program start: 100% of the Guaranteed Program Cost ($10,236.92) (no refund).",
+      "Cooling-off period (Section 3): if the program start date is more than 180 days after the Agreement Date, the Group may cancel for any reason by written notice received within 7 days after the Agreement Date, with a full refund and no cancellation fee.",
+      "Reductions in participant count are governed by the guarantee in Section 7 and are not partial cancellations.",
+      "Cancellation notices must be in writing to explorers@REEF.org."
+    ],
     "termsNote": "These payment terms are from your signed agreement. Your agreement controls if anything here differs.",
     "outstanding": [],
     "decisionMakers": [
@@ -343,7 +353,7 @@ window.BOOKING_DATA = {
               "doneOn": "2026-11-09",
               "template": false,
               "provisional": false,
-              "detail": "REEF sends the agreement; signing starts the payment schedule."
+              "detail": "Signed on Nov 9, 2026."
             },
             {
               "key": "deposit",
@@ -383,7 +393,7 @@ window.BOOKING_DATA = {
               "doneOn": null,
               "template": false,
               "provisional": false,
-              "detail": "Amount: the balance under the signed agreement (not shown until the agreement exists)."
+              "money": "$6,285.82"
             },
             {
               "key": "chaperones",
@@ -406,9 +416,9 @@ window.BOOKING_DATA = {
               "due": "2027-02-15",
               "done": false,
               "doneOn": null,
-              "template": true,
+              "template": false,
               "provisional": false,
-              "detail": "Use the Family view of the proposal."
+              "detail": "Use the Family view of this page."
             },
             {
               "key": "collect_forms",
@@ -440,7 +450,7 @@ window.BOOKING_DATA = {
               "due": "2027-02-15",
               "done": false,
               "doneOn": null,
-              "template": true,
+              "template": false,
               "provisional": false,
               "detail": "Waiver links come from REEF; none are on this page yet."
             },
@@ -450,7 +460,7 @@ window.BOOKING_DATA = {
               "due": "2027-03-17",
               "done": false,
               "doneOn": null,
-              "template": true,
+              "template": false,
               "provisional": false,
               "detail": "Lunch is not provided."
             }
@@ -458,7 +468,7 @@ window.BOOKING_DATA = {
         }
       ]
     },
-    "title": "Administrator Approval Summary",
+    "title": "Administrator Summary",
     "audienceLabel": "Ben Gamla school leadership",
     "url": "https://programs.reef.org/bookings/ben-gamla-charter-school/share/administrator/"
   }

@@ -72,7 +72,7 @@ window.BOOKING_DATA = {
     "items": [
       "Your agreement is signed. Your deposit and Payment 2 are due Nov 23, 2026 (see the payment schedule above).",
       "Return your group's signed waivers and health/medical forms.",
-      "Confirm final headcount with your REEF educator at least 2 weeks before arrival.",
+      "Confirm your final participant count by Dec 17, 2026 (guarantee lock) and send the final roster by Feb 15, 2027.",
       "Reach out any time with questions before your Expedition."
     ]
   },
@@ -177,9 +177,9 @@ window.BOOKING_DATA = {
     "views": [
       {
         "key": "administrator",
-        "title": "Administrator Approval Summary",
+        "title": "Administrator Summary",
         "audience": "Ben Gamla school leadership",
-        "description": "A concise summary for the person who approves the program: purpose, logistics, responsibilities, price, and terms.",
+        "description": "A concise summary for the school administrator: purpose, logistics, responsibilities, price, and terms.",
         "includes": [
           "Purpose and educational value",
           "Date, location, hours and group size",
@@ -321,6 +321,7 @@ window.BOOKING_DATA = {
         "note": ""
       }
     ],
+    "agreementSigned": true,
     "privacyNote": "Anyone who has a link can open that page. The family and student views leave out pricing and contract terms entirely. Please don't add student names or other private details to anything you share."
   },
   "rotation": {
