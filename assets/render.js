@@ -99,6 +99,20 @@
 (function () {
   "use strict";
 
+  // Keep every booking page out of search results (2026-11-10). Pages that were
+  // published before the generator emitted this tag in the HTML shell get it
+  // here, at load, so no published file has to be rewritten. Runs before
+  // anything else; does nothing if the page already carries a robots tag.
+  (function ensureNoindex() {
+    try {
+      if (document.querySelector('meta[name="robots"]')) return;
+      const m = document.createElement("meta");
+      m.setAttribute("name", "robots");
+      m.setAttribute("content", "noindex, nofollow");
+      document.head.appendChild(m);
+    } catch (err) { /* never block rendering */ }
+  })();
+
   // Page footer phone (2026-11-06): Rose's extension is on all Explorers content.
   const REEF_FOOTER_PHONE = "305-852-0030 ext. 1005";
 
