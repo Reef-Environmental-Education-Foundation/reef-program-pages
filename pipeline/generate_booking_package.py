@@ -161,7 +161,9 @@ def agreement_payment_terms(b, money_fn=None, date_fn=None):
 def derive_stage(b, today=None):
     """Stage of a booking, from the latest state to the earliest:
         Completed          Status Completed
-        Get Ready          Status Confirmed/In Progress and arrival within the pre-trip window
+        Get Ready          (a) Status Confirmed/In Progress and arrival within the pre-trip window, OR
+                           (b) Agreement/Contract Status = Signed and Status Confirmed/Contracted/In Progress
+                           (no window; Martha, 2026-11-10)
         Confirmed          Status Confirmed/In Progress
         Agreement pending  Agreement/Contract Status = Sent (or Status Contracted, awaiting signature)
         Accepted           Proposal Response = Ready to Proceed, or Status Verbal Yes
@@ -170,6 +172,8 @@ def derive_stage(b, today=None):
     status = b.get("status") or ""
     if status == "Completed":
         return STAGE_COMPLETED
+    if (b.get("agreement_contract_status") or "") == "Signed" and status in ("Confirmed", "Contracted", "In Progress"):
+        return STAGE_GET_READY
     if status in ("Confirmed", "In Progress"):
         arrival = b.get("arrival_date")
         if arrival:
