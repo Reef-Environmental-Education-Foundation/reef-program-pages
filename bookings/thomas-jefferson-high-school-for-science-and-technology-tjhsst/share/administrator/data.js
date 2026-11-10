@@ -9,15 +9,15 @@ window.BOOKING_DATA = {
     "status": "proposal",
     "statusLabel": "Proposal",
     "version": "v2",
-    "lastUpdated": "Nov 9, 2026",
+    "lastUpdated": "Nov 10, 2026",
     "orgName": "Thomas Jefferson High School for Science and Technology (TJHSST)",
     "dateLine": "January 29 \u2013 February 1, 2027",
     "hours": null,
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A four-day marine science program for 18 students and 2 chaperones in Key Largo, combining classroom learning with two coral reef snorkels and fish surveys.",
+    "summary": "A four-day marine science program for 18 students and 2 chaperones in Key Largo, combining classroom learning, two-stop reef snorkels with fish surveys, and a guided mangrove tour at Pennekamp.",
     "scheduleDraft": false,
     "view": "administrator",
-    "purpose": "A four-day marine science program for 18 students and 2 chaperones in Key Largo, combining classroom learning with two coral reef snorkels and fish surveys.",
+    "purpose": "A four-day marine science program for 18 students and 2 chaperones in Key Largo, combining classroom learning, two-stop reef snorkels with fish surveys, and a guided mangrove tour at Pennekamp.",
     "value": [
       {
         "title": "Real citizen science, not a demo",
@@ -60,19 +60,19 @@ window.BOOKING_DATA = {
     "simpleSchedule": [
       {
         "time": "1:00 PM\u20132:00 PM",
-        "label": "Arrival & Welcome"
+        "label": "Arrival at REEF"
       },
       {
-        "time": "2:15 PM\u20133:30 PM",
-        "label": "Citizen Science & the Volunteer Fish Survey Project"
+        "time": "2:15 PM\u20135:00 PM",
+        "label": "Citizen Science Introduction"
       },
       {
-        "time": "3:45 PM\u20135:00 PM",
-        "label": "Caribbean Fish Identification"
+        "time": "Evening",
+        "label": "Dinner (on your own)"
       },
       {
         "time": "9:00 AM\u20131:00 PM",
-        "label": "Reef Snorkel & Fish Surveys"
+        "label": "Two-Stop Reef Snorkel & Fish Surveys"
       },
       {
         "time": "1:00 PM\u20132:15 PM",
@@ -83,12 +83,20 @@ window.BOOKING_DATA = {
         "label": "Invasive Species: Lionfish Lesson & Dissection"
       },
       {
+        "time": "4:15 PM\u20135:15 PM",
+        "label": "Grouper Moon: Endangered Species Lesson & Role Play"
+      },
+      {
+        "time": "Evening",
+        "label": "Dinner (on your own)"
+      },
+      {
         "time": "9:00 AM\u201310:30 AM",
-        "label": "Coral Reef Ecology"
+        "label": "Florida Keys Ecology & Mangrove Making"
       },
       {
         "time": "10:45 AM\u201312:15 PM",
-        "label": "Endangered Species of the Florida Keys"
+        "label": "Level 2 Fish ID Exam"
       },
       {
         "time": "12:15 PM\u20131:30 PM",
@@ -96,15 +104,15 @@ window.BOOKING_DATA = {
       },
       {
         "time": "1:30 PM\u20135:00 PM",
-        "label": "Reef Snorkel & Fish Surveys"
+        "label": "Two-Stop Reef Snorkel & Fish Surveys"
       },
       {
-        "time": "9:00 AM\u201310:15 AM",
-        "label": "Careers in Marine Science"
+        "time": "Evening",
+        "label": "Dinner (on your own)"
       },
       {
-        "time": "10:30 AM\u201312:00 PM",
-        "label": "Level 2 Fish ID Review & Exam"
+        "time": "9:00 AM\u201311:30 AM",
+        "label": "Kayaking at Pennekamp (Mangrove Tour)"
       },
       {
         "time": "12:00 PM",
@@ -113,17 +121,16 @@ window.BOOKING_DATA = {
     ],
     "outcomes": [
       "Learn what REEF is and how citizen scientists protect reefs.",
-      "Understand how REEF fish survey data is collected and used.",
-      "Begin identifying common Caribbean reef fish.",
-      "Snorkel a Key Largo coral reef and record the fish they find.",
-      "See how corals, fish, and other reef organisms depend on each other.",
+      "Practice a fish survey and learn how Florida Keys fish are adapted to the reef.",
+      "Make a Gyotaku fish print.",
+      "Snorkel two Key Largo reef sites and record the fish they find.",
       "Investigate invasive lionfish through a guided dissection.",
-      "Explain how coral reefs function as connected ecosystems.",
-      "Identify threatened and endangered species of the Florida Keys and the actions protecting them.",
+      "Learn why Nassau grouper and other species need protection.",
+      "Explain how reefs, seagrass and mangroves depend on each other.",
+      "Take the Level 2 fish ID exam.",
       "Record a second set of reef fish surveys.",
-      "Explore career paths in marine science and conservation.",
-      "Review and apply advanced Caribbean fish identification skills.",
-      "Take the exam toward REEF Level 2 surveyor status."
+      "Explore a mangrove ecosystem on a guided tour.",
+      "Connect the week's surveys to coral reef and mangrove conservation."
     ],
     "responsibilities": [
       {
@@ -154,7 +161,7 @@ window.BOOKING_DATA = {
       "Optional REEF-coordinated meals during scheduled program hours: lunch at $10 per person and dinner at $12 per person (meal details confirmed after the contract is signed)"
     ],
     "paymentTerms": [
-      "A $11,562.60 deposit holds your group's date and is due Nov 23, 2026.",
+      "A $11,562.60 deposit holds your group's date and is due Nov 24, 2026.",
       "The agreement guarantees $10,277.87 of program cost for a minimum of 16 paid spaces.",
       "Payment dates are provisional until the agreement date is set.",
       "The final payment is due 90 days before the program.",
