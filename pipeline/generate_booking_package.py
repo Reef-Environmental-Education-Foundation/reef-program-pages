@@ -488,9 +488,10 @@ def promote_build(booking_dir, slug, contract_path=None):
     import shutil
     BOOKINGS_OUT_DIR.mkdir(parents=True, exist_ok=True)
     shutil.copytree(booking_dir, BOOKINGS_OUT_DIR / slug, dirs_exist_ok=True)
-    if contract_path and Path(contract_path).exists():
-        CONTRACTS_OUT_DIR.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(contract_path, CONTRACTS_OUT_DIR / Path(contract_path).name)
+    # Contracts are NEVER copied into the repo: the repo and the Pages site are
+    # public, and a contract carries a school's payment terms (Martha, 2026-11-10).
+    # contract_path is accepted for compatibility and deliberately ignored; the
+    # draft is attached to the private Asana review task instead.
     print(f"Promoted the validated build to {BOOKINGS_OUT_DIR / slug}")
 
 
@@ -1856,7 +1857,7 @@ def add_asana_comment(task_gid, text):
         print(f"WARNING: could not comment on Asana task {task_gid}: {exc}", file=sys.stderr)
 
 
-def create_review_task(b, page_url, contract_url, preview_reasons=None, attachments=()):
+def create_review_task(b, page_url, contract_url, preview_reasons=None, attachments=(), contract_private=False):
     """Creates an Asana task gating human review before the generated
     proposal/contract is sent to the customer (Martha, 2026-09-04): the
     page and contract still auto-deploy exactly as before, but staff must
@@ -1930,7 +1931,9 @@ def create_review_task(b, page_url, contract_url, preview_reasons=None, attachme
             "Review before this goes to the customer:\n"
             f"- Proposal/pre-trip page: {page_url}\n"
             "  (may take a couple of minutes to go live after this task is created)\n"
-            + (f"- Contract: {contract_url}\n\n" if contract_url else
+            + ("- Contract: generated but NOT published (the site is public). The draft .docx is attached to this task.\n\n"
+               if contract_private else
+               f"- Contract: {contract_url}\n\n" if contract_url else
                "- Contract: not generated yet -- this booking is still pre-commitment "
                "(Quoting / Proposal Sent / Verbal Yes). The contract is produced once "
                "Status reaches 'Contracted'.\n\n")
@@ -2301,8 +2304,9 @@ def main():
         if problems:
             raise BuildValidationError(
                 "The build failed validation, so nothing was published: " + "; ".join(problems))
-        promote_build(booking_dir, slug, contract_path if contract_url else None)
-        create_review_task(b, page_url, contract_url)
+        promote_build(booking_dir, slug)
+        create_review_task(b, page_url, None, attachments=[contract_path] if contract_url else (),
+                           contract_private=bool(contract_url))
         publish_support.write_result(
             RESULT_FILE, status="published", record_id=record_id, proposal_version=b["proposal_version"],
             page_url=page_url, message="")

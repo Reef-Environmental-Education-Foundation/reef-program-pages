@@ -118,6 +118,28 @@ class FailedBuildKeepsLivePageTest(unittest.TestCase):
             self.assertEqual((bookings / "school" / "photos" / "days.jpeg").read_text(), "old photo")
 
 
+class NoPublicContractTest(unittest.TestCase):
+    """Martha, 2026-11-10: a contract (payment terms) must never reach the public repo/site."""
+
+    def test_promote_never_copies_a_contract(self):
+        with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as build:
+            write_build(build, good_proposal())
+            contract = Path(root) / "private-contract.docx"
+            contract.write_text("contract with payment terms")
+            bookings, contracts = Path(root) / "bookings", Path(root) / "contracts"
+            with mock.patch.object(g, "BOOKINGS_OUT_DIR", bookings), mock.patch.object(g, "CONTRACTS_OUT_DIR", contracts):
+                g.promote_build(Path(build), "school", contract)
+            self.assertFalse(contracts.exists())
+            self.assertFalse(list(Path(root, "bookings").rglob("*.docx")))
+
+    def test_workflow_does_not_stage_contracts(self):
+        wf = (Path(__file__).parent.parent / ".github" / "workflows" / "publish-booking.yml").read_text()
+        adds = [l.strip() for l in wf.splitlines() if l.strip().startswith("git add")]
+        self.assertTrue(adds)
+        for line in adds:
+            self.assertNotIn("contracts", line)
+
+
 class WritebackTest(unittest.TestCase):
     RESULT = {"status": "published", "proposal_version": 2,
               "page_url": "https://example.test/bookings/school/"}

@@ -85,7 +85,8 @@ jobs:
         run: |
           git config user.name "REEF Booking Pipeline"
           git config user.email "actions@users.noreply.github.com"
-          git add bookings/ contracts/
+          # contracts/ is deliberately not added: the site is public and a contract holds payment terms.
+          git add bookings/
           if git diff --cached --quiet; then
             echo "pushed=false" >> "$GITHUB_OUTPUT"
           else
