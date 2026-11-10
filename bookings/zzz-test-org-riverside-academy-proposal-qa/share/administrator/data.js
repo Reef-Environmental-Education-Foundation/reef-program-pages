@@ -6,18 +6,18 @@ window.BOOKING_DATA = {
     "sampleFlag": true
   },
   "view": {
-    "status": "draft",
-    "statusLabel": "Draft",
-    "version": "v1",
-    "lastUpdated": "Nov 1, 2026",
+    "status": "proposal",
+    "statusLabel": "Proposal",
+    "version": "v2",
+    "lastUpdated": "Nov 10, 2026",
     "orgName": "ZZZ TEST ORG \u2014 Riverside Academy (Proposal QA)",
     "dateLine": "April 13\u201314, 2027",
     "hours": null,
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A two-day marine science Expedition for 32 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
-    "scheduleDraft": true,
+    "summary": "A two-day marine science Expedition for 40 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "scheduleDraft": false,
     "view": "administrator",
-    "purpose": "A two-day marine science Expedition for 32 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "purpose": "A two-day marine science Expedition for 40 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
     "value": [
       {
         "title": "Real citizen science, not a demo",
@@ -35,7 +35,7 @@ window.BOOKING_DATA = {
       },
       {
         "k": "Group Size",
-        "v": "32 students + 5 chaperones"
+        "v": "40 students + 5 chaperones"
       },
       {
         "k": "Length",
@@ -52,7 +52,7 @@ window.BOOKING_DATA = {
       }
     ],
     "counts": {
-      "students": 32,
+      "students": 40,
       "chaperones": 5
     },
     "scheduleFormat": "standard",
@@ -102,9 +102,9 @@ window.BOOKING_DATA = {
       }
     ],
     "pricing": {
-      "total": "$10,978.80",
-      "perStudent": "$322.91",
-      "chaperones": "3 of your 5 chaperones are complimentary.",
+      "total": "$12,504.45",
+      "perStudent": "$304.99",
+      "chaperones": "4 of your 5 chaperones are complimentary.",
       "note": "Estimated total. REEF sends a revised proposal if anything that affects price changes."
     },
     "included": [
@@ -126,9 +126,11 @@ window.BOOKING_DATA = {
     ],
     "optional": [],
     "paymentTerms": [
-      "A $500.00 deposit holds your group's date.",
-      "Payment 2 of $5,239.40 is due Nov 1, 2026.",
-      "The final payment of $5,239.40 is due Jan 13, 2027.",
+      "A $2,500.89 deposit holds your group's date and is due Nov 24, 2026.",
+      "Payment 2 of $3,751.34 is due Nov 24, 2026.",
+      "The final payment is due Jan 13, 2027. Its amount is the balance under the agreement.",
+      "The agreement guarantees $10,674.53 of program cost for a minimum of 35 paid spaces.",
+      "Payment dates are provisional until the agreement date is set.",
       "A 10% late fee applies to payments more than 14 days past due."
     ],
     "cancellationTerms": [
@@ -140,6 +142,7 @@ window.BOOKING_DATA = {
     "termsNote": "These are REEF's standard terms. Your contract states the final terms for your group, including any vendor-specific changes.",
     "outstanding": [],
     "decisionMakers": [],
+    "agreementSigned": false,
     "approval": {
       "enabled": true,
       "bookingId": "rec4YP9ruVPOD90US",
@@ -150,10 +153,10 @@ window.BOOKING_DATA = {
       "name": "Rose Kelly",
       "role": "Education Coordinator",
       "email": "rose@REEF.org",
-      "phone": "305-852-0030"
+      "phone": "305-852-0030 ext. 1005"
     },
     "title": "Administrator Approval Summary",
     "audienceLabel": "School or organization leadership",
-    "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/zzz-test-org-riverside-academy-proposal-qa/share/administrator/"
+    "url": "https://programs.reef.org/bookings/zzz-test-org-riverside-academy-proposal-qa/share/administrator/"
   }
 };

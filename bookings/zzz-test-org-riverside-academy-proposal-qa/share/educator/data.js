@@ -6,16 +6,16 @@ window.BOOKING_DATA = {
     "sampleFlag": true
   },
   "view": {
-    "status": "draft",
-    "statusLabel": "Draft",
-    "version": "v1",
-    "lastUpdated": "Nov 1, 2026",
+    "status": "proposal",
+    "statusLabel": "Proposal",
+    "version": "v2",
+    "lastUpdated": "Nov 10, 2026",
     "orgName": "ZZZ TEST ORG \u2014 Riverside Academy (Proposal QA)",
     "dateLine": "April 13\u201314, 2027",
     "hours": null,
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A two-day marine science Expedition for 32 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
-    "scheduleDraft": true,
+    "summary": "A two-day marine science Expedition for 40 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "scheduleDraft": false,
     "view": "educator",
     "objectives": [
       "Learn REEF's fish identification and survey methods before entering the field (Identify).",
@@ -104,7 +104,7 @@ window.BOOKING_DATA = {
       "An adult chaperone must accompany student groups with participants under 18."
     ],
     "counts": {
-      "students": 32,
+      "students": 40,
       "chaperones": 5
     },
     "resources": [
@@ -115,10 +115,10 @@ window.BOOKING_DATA = {
       "name": "Rose Kelly",
       "role": "Education Coordinator",
       "email": "rose@REEF.org",
-      "phone": "305-852-0030"
+      "phone": "305-852-0030 ext. 1005"
     },
-    "title": "Draft Educator Plan",
+    "title": "Educator Plan",
     "audienceLabel": "Teachers and program staff",
-    "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/zzz-test-org-riverside-academy-proposal-qa/share/educator/"
+    "url": "https://programs.reef.org/bookings/zzz-test-org-riverside-academy-proposal-qa/share/educator/"
   }
 };

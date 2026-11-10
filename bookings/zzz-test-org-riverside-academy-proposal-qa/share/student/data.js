@@ -6,17 +6,18 @@ window.BOOKING_DATA = {
     "sampleFlag": true
   },
   "view": {
-    "status": "draft",
-    "statusLabel": "Draft",
-    "version": "v1",
-    "lastUpdated": "Nov 1, 2026",
+    "status": "proposal",
+    "statusLabel": "Proposal",
+    "version": "v2",
+    "lastUpdated": "Nov 10, 2026",
     "orgName": "ZZZ TEST ORG \u2014 Riverside Academy (Proposal QA)",
     "dateLine": "April 13\u201314, 2027",
     "hours": null,
     "programName": "Florida Keys Ocean Explorers Expedition",
-    "summary": "A two-day marine science Expedition for 32 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
-    "scheduleDraft": true,
+    "summary": "A two-day marine science Expedition for 40 students and 5 chaperones at REEF Ocean Exploration Center, Key Largo.",
+    "scheduleDraft": false,
     "view": "student",
+    "location": "REEF Ocean Exploration Center, Key Largo",
     "headline": "Get ready to explore the reef",
     "intro": "",
     "experiences": [
@@ -64,6 +65,6 @@ window.BOOKING_DATA = {
     "classroomPrep": [],
     "title": "Student Preview",
     "audienceLabel": "Students",
-    "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/zzz-test-org-riverside-academy-proposal-qa/share/student/"
+    "url": "https://programs.reef.org/bookings/zzz-test-org-riverside-academy-proposal-qa/share/student/"
   }
 };
