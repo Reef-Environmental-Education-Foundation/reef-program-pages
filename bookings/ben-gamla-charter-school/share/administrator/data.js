@@ -7,7 +7,7 @@ window.BOOKING_DATA = {
   },
   "view": {
     "status": "confirmed",
-    "statusLabel": "Confirmed",
+    "statusLabel": "Agreement signed",
     "version": "v3",
     "lastUpdated": "Nov 10, 2026",
     "orgName": "Ben Gamla Charter School",
@@ -215,7 +215,7 @@ window.BOOKING_DATA = {
     ],
     "pricing": {
       "total": "$12,571.65",
-      "perStudent": "$179.59",
+      "perStudent": "$179.60",
       "chaperones": "7 of your 10 chaperones are complimentary.",
       "note": "Estimated total. REEF sends a revised proposal if anything that affects price changes."
     },
@@ -234,18 +234,14 @@ window.BOOKING_DATA = {
     ],
     "optional": [],
     "paymentTerms": [
-      "A $500.00 deposit holds your group's date.",
-      "Payment 2 of $6,035.82 is due Nov 10, 2026.",
-      "The final payment of $6,285.82 is due Dec 17, 2026.",
-      "A 10% late fee applies to payments more than 14 days past due."
+      "Deposit: $2,514.33, due Nov 23, 2026.",
+      "Payment 2: $3,771.50, due Nov 23, 2026.",
+      "Final payment: $6,285.82, due Dec 17, 2026.",
+      "Minimum guarantee: 57 paid spaces (85%), locked Dec 17, 2026, for a guaranteed program cost of $10,236.92.",
+      "A flat $100 late fee applies if a payment is not received within 14 days after its due date."
     ],
-    "cancellationTerms": [
-      "More than 90 days before the program: full refund, minus $100 per day of scheduled programming.",
-      "60\u201390 days before: 50% of the deposit held by REEF is refundable.",
-      "Fewer than 60 days before: no refund.",
-      "This schedule also applies if group size decreases by 50% or more. Cancellations must be made in writing."
-    ],
-    "termsNote": "These are REEF's standard terms. Your contract states the final terms for your group, including any vendor-specific changes.",
+    "cancellationTerms": [],
+    "termsNote": "These payment terms are from your signed agreement. Your agreement controls if anything here differs.",
     "outstanding": [],
     "decisionMakers": [
       {
@@ -264,8 +260,9 @@ window.BOOKING_DATA = {
         "note": "To be confirmed by the school"
       }
     ],
+    "agreementSigned": true,
     "approval": {
-      "enabled": true,
+      "enabled": false,
       "bookingId": "recqb6DGaeJRpymL2",
       "webhookUrl": null,
       "emailTo": "rose@REEF.org"
@@ -328,8 +325,8 @@ window.BOOKING_DATA = {
               "key": "send_agreement",
               "title": "REEF sends the agreement",
               "due": null,
-              "done": false,
-              "doneOn": null,
+              "done": true,
+              "doneOn": "2026-11-06",
               "template": false,
               "provisional": false
             }
@@ -342,8 +339,8 @@ window.BOOKING_DATA = {
               "key": "sign_agreement",
               "title": "Review and sign the agreement",
               "due": null,
-              "done": false,
-              "doneOn": null,
+              "done": true,
+              "doneOn": "2026-11-09",
               "template": false,
               "provisional": false,
               "detail": "REEF sends the agreement; signing starts the payment schedule."
@@ -463,6 +460,6 @@ window.BOOKING_DATA = {
     },
     "title": "Administrator Approval Summary",
     "audienceLabel": "Ben Gamla school leadership",
-    "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/ben-gamla-charter-school/share/administrator/"
+    "url": "https://programs.reef.org/bookings/ben-gamla-charter-school/share/administrator/"
   }
 };

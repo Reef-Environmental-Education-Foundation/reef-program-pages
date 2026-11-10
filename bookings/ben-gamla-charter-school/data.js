@@ -13,11 +13,12 @@ window.BOOKING_DATA = {
     "track": "Expedition",
     "groupName": "Ben Gamla Charter School",
     "schoolOrg": "Ben Gamla Charter School",
-    "gradeLevel": "Dean of Students",
+    "gradeLevel": null,
     "groupSize": "67 Students / 10 Chaperones",
     "location": "John Pennekamp Coral Reef State Park, Key Largo",
     "dates": {
-      "label": "Confirmed",
+      "label": "Dates held",
+      "note": "Deposit due Nov 23, 2026",
       "range": "Mar 17, 2027 - Mar 17, 2027"
     }
   },
@@ -46,17 +47,17 @@ window.BOOKING_DATA = {
     "lastUpdated": null
   },
   "paymentSchedule": {
-    "tier": "Mid (90\u2013180 days out): $500 deposit + 2 payments",
+    "tier": "",
     "items": [
       {
-        "label": "Deposit (due now)",
-        "amount": "$500.00",
-        "dueDate": null
+        "label": "Deposit",
+        "amount": "$2,514.33",
+        "dueDate": "Nov 23, 2026"
       },
       {
         "label": "Payment 2",
-        "amount": "$6,035.82",
-        "dueDate": "Nov 10, 2026"
+        "amount": "$3,771.50",
+        "dueDate": "Nov 23, 2026"
       },
       {
         "label": "Final Payment",
@@ -65,11 +66,11 @@ window.BOOKING_DATA = {
       }
     ],
     "total": "$12,571.65",
-    "note": "Generated from REEF Bookings' payment-schedule fields (added 2026-09-03); confirm the 50/50 Payment 2 / Final split assumption before treating as final."
+    "note": "From your signed agreement."
   },
   "nextSteps": {
     "items": [
-      "Review and sign your agreement once it's sent (see above).",
+      "Your agreement is signed. Your deposit and Payment 2 are due Nov 23, 2026 (see the payment schedule above).",
       "Return your group's signed waivers and health/medical forms.",
       "Confirm final headcount with your REEF educator at least 2 weeks before arrival.",
       "Reach out any time with questions before your Expedition."
@@ -148,15 +149,10 @@ window.BOOKING_DATA = {
   ],
   "share": {
     "status": "confirmed",
-    "statusLabel": "Confirmed",
+    "statusLabel": "Agreement signed",
     "version": "v3",
     "lastUpdated": "Nov 10, 2026",
     "needs": [
-      {
-        "key": "approval",
-        "label": "Get school or organizational approval",
-        "view": "administrator"
-      },
       {
         "key": "staff",
         "label": "Share with teachers or program staff",
@@ -192,7 +188,7 @@ window.BOOKING_DATA = {
           "Price, inclusions and terms"
         ],
         "path": "share/administrator/",
-        "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/ben-gamla-charter-school/share/administrator/",
+        "url": "https://programs.reef.org/bookings/ben-gamla-charter-school/share/administrator/",
         "pricing": true
       },
       {
@@ -209,7 +205,7 @@ window.BOOKING_DATA = {
           "Preparation resources"
         ],
         "path": "share/educator/",
-        "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/ben-gamla-charter-school/share/educator/",
+        "url": "https://programs.reef.org/bookings/ben-gamla-charter-school/share/educator/",
         "pricing": true
       },
       {
@@ -226,7 +222,7 @@ window.BOOKING_DATA = {
           "Chaperone expectations"
         ],
         "path": "share/family/",
-        "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/ben-gamla-charter-school/share/family/",
+        "url": "https://programs.reef.org/bookings/ben-gamla-charter-school/share/family/",
         "pricing": false
       },
       {
@@ -241,7 +237,7 @@ window.BOOKING_DATA = {
           "What to bring"
         ],
         "path": "share/student/",
-        "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/ben-gamla-charter-school/share/student/",
+        "url": "https://programs.reef.org/bookings/ben-gamla-charter-school/share/student/",
         "pricing": false
       }
     ],

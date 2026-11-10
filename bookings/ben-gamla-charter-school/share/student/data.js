@@ -7,7 +7,7 @@ window.BOOKING_DATA = {
   },
   "view": {
     "status": "confirmed",
-    "statusLabel": "Confirmed",
+    "statusLabel": "Agreement signed",
     "version": "v3",
     "lastUpdated": "Nov 10, 2026",
     "orgName": "Ben Gamla Charter School",
@@ -17,6 +17,7 @@ window.BOOKING_DATA = {
     "summary": "A one-day marine science Expedition for 67 students, organized into four cohorts rotating through five hands-on experiences at John Pennekamp Coral Reef State Park, Key Largo.",
     "scheduleDraft": false,
     "view": "student",
+    "location": "John Pennekamp Coral Reef State Park, Key Largo",
     "headline": "A day on the reef at John Pennekamp",
     "intro": "You'll spend the day with REEF educators, rotating with your cohort through hands-on marine science experiences at John Pennekamp Coral Reef State Park.",
     "experiences": [
@@ -109,6 +110,6 @@ window.BOOKING_DATA = {
     },
     "title": "Student Preview",
     "audienceLabel": "Ben Gamla students",
-    "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/ben-gamla-charter-school/share/student/"
+    "url": "https://programs.reef.org/bookings/ben-gamla-charter-school/share/student/"
   }
 };

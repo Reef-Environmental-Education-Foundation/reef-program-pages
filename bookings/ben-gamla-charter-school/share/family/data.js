@@ -7,7 +7,7 @@ window.BOOKING_DATA = {
   },
   "view": {
     "status": "confirmed",
-    "statusLabel": "Confirmed",
+    "statusLabel": "Agreement signed",
     "version": "v3",
     "lastUpdated": "Nov 10, 2026",
     "orgName": "Ben Gamla Charter School",
@@ -122,6 +122,6 @@ window.BOOKING_DATA = {
     },
     "title": "Family & Chaperone Overview",
     "audienceLabel": "Ben Gamla parents, guardians and chaperones",
-    "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/ben-gamla-charter-school/share/family/"
+    "url": "https://programs.reef.org/bookings/ben-gamla-charter-school/share/family/"
   }
 };
