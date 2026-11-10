@@ -214,8 +214,31 @@ def _objectives(pd):
     return out
 
 
+def _signed_payment_lines(ap, money):
+    """Payment terms of a SIGNED agreement, straight from the Agreement fields. Nothing from the standard
+    defaults (old $500 deposit / 10% late fee) is mixed in. The flat $100 late fee is the signed term
+    (Martha, 2026-11-10; Drop A contract alignment, Sec. 6)."""
+    lines = []
+    if ap["deposit"]:
+        lines.append(f"Deposit: {money(ap['deposit'])}" + (f", due {ap['deposit_due']}." if ap["deposit_due"] else "."))
+    if ap["payment2"]:
+        lines.append(f"Payment 2: {money(ap['payment2'])}" + (f", due {ap['payment2_due']}." if ap["payment2_due"] else "."))
+    if ap.get("final"):
+        lines.append(f"Final payment: {money(ap['final'])}" + (f", due {ap['final_due']}." if ap["final_due"] else "."))
+    if ap["min_spaces"] and ap["guaranteed_cost"]:
+        lines.append(f"Minimum guarantee: {ap['min_spaces']} paid spaces (85%), locked "
+                     + (f"{ap['lock_date']}" if ap.get("lock_date") else "at the guarantee lock date")
+                     + f", for a guaranteed program cost of {money(ap['guaranteed_cost'])}.")
+    lines.append("A flat $100 late fee applies if a payment is not received within 14 days after its due date.")
+    return lines
+
+
 def _payment_lines(b, defaults, money):
     ap = b.get("agreement_payment")
+    if ap and ap.get("signed"):
+        return _signed_payment_lines(ap, money)
+    if not ap and (b.get("agreement_contract_status") or "") == CONTRACT_SIGNED:
+        return ["Your payment terms are in your signed agreement."]   # never the standard $500 / 10% wording
     if ap:  # agreement terms (generate_booking_package.agreement_payment_terms)
         lines = []
         if ap["deposit"]:
@@ -255,6 +278,9 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on, school
     aud = copy.deepcopy(itin.get("audiences") or {})
     record_id = b["record_id"]
     status, status_label = share_status(b.get("status"), b.get("agreement_contract_status"), school_facing)
+    signed = (b.get("agreement_contract_status") or "") == CONTRACT_SIGNED
+    if signed and (b.get("deposit_payment_status") or "") not in ("Deposit Received", "Paid in Full"):
+        status_label = "Agreement signed"      # "Confirmed" only after the deposit (vocabulary rule)
     version = pd["meta"].get("proposalVersion") or "v1"
     roles = _validate_roles(aud.get("roles"), record_id)
     logistics = aud.get("logistics") or {}
@@ -319,13 +345,17 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on, school
         "notIncluded": pd.get("notIncluded") or [],
         "optional": pd.get("optional") or [],
         "paymentTerms": _payment_lines(b, defaults, money),
-        "cancellationTerms": defaults["cancellationTerms"],
-        "termsNote": defaults["termsNote"],
+        # Signed: the signed agreement's own cancellation text is not in this repo (only the old Benjamin
+        # template is), so it is left out rather than guessed. Unsigned bookings keep the standard terms.
+        "cancellationTerms": [] if signed else defaults["cancellationTerms"],
+        "termsNote": ("These payment terms are from your signed agreement. Your agreement controls if anything here differs."
+                      if signed else defaults["termsNote"]),
         # Internal-review wording is for the internal preview only (2026-11-06).
         "outstanding": [] if school_facing else (adm.get("outstandingDecisions") or aud.get("outstandingDecisions") or []),
         "decisionMakers": [r for r in roles if "decisionMaker" in r["roles"] or r["approvalAuthority"]],
+        "agreementSigned": signed,
         "approval": {
-            "enabled": adm.get("approval", True),
+            "enabled": adm.get("approval", True) and not signed,
             "bookingId": record_id,
             "webhookUrl": (pd.get("cta") or {}).get("responseWebhookUrl") if ADMIN_WEBHOOK_ENABLED else None,
             "emailTo": reef.get("email") or "explorers@REEF.org",
@@ -386,6 +416,7 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on, school
     stu = aud.get("student") or {}
     views["student"] = dict(common, **{
         "view": "student",
+        "location": fam.get("generalLocation") or pd.get("location"),
         "headline": stu.get("headline") or "Get ready to explore the reef",
         "intro": stu.get("intro") or "",
         "experiences": _experiences(pd, for_students=True),
@@ -417,7 +448,8 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on, school
         "statusLabel": status_label,
         "version": version,
         "lastUpdated": generated_on,
-        "needs": [n for n in defaults["needs"] if n.get("action") or n.get("view") in views],
+        "needs": [n for n in defaults["needs"] if (n.get("action") or n.get("view") in views)
+                  and not (signed and n.get("key") == "approval")],
         "views": [{
             "key": k,
             "title": copy_[k]["draftTitle"] if (status == "draft" and copy_[k].get("draftTitle")) else copy_[k]["title"],

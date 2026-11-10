@@ -179,12 +179,16 @@
     const hero = data.hero || {};
     const dates = p.dates || {};
 
+    // Grade Level is shown only from a real grade-level value; with none, the chip is left out (never a
+    // contact's title, never a placeholder).
     const chips = [
       ["Group", p.groupName],
-      ["Dates", (dates.label ? dates.label + " — " : "") + placeholder(dates.range)],
+      ["Dates", (dates.label ? dates.label + " — " : "") + placeholder(dates.range) + (dates.note ? " · " + dates.note : "")],
       ["Grade Level", p.gradeLevel],
       ["Location", p.location || "REEF Campus, Key Largo"],
-    ].map(function (pair) {
+    ].filter(function (pair) {
+      return pair[0] !== "Grade Level" || (pair[1] && String(pair[1]).trim().length);
+    }).map(function (pair) {
       return el("div", { class: "chip" }, [
         el("div", { class: "eyebrow" }, [pair[0]]),
         el("div", { class: "value" }, [placeholder(pair[1])]),
@@ -539,11 +543,13 @@
           ["Parking / Drop-off", fr.parking],
           ["REEF Contact", fr.reefContact],
           ["Questions Before Arrival", fr.questionsEmail || "info@REEF.org"],
-        ].map(function (pair) {
-          const has = pair[1] && String(pair[1]).trim().length;
+        ].filter(function (pair) {
+          // A box with no value is hidden, never shown as "[confirm from booking data]".
+          return pair[1] && String(pair[1]).trim().length;
+        }).map(function (pair) {
           return el("div", { class: "field" }, [
             el("div", { class: "eyebrow" }, [pair[0]]),
-            el("div", { class: "value" + (has ? "" : " placeholder") }, [placeholder(pair[1])]),
+            el("div", { class: "value" }, [pair[1]]),
           ]);
         })),
       ]),
@@ -844,11 +850,11 @@
     pageRoot.appendChild(el("div", { class: "a-status-ribbon is-" + (isDraft ? "draft" : "confirmed") }, [
       isDraft ? (V.scheduleDraft ? "Proposed program · Draft schedule · Details may change until your contract is confirmed"
                                  : "Proposed program · Details may change until your contract is confirmed")
-              : "Confirmed program",
+              : (V.statusLabel === "Agreement signed" ? "Agreement signed" : "Confirmed program"),
     ]));
     const chips = [
       [isDraft ? "Proposed Date" : "Date", V.dateLine],
-      V.view === "family" || V.view === "student" ? ["Where", V.location] : null,
+      (V.view === "family" || V.view === "student") && V.location ? ["Where", V.location] : null,
       V.hours ? ["Hours", V.hours] : null,
       ["Version", (V.version || "v1") + (V.lastUpdated ? " · Updated " + V.lastUpdated : "")],
     ].filter(Boolean);
@@ -954,20 +960,22 @@
           has(V.optional) ? el("div", { class: "included-card optional-card" }, [el("h4", {}, [el("span", { class: "dot" }), "Optional — not included in this price"]), list(V.optional)]) : null,
         ].filter(Boolean)),
       ]));
-      add(sec("TERMS", "Payment, cancellation and approval", [
+      const signed = !!V.agreementSigned;
+      add(sec("TERMS", signed ? "Payment and cancellation" : "Payment, cancellation and approval", [
         has(V.paymentTerms) ? el("h3", { class: "a-h3" }, ["Payment"]) : null, has(V.paymentTerms) ? list(V.paymentTerms) : null,
         has(V.cancellationTerms) ? el("h3", { class: "a-h3" }, ["Cancellation"]) : null, has(V.cancellationTerms) ? list(V.cancellationTerms) : null,
-        el("h3", { class: "a-h3" }, ["Approval"]),
-        list(["Approving this summary tells REEF to prepare your contract. It isn't a signature and doesn't commit a payment."]),
+        signed ? null : el("h3", { class: "a-h3" }, ["Approval"]),
+        signed ? null : list(["Approving this summary tells REEF to prepare your contract. It isn't a signature and doesn't commit a payment."]),
         V.termsNote ? el("p", { class: "a-fine" }, [V.termsNote]) : null,
       ]));
       add(sec("OUTSTANDING DECISIONS", "Still to be decided", [has(V.outstanding) ? list(V.outstanding) : null]));
-      add(sec("STATUS", "Proposal status", [
+      add(sec("STATUS", signed ? "Agreement status" : "Proposal status", [
         el("p", {}, [statusBadge(V)]),
-        has(V.decisionMakers) ? el("p", { class: "a-fine" }, ["Approves the program: " + V.decisionMakers.map(function (r) {
+        signed ? el("p", {}, ["Your agreement is signed."]) : null,
+        has(V.decisionMakers) && !signed ? el("p", { class: "a-fine" }, ["Approves the program: " + V.decisionMakers.map(function (r) {
           return r.name ? r.name + (r.title ? ", " + r.title : "") : r.title + (r.note ? " (" + r.note.toLowerCase() + ")" : "");
         }).join("; ")]) : null,
-        V.approval && V.approval.enabled ? adminApproval(V) : null,
+        V.approval && V.approval.enabled && !signed ? adminApproval(V) : null,
         contactCard(V.reefContact),
       ]));
     }

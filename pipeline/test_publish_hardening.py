@@ -65,7 +65,8 @@ class ValidateBuildTest(unittest.TestCase):
         for d in sorted((REPO / "bookings").iterdir()):
             if d.name.startswith(("sample", "zzz")) or not (d / "data.js").exists():
                 continue
-            self.assertEqual(ps.validate_build(d, True), [], d.name)
+            is_proposal = '"docType": "proposal"' in (d / "data.js").read_text()   # pre-trip pages are validated as pre-trip
+            self.assertEqual(ps.validate_build(d, is_proposal), [], d.name)
 
 
 class GateTest(unittest.TestCase):
