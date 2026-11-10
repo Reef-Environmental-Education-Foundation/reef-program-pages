@@ -600,9 +600,30 @@
     ]);
   }
 
+  // Copy-link target. data.js carries an absolute url baked at publish time
+  // (github.io today). When the page is served from one of REEF's own two
+  // addresses, build the link from the address the viewer is on instead, so a
+  // copied link always matches the live host (programs.reef.org after the
+  // domain flip) even for pages published before it. Anywhere else (local
+  // preview, file://, Airtable preview) fall back to the baked url.
+  const LIVE_HOSTS = ["programs.reef.org", "reef-environmental-education-foundation.github.io"];
+  function liveHost() {
+    try { return location.protocol === "https:" && LIVE_HOSTS.indexOf(location.hostname) !== -1; } catch (err) { return false; }
+  }
+  function shareLink(v) {
+    if (liveHost() && v.path) {
+      try { return new URL(v.path, location.href.split("?")[0].split("#")[0]).href; } catch (err) { /* fall through */ }
+    }
+    return v.url;
+  }
+  function pageLink(V) {
+    if (liveHost()) return location.href.split("?")[0].split("#")[0];
+    return V.url || location.href.split("?")[0];
+  }
+
   function shareCard(v, share) {
     const copyBtn = el("button", { class: "share-btn" }, ["Copy link"]);
-    copyBtn.addEventListener("click", function () { copyText(v.url, copyBtn); });
+    copyBtn.addEventListener("click", function () { copyText(shareLink(v), copyBtn); });
     return el("article", { class: "share-card", "data-view": v.key }, [
       el("div", { class: "share-card-top" }, [
         statusBadge(share),
@@ -788,7 +809,7 @@
     const printBtn = el("button", { class: "share-btn on-dark" }, ["Print or Save PDF"]);
     printBtn.addEventListener("click", function () { window.print(); });
     const copyBtn = el("button", { class: "share-btn on-dark" }, ["Copy link"]);
-    copyBtn.addEventListener("click", function () { copyText(V.url || location.href.split("?")[0], copyBtn); });
+    copyBtn.addEventListener("click", function () { copyText(pageLink(V), copyBtn); });
     const topActions = [copyBtn, printBtn];
     if (isPreview()) {
       topActions.unshift(el("a", { class: "share-btn on-dark", href: location.pathname }, ["← Back to proposal"]));

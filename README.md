@@ -6,6 +6,8 @@ gets its own shareable, photo-friendly HTML page instead of a Word doc or PDF.
 
 Live site (once GitHub Pages is enabled): `https://reef-environmental-education-foundation.github.io/reef-program-pages/`
 
+Custom domain (`programs.reef.org`): see "Serving from programs.reef.org" below.
+
 ## How this is organized
 
 ```
@@ -155,3 +157,15 @@ never counts as approval.
 - `?view=<key>` on a booking URL redirects to that view's own page.
 - **Read `PRIVACY.md`** — GitHub Pages is public, and this is how the views
   avoid sending prices to families.
+
+
+## Serving from programs.reef.org
+
+The site deploys with GitHub Actions (`deploy.yml`, Pages source = "GitHub Actions"), so **no `CNAME` file is used or needed**: the custom domain lives in repo Settings > Pages. Do not add a `CNAME` file (Actions deploys ignore it).
+
+Every page and asset reference in the site is relative (`../../assets/render.js`, `share/<view>/`, `../../version.json`), so the same files work at
+`.../reef-program-pages/bookings/<slug>/` (github.io) and `/bookings/<slug>/` (custom domain). Only the *absolute* school-facing links the generator writes into `data.js` ("Copy link" values) and into the Asana task / Airtable "Last Publish Message" depend on the address:
+
+- `PAGES_BASE_URL` in `pipeline/generate_booking_package.py` defaults to the github.io address and is overridden by the repo **variable** `PAGES_BASE_URL` (Settings > Secrets and variables > Actions > Variables), which `publish-booking.yml` passes through. Leave it empty until the domain is live, then set it to `https://programs.reef.org`. Delete the variable to roll back.
+- `assets/render.js` builds "Copy link" from the address the viewer is on when that is `programs.reef.org` or the github.io host, so pages published earlier copy the right link on either address.
+- Already-published `data.js` files still contain github.io URLs; they are not rewritten. After the flip GitHub redirects the old address to the new one.
