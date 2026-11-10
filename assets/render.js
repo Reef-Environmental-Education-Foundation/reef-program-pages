@@ -156,6 +156,30 @@
   // with hero.logoUrl (a path relative to that booking's own index.html)
   // if a different mark is ever needed; hero.logoFallbackText swaps in a
   // plain text wordmark instead, in case the image file is ever missing.
+  // ---------------- PHOTOS (shared REEF-owned set in assets/photos/) ----------------
+  // A photo is { file, alt, pos } -> <figure><img loading="lazy">. The path is built from assetDepth like the logo.
+  function photoSrc(file, depth) { return "../".repeat(depth) + "assets/photos/" + file; }
+  function photoFigure(ph, depth, cls) {
+    if (!ph || !ph.file) return null;   // no photo for this spot: leave it out
+    return el("figure", { class: "photo-band " + (cls || "") }, [
+      el("img", { src: photoSrc(ph.file, depth), alt: ph.alt || "", loading: "lazy", decoding: "async",
+                  style: ph.pos ? "object-position:" + ph.pos + ";" : "" }),
+    ]);
+  }
+
+  // REEF contact as labeled rows: Name, Role, Email, Phone, one per row. A row with no value is left out.
+  function contactRows(c) {
+    const rows = [["Name", c.name], ["Role", c.role], ["Email", c.email ? el("a", { href: "mailto:" + c.email }, [c.email]) : ""],
+                  ["Phone", c.phone]].filter(function (r) { return r[1] && (typeof r[1] !== "string" || r[1].trim().length); });
+    if (!rows.length) return null;
+    return el("div", { class: "contact-card contact-rows-card" }, [
+      el("div", { class: "contact-rows-title" }, ["Your REEF contact"]),
+      el("dl", { class: "contact-rows" }, rows.map(function (r) {
+        return el("div", { class: "contact-row" }, [el("dt", {}, [r[0]]), el("dd", {}, [r[1]])]);
+      })),
+    ]);
+  }
+
   function renderLogo(data) {
     const hero = (data && data.hero) || {};
     if (hero.logoFallbackText) {
@@ -290,6 +314,7 @@
         }).concat(welcome.signOff ? [
           el("p", { style: "font-style:italic;color:var(--slate);margin-top:20px;" }, ["— " + welcome.signOff]),
         ] : [])),
+        photoFigure((data.photos || {}).welcome, data.assetDepth || 0, "in-page"),
       ]),
     ]));
   }
@@ -530,6 +555,7 @@
           el("span", { class: "eyebrow" }, ["NEXT STEPS"]),
           el("ul", {}, steps.map(function (line) { return el("li", {}, [line]); })),
         ]),
+        photoFigure((data.photos || {}).next, data.assetDepth || 0, "in-page"),
         el("div", { class: "section-head", style: "margin-top:32px;" }, [
           el("span", { class: "eyebrow" }, ["FINAL REMINDERS"]),
           el("h3", { style: "font-size:18px;" }, ["Before you arrive"]),
@@ -801,17 +827,7 @@
     }
     function contactCard(c) {
       if (!c || !c.name) return null;
-      return el("div", { class: "contact-card" }, [
-        el("div", { class: "contact-avatar" }, [(c.name || "REEF").split(" ").map(function (w) { return w[0]; }).join("")]),
-        el("div", { class: "contact-body" }, [
-          el("div", { class: "contact-name" }, [c.name]),
-          el("div", { class: "contact-role" }, [c.role || ""]),
-          el("div", { class: "contact-links" }, [
-            c.email ? el("a", { href: "mailto:" + c.email }, [c.email]) : null,
-            c.phone ? el("span", {}, [c.phone]) : null,
-          ]),
-        ]),
-      ]);
+      return contactRows(c);
     }
     function experienceCards(items, numbered) {
       return el("div", { class: "station-grid" }, (items || []).map(function (x, i) {
@@ -872,6 +888,10 @@
       ]),
     ]);
     pageRoot.appendChild(header);
+    if (V.photo) {
+      const band = photoFigure(V.photo, (data.assetDepth || 4), "a-photo");
+      if (band) pageRoot.appendChild(el("div", { class: "container a-photo-wrap" }, [band]));
+    }
 
     const main = el("main", { id: "main", class: "a-main" });
     const add = function (node) { if (node) main.appendChild(node); };
@@ -2349,12 +2369,15 @@
         el("h3", {}, ["Ready for your students to become part of it?"]),
         el("p", {}, ["Reach out any time before your Expedition — a REEF educator is glad to help shape the details around your group."]),
       ]),
-      el("div", { class: "contact" }, [
-        el("div", { class: "eyebrow" }, ["REEF OCEAN EXPLORERS"]),
-        el("div", {}, [
-          el("a", { href: "mailto:" + (c.reefEmail || "info@REEF.org") }, [c.reefEmail || "info@REEF.org"]),
-          " · " + (c.reefPhone || REEF_FOOTER_PHONE),
-        ]),
+      el("div", { class: "contact contact-rows-cta" }, [
+        el("div", { class: "eyebrow" }, ["YOUR REEF CONTACT"]),
+        el("dl", { class: "contact-rows" }, [
+          ["Name", c.reefEducatorName], ["Role", c.reefEducatorTitle],
+          ["Email", el("a", { href: "mailto:" + (c.reefEmail || "info@REEF.org") }, [c.reefEmail || "info@REEF.org"])],
+          ["Phone", c.reefPhone || REEF_FOOTER_PHONE],
+        ].filter(function (r) { return r[1] && (typeof r[1] !== "string" || r[1].trim().length); }).map(function (r) {
+          return el("div", { class: "contact-row" }, [el("dt", {}, [r[0]]), el("dd", {}, [r[1]])]);
+        })),
       ]),
     ]));
     mount("site-footer", el("div", { class: "site-footer" }, [

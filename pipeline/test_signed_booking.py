@@ -150,7 +150,7 @@ class SignedCancellationTest(unittest.TestCase):
                      "60 days or fewer before the program start: 100%", "(no refund)",
                      "Cooling-off period (Section 3)", "within 7 days after the Agreement Date",
                      "guarantee in Section 7 and are not partial cancellations",
-                     "in writing to explorers@REEF.org"):
+                     "in writing to explorers@reef.org"):
             self.assertIn(want, text)
 
     def test_dollar_figures_come_from_the_agreement_cost_or_are_left_out(self):
@@ -203,6 +203,64 @@ class SignedCleanupTest(unittest.TestCase):
     def test_admin_page_title_for_signed_bookings(self):
         src = (Path(__file__).parent / "audience_views.py").read_text()
         self.assertEqual(src.count('"Administrator Summary"'), 2)       # share card + the page itself
+
+
+class PublicContactEmailTest(unittest.TestCase):
+    """Martha, 2026-11-10: school-facing REEF contact email on Get Ready / signed pages is explorers@reef.org."""
+
+    def b(self, **kw):
+        kw.setdefault("arrival_date", "2027-03-17")
+        return booking(reef_contact={"name": "Rose Kelly", "email": "rose@REEF.org", "phone": "305-852-0030"}, **kw)
+
+    def test_signed_and_get_ready_use_the_shared_inbox_and_keep_the_named_contact(self):
+        for kw in ({}, {"agreement_contract_status": "Sent", "arrival_date": "2027-02-09"}):   # signed; confirmed 100 days out
+            b = self.b(**kw)
+            self.assertTrue(g.apply_public_contact_email(b), kw)
+            self.assertEqual(b["reef_contact"]["email"], "explorers@reef.org")
+            self.assertEqual(b["reef_contact"]["name"], "Rose Kelly")
+            self.assertEqual(b["reef_contact"]["phone"], "305-852-0030")
+
+    def test_unsigned_proposal_pages_keep_the_contacts_own_address(self):
+        b = self.b(status="Proposal Sent", agreement_contract_status=None)
+        self.assertFalse(g.apply_public_contact_email(b))
+        self.assertEqual(b["reef_contact"]["email"], "rose@REEF.org")
+
+    def test_notice_line_is_lowercase(self):
+        self.assertIn("explorers@reef.org", av.SIGNED_NOTICE_LINE)
+        self.assertNotIn("REEF.org", av.SIGNED_NOTICE_LINE.replace("@reef.org", ""))
+
+
+class PhotoAndContactRowsTest(unittest.TestCase):
+    JS = (REPO / "assets" / "render.js").read_text()
+
+    def test_every_photo_exists_is_web_sized_and_has_alt_text(self):
+        for key, ph in av.PHOTOS.items():
+            f = REPO / "assets" / "photos" / ph["file"]
+            self.assertTrue(f.exists(), key)
+            self.assertLess(f.stat().st_size, 400_000, key)
+            self.assertGreater(len(ph["alt"]), 30, key)
+        self.assertEqual(set(av.VIEW_PHOTO), set(av.VIEW_KEYS))
+        self.assertTrue(set(av.VIEW_PHOTO.values()) <= set(av.PHOTOS))
+
+    def test_photos_are_lazy_have_alt_and_print_safely(self):
+        self.assertIn('loading: "lazy"', self.JS)
+        self.assertIn('alt: ph.alt || ""', self.JS)
+        css = (REPO / "assets" / "styles.css").read_text()
+        self.assertIn(".photo-band{break-inside:avoid", css)
+
+    def test_no_photo_shows_without_a_file(self):
+        self.assertIn("if (!ph || !ph.file) return null;", self.JS)
+
+    def test_contact_is_labeled_rows(self):
+        for label in ('"Name"', '"Role"', '"Email"', '"Phone"'):
+            self.assertIn(label, self.JS)
+        self.assertIn('mailto:" + c.email', self.JS)
+        self.assertIn("contact-rows", (REPO / "assets" / "styles.css").read_text())
+
+    def test_main_page_hero_uses_a_photo_that_exists(self):
+        src = (REPO / "pipeline" / "generate_booking_package.py").read_text()
+        self.assertNotIn("assets/photos/hero-reef-shark.jpg", src)   # that file was never committed
+        self.assertTrue((REPO / "assets" / "photos" / "overview.jpg").exists())
 
 
 if __name__ == "__main__":
