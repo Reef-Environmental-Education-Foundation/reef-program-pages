@@ -214,6 +214,46 @@ def _objectives(pd):
     return out
 
 
+# Cancellation terms of the SIGNED agreement (Section 10; cooling-off is Section 3; participant counts are
+# governed by the guarantee in Section 7). Text and numbers from Martha, 2026-11-10 -- do not paraphrase the
+# numbers. Stored here as page text only; no contract file is written to the public repo.
+SIGNED_CANCEL_INTRO = ("If the Group cancels, the Group owes the greater of (a) the percentage of the Guaranteed Program "
+                       "Cost below, or (b) REEF's nonrecoverable costs incurred through the cancellation date, but never "
+                       "more than 100% of the Guaranteed Program Cost. Anything paid above what is owed is refunded.")
+SIGNED_CANCEL_TIERS = (  # (cancellation received, share of Guaranteed Program Cost or None for the deposit)
+    ("More than 180 days before the program start", None),
+    ("121 to 180 days before the program start", 0.35),
+    ("91 to 120 days before the program start", 0.50),
+    ("61 to 90 days before the program start", 0.75),
+    ("60 days or fewer before the program start", 1.00),
+)
+SIGNED_COOLING_OFF = ("Cooling-off period (Section 3): if the program start date is more than 180 days after the "
+                      "Agreement Date, the Group may cancel for any reason by written notice received within 7 days "
+                      "after the Agreement Date, with a full refund and no cancellation fee.")
+SIGNED_COUNT_LINE = ("Reductions in participant count are governed by the guarantee in Section 7 and are not partial "
+                     "cancellations.")
+SIGNED_NOTICE_LINE = "Cancellation notices must be in writing to explorers@REEF.org."
+
+
+def signed_cancellation_lines(ap, money):
+    """The Cancellation list for a signed booking. Dollar figures only when the Guaranteed Program Cost comes
+    from the Agreement fields (ap["guaranteed_cost"]); otherwise percentages only."""
+    cost = (ap or {}).get("guaranteed_cost")
+    lines = [SIGNED_CANCEL_INTRO]
+    for when, share in SIGNED_CANCEL_TIERS:
+        if share is None:
+            owed = "the deposit"
+        else:
+            pct = f"{round(share * 100)}%"
+            owed = (f"{pct} of the Guaranteed Program Cost ({money(cost * share)})" if cost else
+                    f"{pct} of the Guaranteed Program Cost")
+            if share == 1.00:
+                owed += " (no refund)"
+        lines.append(f"Cancellation received {when.lower()}: {owed}.")
+    lines += [SIGNED_COOLING_OFF, SIGNED_COUNT_LINE, SIGNED_NOTICE_LINE]
+    return lines
+
+
 def _signed_payment_lines(ap, money):
     """Payment terms of a SIGNED agreement, straight from the Agreement fields. Nothing from the standard
     defaults (old $500 deposit / 10% late fee) is mixed in. The flat $100 late fee is the signed term
@@ -339,15 +379,15 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on, school
             "total": pr.get("estimatedTotal"),
             "perStudent": (pr.get("tileRate") or {}).get("num"),
             "chaperones": (pr.get("chaperonePolicy") or {}).get("headline"),
-            "note": "Estimated total. REEF sends a revised proposal if anything that affects price changes.",
+            "note": ("Program total as of your signed agreement. Your agreement controls final billing." if signed else
+                     "Estimated total. REEF sends a revised proposal if anything that affects price changes."),
         },
         "included": [i for g in pd.get("included") or [] for i in g.get("items") or []],
         "notIncluded": pd.get("notIncluded") or [],
         "optional": pd.get("optional") or [],
         "paymentTerms": _payment_lines(b, defaults, money),
-        # Signed: the signed agreement's own cancellation text is not in this repo (only the old Benjamin
-        # template is), so it is left out rather than guessed. Unsigned bookings keep the standard terms.
-        "cancellationTerms": [] if signed else defaults["cancellationTerms"],
+        # Signed: the signed agreement's Section 10 terms (above). Unsigned bookings keep the standard terms.
+        "cancellationTerms": signed_cancellation_lines(b.get("agreement_payment"), money) if signed else defaults["cancellationTerms"],
         "termsNote": ("These payment terms are from your signed agreement. Your agreement controls if anything here differs."
                       if signed else defaults["termsNote"]),
         # Internal-review wording is for the internal preview only (2026-11-06).
@@ -452,21 +492,26 @@ def build_views(b, pd, itin, money, date_pretty, pages_url, generated_on, school
                   and not (signed and n.get("key") == "approval")],
         "views": [{
             "key": k,
-            "title": copy_[k]["draftTitle"] if (status == "draft" and copy_[k].get("draftTitle")) else copy_[k]["title"],
+            "title": ("Administrator Summary" if (signed and k == "administrator") else
+                      copy_[k]["draftTitle"] if (status == "draft" and copy_[k].get("draftTitle")) else copy_[k]["title"]),
             "audience": (aud.get("audienceLabels") or {}).get(k) or copy_[k]["audience"],
-            "description": copy_[k]["description"],
+            "description": ("A concise summary for the school administrator: purpose, logistics, responsibilities, price, and terms."
+                            if (signed and k == "administrator") else copy_[k]["description"]),
             "includes": copy_[k]["includes"],
             "path": f"share/{k}/",
             "url": f"{pages_url}share/{k}/",
             "pricing": k not in PUBLIC_VIEWS,
         } for k in VIEW_KEYS if k in views],
         "roles": roles,
+        "agreementSigned": signed,
         "privacyNote": ("Anyone who has a link can open that page. The family and student views leave out "
                         "pricing and contract terms entirely. Please don't add student names or other "
                         "private details to anything you share."),
     }
     for k, v in views.items():
         v["title"] = next(x["title"] for x in share["views"] if x["key"] == k)
+        if signed and k == "administrator":      # nothing left to approve once the agreement is signed
+            v["title"] = "Administrator Summary"
         v["audienceLabel"] = next(x["audience"] for x in share["views"] if x["key"] == k)
         v["url"] = next(x["url"] for x in share["views"] if x["key"] == k)
     return share, views

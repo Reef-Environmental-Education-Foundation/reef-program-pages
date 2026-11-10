@@ -124,6 +124,7 @@ def build_checklist(b, today=None, state=None):
     p2_due = _d(b.get("payment2_due_agreement"))
     final_due = _d(b.get("final_due_date"))
     money = lambda v: f"${v:,.2f}" if isinstance(v, (int, float)) and v else None  # noqa: E731
+    is_signed = (b.get("agreement_contract_status") or "") == "Signed"
     prov = not agreement_known  # payment dates are provisional until the Agreement Date is entered
 
     items = [
@@ -138,14 +139,16 @@ def build_checklist(b, today=None, state=None):
               "Airtable (Guarantee Lock Date)",
               detail=(f"Minimum guaranteed paid spaces: {b['min_guaranteed_spaces']}." if b.get("min_guaranteed_spaces") else "")),
         _item("final_payment", "School administrator", "Final payment", final_due, "Airtable (Final Payment Due Date)",
-              detail="Amount: the balance under the signed agreement (not shown until the agreement exists).",
+              money=money(b.get("final_amount_agreement")) if is_signed else None,
+              detail=("" if (is_signed and money(b.get("final_amount_agreement")))
+                      else "Amount: the balance under the signed agreement (not shown until the agreement exists)."),
               provisional=prov),
         _item("chaperones", "School administrator", "Confirm the chaperone count",
               lock, "Airtable (# Total Chaperones is unconfirmed)",
               detail="The chaperone count changes the total: confirm it before the guarantee lock."),
         # ---- Teacher to families
         _item("share_family_page", "Teacher to families", "Share the family information page with families",
-              roster, detail="Use the Family view of the proposal."),
+              roster, detail="Use the Family view of this page."),
         _item("collect_forms", "Teacher to families", "Collect signed forms and waivers", roster,
               "Airtable (Final Roster Due)", detail="Liability, medical, conduct and media forms are due with the final roster."),
         _item("final_roster", "Teacher to families", "Send REEF the final roster", roster, "Airtable (Final Roster Due)"),
@@ -166,6 +169,8 @@ def build_checklist(b, today=None, state=None):
         it["done"] = bool(s.get("done"))
         it["doneOn"] = s.get("doneOn")
         it["doneBy"] = s.get("doneBy")
+        if it["key"] == "sign_agreement" and it["done"] and b.get("agreement_date"):
+            it["detail"] = f"Signed on {_d(b['agreement_date']).strftime('%b %-d, %Y')}."
         it["daysToDue"] = (it["due"] - today).days if it["due"] else None
         it["overdue"] = bool(it["due"] and not it["done"] and it["due"] < today)
     return items
@@ -215,7 +220,7 @@ def _deadlines(b, view):
     return [{"label": l, "date": _iso(d), "provisional": p} for l, d, p in rows if d]
 
 
-def views_payload(b, today=None, state=None):
+def views_payload(b, today=None, state=None, school_facing=False):
     """{view: {"asOf", "provisional", "deadlines", "groups"}} for the Get Ready stage.
     Money only in the administrator view; any "$" amount in another view raises."""
     today = today or datetime.utcnow().date()
@@ -231,7 +236,8 @@ def views_payload(b, today=None, state=None):
                     continue
                 row = {"key": it["key"], "title": PUBLIC_TITLE.get(it["key"], it["title"]),
                        "due": _iso(it["due"]), "done": it["done"], "doneOn": it["doneOn"],
-                       "template": it["source"] == "Template (confirm)",
+                       # "Template (confirm)" is a review tag for staff: never on a page given to the school.
+                       "template": it["source"] == "Template (confirm)" and not school_facing,
                        "provisional": bool(it["provisional"] and it["due"])}
                 if it["detail"] and it["key"] not in PUBLIC_TITLE:
                     row["detail"] = it["detail"]

@@ -669,7 +669,7 @@
       el("ul", {}, roles.map(function (r) {
         return el("li", {}, [
           el("span", { class: "role-who" }, [r.name ? r.name + (r.title ? ", " + r.title : "") : r.title]),
-          el("span", { class: "role-what" }, [(r.roleLabels || []).join(" · ") + (r.approvalAuthority ? " · Approves the program" : "") + (r.note ? " · " + r.note : "")]),
+          el("span", { class: "role-what" }, [(r.roleLabels || []).join(" · ") + (r.approvalAuthority && !share.agreementSigned ? " · Approves the program" : "") + (r.note ? " · " + r.note : "")]),
         ]);
       })),
     ]);
@@ -726,9 +726,11 @@
       root.appendChild(fs);
     }
     root.appendChild(el("div", { class: "block-head", style: "margin-top:28px;" }, [
-      el("span", { class: "eyebrow" }, ["SHARE FOR REVIEW"]),
+      el("span", { class: "eyebrow" }, [share.agreementSigned ? "SHARE WITH YOUR TEAM" : "SHARE FOR REVIEW"]),
       el("h2", {}, ["Materials for each audience"]),
-      el("p", { class: "dek" }, ["Each link opens a focused page built from this same proposal, so dates, schedule and details always match. Sharing a page doesn't approve anything."]),
+      el("p", { class: "dek" }, [share.agreementSigned
+        ? "Each link opens a focused page built from the same program plan, so dates, schedule and details always match."
+        : "Each link opens a focused page built from this same proposal, so dates, schedule and details always match. Sharing a page doesn't approve anything."]),
     ]));
     root.appendChild(hint);
     root.appendChild(cardsWrap);
@@ -947,9 +949,9 @@
         has(V.responsibilities) ? dl(V.responsibilities.map(function (r) { return { k: r.area, v: r.text }; })) : null,
       ]));
       const pr = V.pricing || {};
-      add(sec("PRICE", "Estimated total", [
+      add(sec("PRICE", V.agreementSigned ? "Program total" : "Estimated total", [
         pr.total ? el("div", { class: "price-tiles cols-2" }, [
-          el("div", { class: "price-tile is-primary" }, [el("div", { class: "tile-label" }, ["Estimated Total"]), el("div", { class: "tile-num" }, [pr.total]),
+          el("div", { class: "price-tile is-primary" }, [el("div", { class: "tile-label" }, [V.agreementSigned ? "Program Total" : "Estimated Total"]), el("div", { class: "tile-num" }, [pr.total]),
             el("div", { class: "tile-unit" }, [(V.counts ? V.counts.students + " students and " + V.counts.chaperones + " chaperones" : "")])]),
           pr.perStudent ? el("div", { class: "price-tile" }, [el("div", { class: "tile-label" }, ["Per Student"]), el("div", { class: "tile-num" }, [pr.perStudent]), el("div", { class: "tile-unit" }, ["for the full program"])]) : null,
         ]) : null,

@@ -1514,6 +1514,14 @@ def signed_first_step(b):
     return "Your agreement is signed. See the payment schedule above for what is due and when."
 
 
+def signed_headcount_step(b):
+    lock, roster = b.get("guarantee_lock_date"), b.get("final_roster_due")
+    if lock and roster:
+        return (f"Confirm your final participant count by {date_pretty(lock)} (guarantee lock) and send the final "
+                f"roster by {date_pretty(roster)}.")
+    return "Confirm your final participant count and final roster with your REEF educator."
+
+
 def build_payment_schedule(b):
     ap = agreement_payment_terms(b)
     if ap:
@@ -1649,6 +1657,7 @@ def build_confirmed_page_data(b):
             "items": [
                 signed_first_step(b) if is_signed(b) else "Review and sign your agreement once it's sent (see above).",
                 "Return your group's signed waivers and health/medical forms.",
+                signed_headcount_step(b) if is_signed(b) else
                 "Confirm final headcount with your REEF educator at least 2 weeks before arrival.",
                 "Reach out any time with questions before your Expedition.",
             ],
@@ -2278,7 +2287,7 @@ def main():
         # strict: an unreadable Checklist Items table fails the build (old page stays live)
         # instead of publishing a page that shows everything outstanding.
         b["checklist_state"] = get_ready.fetch_completion_state(record_id, strict=True)
-        b["get_ready"] = get_ready.views_payload(b)
+        b["get_ready"] = get_ready.views_payload(b, school_facing=not preview)
     view_data = build_share_views(b, page_data, is_proposal, page_url, school_facing=not preview)
     # Never publish a literal {{token}}, on the Airtable path or the JSON path.
     schedule_airtable.assert_no_tokens(page_data, "booking page")
