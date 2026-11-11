@@ -186,6 +186,56 @@ class WritebackTest(unittest.TestCase):
             self.assertFalse(fields[ps.F_PUBLISH_REQUESTED])
             self.assertEqual(fields[ps.F_PUBLISH_RESULT], "Success")
 
+    def _main_fields(self, **extra):
+        with tempfile.TemporaryDirectory() as d:
+            rf = Path(d) / "result.json"
+            rf.write_text(json.dumps(self.RESULT))
+            env = {"RECORD_ID": "recAAAAAAAAAAAAAA", "RESULT_FILE": str(rf), "GENERATE_OUTCOME": "success",
+                   "COMMIT_OUTCOME": "success", "DEPLOY_OUTCOME": "success", "PUSHED": "true",
+                   "AIRTABLE_WRITE_KEY": "k", "GITHUB_RUN_ID": "9", "GITHUB_REPOSITORY": "o/r"}
+            env.update(extra)
+            with mock.patch.object(wb, "patch_record") as patch:
+                wb.main(env)
+            return patch.call_args[0][1]
+
+    def test_smoke_failure_keeps_success_and_adds_a_distinct_line(self):
+        f = self._main_fields(SMOKE_OUTCOME="failure", DEPLOY_RUN_URL="https://github.test/deploy/5")
+        self.assertEqual(f[ps.F_PUBLISH_RESULT], "Success")  # not "Failed - ..."
+        self.assertEqual(f[ps.F_PUBLISHED_VERSION], 2)
+        self.assertTrue(f[ps.F_PUBLISHED_AT].endswith("Z"))
+        self.assertFalse(f[ps.F_PUBLISH_REQUESTED])
+        msg = f[ps.F_PUBLISH_MESSAGE]
+        self.assertIn("Live page: https://example.test/bookings/school/", msg)
+        self.assertIn("Published, but the programs.reef.org check failed. See the run summary:", msg)
+        self.assertTrue(msg.endswith("https://github.test/deploy/5"))
+        self.assertNotIn("did not succeed", msg)
+
+    def test_smoke_pass_skipped_or_missing_adds_no_line(self):
+        for outcome in ("success", "skipped", "cancelled", ""):
+            f = self._main_fields(SMOKE_OUTCOME=outcome)
+            self.assertEqual(f[ps.F_PUBLISH_RESULT], "Success")
+            self.assertNotIn("programs.reef.org check failed", f[ps.F_PUBLISH_MESSAGE])
+
+    def test_smoke_flag_never_turns_a_failed_publish_into_success(self):
+        f = ps.writeback_fields({"message": "boom"}, False, "https://github.test/run/1", smoke_failed=True)
+        self.assertEqual(f[ps.F_PUBLISH_RESULT], "Failed - previous version still live")
+        self.assertNotIn("programs.reef.org check failed", f[ps.F_PUBLISH_MESSAGE])
+
+    def test_decide_ignores_smoke(self):
+        # decide() takes no smoke input: a deploy that succeeded is ok.
+        self.assertEqual(wb.decide(self.RESULT, "success", "success", "success"), (True, ""))
+
+    def test_workflow_wires_smoke_as_its_own_signal(self):
+        wf = (Path(__file__).resolve().parent.parent / ".github/workflows/publish-booking.yml").read_text()
+        # The deploy step must not fail on the whole run's status ...
+        self.assertNotIn("gh run watch \"$id\" --exit-status", wf)
+        # ... it judges the deploy job alone and passes smoke on separately.
+        self.assertIn('select(.name=="deploy")', wf)
+        self.assertIn("SMOKE_OUTCOME: ${{ steps.deploy.outputs.smoke }}", wf)
+        # The run still goes red, after the Airtable write-back.
+        self.assertLess(wf.index("airtable_writeback.py"), wf.index("Fail run if the programs.reef.org check failed"))
+        self.assertIn("steps.deploy.outputs.smoke == 'failure'", wf)
+
     def test_main_with_no_token_or_bad_id_is_a_quiet_noop(self):
         with mock.patch.object(wb, "patch_record") as patch:
             self.assertEqual(wb.main({"RECORD_ID": "recAAAAAAAAAAAAAA"}), 0)

@@ -34,3 +34,45 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  # Post-deploy smoke check: the site root plus every booking page published in
+  # this run must answer 200 on programs.reef.org with no redirect (a redirect
+  # to github.io fails it). Read-only; changes no content and sends nothing.
+  # A failure here fails the run, so publish-booking.yml (which watches this
+  # run) records "deploy did not succeed" on the Bookings record.
+  smoke-check:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Find bookings published in this run
+        id: slugs
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # A push covers before..HEAD; a manual run (which publish-booking.yml
+          # uses) covers the latest commit, i.e. the publish commit.
+          base="HEAD~1"
+          if [ "${{ github.event_name }}" = "push" ] && [[ "$BEFORE" =~ ^[0-9a-f]{40}$ ]] && [[ ! "$BEFORE" =~ ^0+$ ]] && git cat-file -e "$BEFORE" 2>/dev/null; then
+            base="$BEFORE"
+          fi
+          git rev-parse -q --verify "$base" >/dev/null || base=""
+          if [ -n "$base" ]; then
+            changed=$(git diff --name-only --diff-filter=AMR "$base" HEAD -- bookings/)
+          else
+            changed=""
+          fi
+          slugs=$(printf '%s\n' "$changed" | sed -n 's#^bookings/\([^/]*\)/.*#\1#p' | sort -u | while read -r s; do [ -f "bookings/$s/index.html" ] && echo "$s"; done | tr '\n' ' ')
+          echo "Bookings to check: ${slugs:-none (site root only)}"
+          echo "list=$slugs" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Smoke check programs.reef.org
+        env:
+          SLUGS: ${{ steps.slugs.outputs.list }}
+        run: python pipeline/smoke_check.py $SLUGS
