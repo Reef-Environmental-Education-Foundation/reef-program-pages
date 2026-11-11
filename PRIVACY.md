@@ -72,3 +72,18 @@ per request, with:
 5. A private data store for anything that shouldn't be public, such as rosters,
    cohort assignments by student, and accommodation plans. That's what the full
    Group Planning Hub would need.
+
+## 2027 meals and lodging (added 2026-11-09)
+
+- The coordinator proposal may show two customer-facing Airtable fields: the
+  auto-written "Proposal - Meals & Outside Expenses" text and "Total Payable to
+  REEF (incl. selected meals)". The generator requests only those two fields by
+  ID, so internal meal costs, margins, review counts, deadlines and every
+  lodging field (access code, release date, reservation contacts) never reach a
+  public `data.js`. `pipeline/test_meals_proposal.py` fails if an internal field
+  ID is added to the generator.
+- Meals are not part of Total Package Price; deposit and guarantee wording is
+  unchanged. Meal text contains $ amounts, so it is not added to the family,
+  student or educator views.
+- Lodging recommendations are sent to a school by REEF staff with the Lodging
+  Access Code. They are not on any public page.
