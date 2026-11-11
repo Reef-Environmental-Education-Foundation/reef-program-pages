@@ -11,7 +11,7 @@ window.BOOKING_DATA = {
   "proposal": {
     "meta": {
       "bookingId": "recXmG8ySdXrgmj85",
-      "proposalVersion": "v5",
+      "proposalVersion": "v6",
       "proposalDate": "",
       "programTypeLabel": "Expedition",
       "programWord": "Expedition"
@@ -75,7 +75,7 @@ window.BOOKING_DATA = {
         {
           "id": "lunch-pk",
           "name": "Lunch at Pennekamp",
-          "short": "Lunch PK",
+          "short": "Lunch",
           "location": "Pennekamp",
           "type": "meal",
           "color": 5,
@@ -839,7 +839,7 @@ window.BOOKING_DATA = {
     "share": {
       "status": "proposal",
       "statusLabel": "Proposal",
-      "version": "v5",
+      "version": "v6",
       "lastUpdated": "Nov 11, 2026",
       "needs": [
         {

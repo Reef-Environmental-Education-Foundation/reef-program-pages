@@ -8,7 +8,7 @@ window.BOOKING_DATA = {
   "view": {
     "status": "proposal",
     "statusLabel": "Proposal",
-    "version": "v5",
+    "version": "v6",
     "lastUpdated": "Nov 11, 2026",
     "photo": null,
     "orgName": "The Benjamin School",
@@ -108,7 +108,7 @@ window.BOOKING_DATA = {
           },
           {
             "time": "Day 1 12:30-13:00",
-            "name": "Lunch PK"
+            "name": "Lunch"
           },
           {
             "time": "Day 1 13:00-15:00",
