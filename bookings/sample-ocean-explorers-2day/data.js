@@ -38,16 +38,16 @@ window.BOOKING_DATA = {
 
   contacts: {
     educatorName: "[Educator / Group Leader]",
-    reefEducatorName: "[REEF Educator Name]",
+    reefEducatorName: "Rose",
     reefPhone: "305-852-0030",
-    reefEmail: "info@REEF.org",
+    reefEmail: "explorers@reef.org",
   },
 
   hero: {
     kicker: "OCEAN EXPLORERS\nEXPEDITION PACKET",
     eyebrowTag: "Florida Keys Marine Science Expedition",
     headline: "From Student to Scientist in Key Largo",
-    promise: "Turn the ocean into your classroom. Your students won't just study marine science — they become part of it.",
+    promise: "Turn the ocean into your classroom. Your students won't just study marine science, they become part of it.",
     // Placeholder path — points at a real, non-people REEF photo (Caribbean
     // Reef Shark, credit Jeffrey Haines) found in REEF's Dropbox at
     // /Photos Videos/Fish and Invertebrate Algae Photos/TWA Region Fish
@@ -56,32 +56,31 @@ window.BOOKING_DATA = {
     // from here) — save that file as assets/photos/hero-reef-shark.jpg in
     // the repo and this path will pick it up automatically. Until then the
     // hero renders its default navy/teal gradient (no broken image).
-    imageUrl: "../../assets/photos/hero-reef-shark.jpg",
-    imageCredit: "Photo: Jeffrey Haines / REEF",
+    imageUrl: "../../assets/photos/overview.jpg",
   },
 
   // Shown only while the agreement is genuinely awaiting the customer's
   // signature — remove or set show:false once it's Signed.
   actionNeeded: {
     show: true,
-    headline: "Your agreement is ready to sign",
-    detail: "Review and sign your Ocean Explorers agreement in Zoho Sign to lock in your dates.",
-    ctaText: "Review & Sign Agreement",
-    ctaUrl: "https://sign.zoho.com/reef-sample-agreement-link",
+    headline: "Ready to bring your group to the Keys?",
+    detail: "Tell us about your group and we will build your proposal and agreement.",
+    ctaText: "Book now",
+    // TODO: swap in the Zoho booking form link once it is available.
+    ctaUrl: "mailto:explorers@reef.org?subject=Ocean%20Explorers%20booking%20request",
   },
 
   agreement: {
-    status: "Sent",
-    zohoSignUrl: "https://sign.zoho.com/reef-sample-agreement-link",
-    lastUpdated: "Sent Aug 28, 2026",
+    status: "Not Sent",
+    lastUpdated: "",
   },
 
   nextSteps: {
     items: [
-      "Review and sign your agreement in Zoho Sign (link above).",
-      "Return your group's signed waivers and health/medical forms.",
-      "Confirm final headcount with your REEF educator at least 2 weeks before arrival.",
-      "Reach out any time with questions before your expedition.",
+      "Book now: tell us your group size, ideal dates and interests.",
+      "Receive your custom proposal from REEF, with a schedule and pricing for your group.",
+      "Review and sign your agreement, then pay your deposit to lock in your dates.",
+      "Return signed waivers and health forms, and confirm final headcount with your REEF contact.",
     ],
   },
 
@@ -132,8 +131,8 @@ window.BOOKING_DATA = {
         {
           time: "4:00 PM",
           tag: "Wrap-Up",
-          title: "Return to campus & reflection",
-          description: "Group returns to the REEF Campus to rinse gear, log survey observations, and reflect on the day's dive into reef ecology.",
+          title: "Upload citizen science data & reflection",
+          description: "Regroup with REEF experts to review observations made that day and learn about how the database is used.",
         },
       ],
       studentsWill: [
@@ -141,7 +140,7 @@ window.BOOKING_DATA = {
         "Observe how reef habitat structure supports marine life.",
         "Connect field observations to REEF's citizen-science survey methods.",
       ],
-      bring: "mask, snorkel, fins, towel, reusable water bottle, reef-safe sun protection",
+      bring: "towel, reusable water bottle, reef-safe sun protection",
       note: "boat and water activities are weather- and water-condition dependent",
     },
     {
@@ -193,7 +192,6 @@ window.BOOKING_DATA = {
       {
         title: "Water Gear",
         items: [
-          { label: "Mask, snorkel, fins [from booking data]", level: "required" },
           { label: "Rash guard or swimsuit under clothing", level: "recommended" },
           { label: "Reef-safe sunscreen", level: "recommended" },
         ],
@@ -224,7 +222,7 @@ window.BOOKING_DATA = {
   finalReminders: {
     arrivalTime: "",
     parking: "",
-    reefContact: "",
-    questionsEmail: "info@REEF.org",
+    reefContact: "Rose",
+    questionsEmail: "explorers@reef.org",
   },
 };
