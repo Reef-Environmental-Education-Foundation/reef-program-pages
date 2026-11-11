@@ -8,15 +8,17 @@ window.BOOKING_DATA = {
   "view": {
     "status": "proposal",
     "statusLabel": "Proposal",
-    "version": "v4",
-    "lastUpdated": "Nov 7, 2026",
+    "version": "v5",
+    "lastUpdated": "Nov 11, 2026",
+    "photo": null,
     "orgName": "The Benjamin School",
-    "dateLine": "April 16\u201317, 2027",
+    "dateLine": "April 15\u201316, 2027",
     "hours": "Day 1: 10:30 AM \u2013 9:00 PM; Day 2: 8:30 AM \u2013 6:15 PM",
     "programName": "Florida Keys Ocean Explorers Expedition",
     "summary": "A two-day marine science program for 90 students in Key Largo, organized into three cohorts that rotate through fish identification, a lionfish lesson, kayaking, snorkeling, an ecology hike and a coral nursery visit at REEF's Ocean Exploration Center, the MOTE Coral Nursery and Pennekamp Coral Reef State Park, with a whole-group night activity on Day 1.",
     "scheduleDraft": false,
     "view": "student",
+    "location": "Key Largo, Florida",
     "headline": "Two days on the reef",
     "intro": "You will work in a small group (a cohort) and rotate between REEF's Ocean Exploration Center, Pennekamp and the MOTE Coral Nursery.",
     "experiences": [
@@ -96,6 +98,6 @@ window.BOOKING_DATA = {
     "classroomPrep": [],
     "title": "Student Preview",
     "audienceLabel": "Benjamin School students",
-    "url": "https://reef-environmental-education-foundation.github.io/reef-program-pages/bookings/the-benjamin-school/share/student/"
+    "url": "https://programs.reef.org/bookings/the-benjamin-school/share/student/"
   }
 };
